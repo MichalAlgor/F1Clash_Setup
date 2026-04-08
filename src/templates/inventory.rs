@@ -17,12 +17,16 @@ pub fn list_page(items: &[InventoryItem]) -> Markup {
 
             div class="category-grid" {
                 @for category in PartCategory::all() {
-                    @let cat_items: Vec<_> = items.iter()
-                        .filter(|item| {
-                            data::find_part(&item.part_name)
-                                .is_some_and(|p| p.category == *category)
-                        })
-                        .collect();
+                    @let cat_items: Vec<_> = {
+                        let mut v: Vec<_> = items.iter()
+                            .filter(|item| {
+                                data::find_part(&item.part_name)
+                                    .is_some_and(|p| p.category == *category)
+                            })
+                            .collect();
+                        v.sort_by_key(|item| data::catalog_index(&item.part_name));
+                        v
+                    };
 
                     @if !cat_items.is_empty() {
                         section {
