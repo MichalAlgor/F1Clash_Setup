@@ -190,6 +190,11 @@ button.btn-delete {
     min-width: 80px;
 }
 
+/* Rarity colors */
+.rarity-common { color: #4a90d9; }
+.rarity-rare { color: #ed7d31; }
+.rarity-epic { color: #b46dd8; }
+
 /* Footer */
 footer.container {
     padding-bottom: 1rem;

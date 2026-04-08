@@ -1,10 +1,36 @@
 use crate::models::part::PartCategory;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rarity {
+    Common,
+    Rare,
+    Epic,
+}
+
+impl Rarity {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Common => "Common",
+            Self::Rare => "Rare",
+            Self::Epic => "Epic",
+        }
+    }
+
+    pub fn css_class(&self) -> &'static str {
+        match self {
+            Self::Common => "rarity-common",
+            Self::Rare => "rarity-rare",
+            Self::Epic => "rarity-epic",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PartDefinition {
     pub name: &'static str,
     pub category: PartCategory,
     pub series: i32,
+    pub rarity: Rarity,
     pub levels: &'static [LevelStats],
 }
 
@@ -90,11 +116,12 @@ pub fn parts_by_category(category: PartCategory) -> Vec<&'static PartDefinition>
 }
 
 use PartCategory::*;
+use Rarity::*;
 
 static CATALOG: &[PartDefinition] = &[
     // ==================== ENGINE ====================
     PartDefinition {
-        name: "Mach I", category: Engine, series: 1,
+        name: "Mach I", category: Engine, series: 1, rarity: Common,
         levels: &[
             LevelStats::new(1, 2, 3, 1, 2, 0.97, 0),
             LevelStats::new(2, 3, 4, 2, 3, 0.94, 0),
@@ -110,7 +137,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Spark-E", category: Engine, series: 2,
+        name: "Spark-E", category: Engine, series: 2, rarity: Common,
         levels: &[
             LevelStats::new(1, 6, 2, 1, 3, 0.90, 0),
             LevelStats::new(2, 7, 3, 2, 4, 0.85, 0),
@@ -126,7 +153,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Mach II", category: Engine, series: 4,
+        name: "Mach II", category: Engine, series: 4, rarity: Rare,
         levels: &[
             LevelStats::new(1, 8, 16, 6, 16, 0.79, 0),
             LevelStats::new(2, 9, 18, 7, 18, 0.77, 0),
@@ -140,7 +167,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Reactor", category: Engine, series: 6,
+        name: "The Reactor", category: Engine, series: 6, rarity: Common,
         levels: &[
             LevelStats::new(1, 5, 4, 12, 6, 0.86, 0),
             LevelStats::new(2, 6, 5, 14, 7, 0.84, 0),
@@ -156,7 +183,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Mach III", category: Engine, series: 7,
+        name: "Mach III", category: Engine, series: 7, rarity: Epic,
         levels: &[
             LevelStats::new(1, 14, 36, 13, 15, 0.55, 0),
             LevelStats::new(2, 15, 39, 14, 16, 0.51, 0),
@@ -169,7 +196,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Behemoth", category: Engine, series: 10,
+        name: "Behemoth", category: Engine, series: 10, rarity: Rare,
         levels: &[
             LevelStats::new(1, 24, 8, 10, 9, 0.72, 0),
             LevelStats::new(2, 26, 9, 11, 10, 0.69, 0),
@@ -183,7 +210,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Chaos Core", category: Engine, series: 12,
+        name: "Chaos Core", category: Engine, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 48, 19, 19, 21, 0.54, 0),
             LevelStats::new(2, 50, 20, 20, 23, 0.52, 0),
@@ -196,7 +223,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Turbo Jet", category: Engine, series: 12,
+        name: "Turbo Jet", category: Engine, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 16, 15, 42, 17, 0.48, 0),
             LevelStats::new(2, 17, 16, 45, 18, 0.45, 0),
@@ -211,7 +238,7 @@ static CATALOG: &[PartDefinition] = &[
 
     // ==================== FRONT WING ====================
     PartDefinition {
-        name: "The Dash", category: FrontWing, series: 1,
+        name: "The Dash", category: FrontWing, series: 1, rarity: Common,
         levels: &[
             LevelStats::new(1, 2, 2, 3, 1, 0.97, 0),
             LevelStats::new(2, 3, 3, 4, 2, 0.94, 0),
@@ -227,7 +254,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Glide", category: FrontWing, series: 2,
+        name: "Glide", category: FrontWing, series: 2, rarity: Common,
         levels: &[
             LevelStats::new(1, 5, 2, 2, 4, 0.97, 0),
             LevelStats::new(2, 6, 3, 3, 5, 0.94, 0),
@@ -243,7 +270,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Synergy", category: FrontWing, series: 4,
+        name: "Synergy", category: FrontWing, series: 4, rarity: Common,
         levels: &[
             LevelStats::new(1, 4, 3, 7, 2, 0.79, 0),
             LevelStats::new(2, 5, 4, 8, 3, 0.74, 0),
@@ -259,7 +286,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Vortex", category: FrontWing, series: 6,
+        name: "Vortex", category: FrontWing, series: 6, rarity: Epic,
         levels: &[
             LevelStats::new(1, 13, 35, 14, 15, 0.58, 0),
             LevelStats::new(2, 14, 38, 15, 16, 0.55, 0),
@@ -272,7 +299,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Sabre", category: FrontWing, series: 8,
+        name: "The Sabre", category: FrontWing, series: 8, rarity: Rare,
         levels: &[
             LevelStats::new(1, 15, 13, 5, 6, 0.79, 0),
             LevelStats::new(2, 17, 15, 6, 7, 0.77, 0),
@@ -286,7 +313,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Curler", category: FrontWing, series: 9,
+        name: "Curler", category: FrontWing, series: 9, rarity: Rare,
         levels: &[
             LevelStats::new(1, 9, 8, 24, 10, 0.72, 0),
             LevelStats::new(2, 10, 9, 26, 11, 0.69, 0),
@@ -300,7 +327,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Flex XL", category: FrontWing, series: 11,
+        name: "Flex XL", category: FrontWing, series: 11, rarity: Epic,
         levels: &[
             LevelStats::new(1, 17, 42, 15, 16, 0.48, 0),
             LevelStats::new(2, 18, 45, 16, 17, 0.45, 0),
@@ -313,7 +340,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Edgecutter", category: FrontWing, series: 12,
+        name: "Edgecutter", category: FrontWing, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 46, 20, 19, 17, 0.51, 0),
             LevelStats::new(2, 48, 21, 20, 18, 0.49, 0),
@@ -328,7 +355,7 @@ static CATALOG: &[PartDefinition] = &[
 
     // ==================== REAR WING ====================
     PartDefinition {
-        name: "Motion", category: RearWing, series: 1,
+        name: "Motion", category: RearWing, series: 1, rarity: Common,
         levels: &[
             LevelStats::new(1, 2, 3, 2, 1, 0.79, 0),
             LevelStats::new(2, 3, 4, 3, 2, 0.76, 0),
@@ -344,7 +371,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Gale Force", category: RearWing, series: 3,
+        name: "Gale Force", category: RearWing, series: 3, rarity: Common,
         levels: &[
             LevelStats::new(1, 4, 8, 2, 2, 0.65, 0),
             LevelStats::new(2, 5, 9, 3, 3, 0.61, 0),
@@ -360,7 +387,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "X-Hale", category: RearWing, series: 4,
+        name: "X-Hale", category: RearWing, series: 4, rarity: Epic,
         levels: &[
             LevelStats::new(1, 17, 16, 7, 5, 0.72, 27),
             LevelStats::new(2, 19, 18, 8, 6, 0.69, 30),
@@ -373,7 +400,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Spire", category: RearWing, series: 6,
+        name: "The Spire", category: RearWing, series: 6, rarity: Rare,
         levels: &[
             LevelStats::new(1, 6, 5, 15, 14, 0.79, 0),
             LevelStats::new(2, 7, 5, 17, 15, 0.77, 0),
@@ -387,7 +414,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Power Lift", category: RearWing, series: 7,
+        name: "Power Lift", category: RearWing, series: 7, rarity: Rare,
         levels: &[
             LevelStats::new(1, 30, 12, 10, 12, 0.69, 0),
             LevelStats::new(2, 32, 13, 11, 13, 0.65, 0),
@@ -401,7 +428,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Aero Blade", category: RearWing, series: 9,
+        name: "Aero Blade", category: RearWing, series: 9, rarity: Rare,
         levels: &[
             LevelStats::new(1, 10, 12, 33, 14, 0.97, 42),
             LevelStats::new(2, 11, 13, 36, 15, 0.94, 45),
@@ -415,7 +442,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Valkyrie", category: RearWing, series: 11,
+        name: "The Valkyrie", category: RearWing, series: 11, rarity: Epic,
         levels: &[
             LevelStats::new(1, 42, 16, 15, 17, 0.48, 17),
             LevelStats::new(2, 45, 17, 16, 18, 0.45, 19),
@@ -428,7 +455,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Phantom Arc", category: RearWing, series: 12,
+        name: "Phantom Arc", category: RearWing, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 11, 46, 12, 13, 0.94, 46),
             LevelStats::new(2, 12, 48, 13, 14, 0.94, 48),
@@ -443,7 +470,7 @@ static CATALOG: &[PartDefinition] = &[
 
     // ==================== SUSPENSION ====================
     PartDefinition {
-        name: "Equinox", category: Suspension, series: 1,
+        name: "Equinox", category: Suspension, series: 1, rarity: Epic,
         levels: &[
             LevelStats::new(1, 4, 2, 9, 3, 0.93, 0),
             LevelStats::new(2, 5, 3, 12, 4, 0.90, 0),
@@ -456,7 +483,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Swish", category: Suspension, series: 2,
+        name: "Swish", category: Suspension, series: 2, rarity: Common,
         levels: &[
             LevelStats::new(1, 3, 2, 4, 3, 0.90, 0),
             LevelStats::new(2, 4, 3, 5, 4, 0.86, 0),
@@ -472,7 +499,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Curver 2.5", category: Suspension, series: 3,
+        name: "Curver 2.5", category: Suspension, series: 3, rarity: Common,
         levels: &[
             LevelStats::new(1, 7, 4, 2, 7, 0.93, 0),
             LevelStats::new(2, 8, 5, 3, 8, 0.91, 0),
@@ -488,7 +515,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Arc", category: Suspension, series: 5,
+        name: "The Arc", category: Suspension, series: 5, rarity: Common,
         levels: &[
             LevelStats::new(1, 4, 12, 5, 6, 0.69, 0),
             LevelStats::new(2, 5, 14, 6, 7, 0.64, 0),
@@ -504,7 +531,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Quantum", category: Suspension, series: 7,
+        name: "Quantum", category: Suspension, series: 7, rarity: Rare,
         levels: &[
             LevelStats::new(1, 24, 7, 11, 10, 0.76, 0),
             LevelStats::new(2, 26, 8, 12, 11, 0.73, 0),
@@ -518,7 +545,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Gyro", category: Suspension, series: 9,
+        name: "Gyro", category: Suspension, series: 9, rarity: Rare,
         levels: &[
             LevelStats::new(1, 10, 30, 12, 11, 0.65, 0),
             LevelStats::new(2, 11, 32, 13, 12, 0.62, 0),
@@ -532,7 +559,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Joltcoil", category: Suspension, series: 12,
+        name: "Joltcoil", category: Suspension, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 21, 17, 48, 21, 0.50, 0),
             LevelStats::new(2, 23, 18, 50, 23, 0.48, 0),
@@ -545,7 +572,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Nexus", category: Suspension, series: 12,
+        name: "Nexus", category: Suspension, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 16, 17, 42, 15, 0.48, 0),
             LevelStats::new(2, 17, 18, 45, 16, 0.45, 0),
@@ -558,7 +585,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Fluxspring", category: Suspension, series: 12,
+        name: "Fluxspring", category: Suspension, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 49, 17, 18, 20, 0.44, 0),
             LevelStats::new(2, 51, 18, 19, 21, 0.42, 0),
@@ -571,7 +598,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Teeter Totter", category: Suspension, series: 12,
+        name: "Teeter Totter", category: Suspension, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 21, 46, 19, 17, 0.48, 0),
             LevelStats::new(2, 23, 48, 20, 18, 0.46, 0),
@@ -586,7 +613,7 @@ static CATALOG: &[PartDefinition] = &[
 
     // ==================== BRAKES ====================
     PartDefinition {
-        name: "Pivot", category: Brakes, series: 1,
+        name: "Pivot", category: Brakes, series: 1, rarity: Common,
         levels: &[
             LevelStats::new(1, 2, 2, 1, 3, 0.97, 0),
             LevelStats::new(2, 3, 3, 2, 4, 0.94, 0),
@@ -602,7 +629,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Stabiliser", category: Brakes, series: 2,
+        name: "The Stabiliser", category: Brakes, series: 2, rarity: Common,
         levels: &[
             LevelStats::new(1, 3, 5, 2, 1, 0.86, 0),
             LevelStats::new(2, 4, 7, 3, 2, 0.81, 0),
@@ -618,7 +645,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Supernova", category: Brakes, series: 3,
+        name: "Supernova", category: Brakes, series: 3, rarity: Epic,
         levels: &[
             LevelStats::new(1, 15, 5, 6, 7, 0.83, 0),
             LevelStats::new(2, 18, 6, 7, 8, 0.80, 0),
@@ -631,7 +658,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Descent", category: Brakes, series: 5,
+        name: "The Descent", category: Brakes, series: 5, rarity: Rare,
         levels: &[
             LevelStats::new(1, 5, 15, 6, 14, 0.83, 0),
             LevelStats::new(2, 6, 17, 7, 16, 0.80, 0),
@@ -645,7 +672,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Rumble", category: Brakes, series: 8,
+        name: "Rumble", category: Brakes, series: 8, rarity: Rare,
         levels: &[
             LevelStats::new(1, 8, 10, 28, 11, 0.69, 0),
             LevelStats::new(2, 9, 11, 30, 12, 0.65, 0),
@@ -659,7 +686,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Flow 1K", category: Brakes, series: 10,
+        name: "Flow 1K", category: Brakes, series: 10, rarity: Rare,
         levels: &[
             LevelStats::new(1, 33, 12, 13, 11, 0.62, 0),
             LevelStats::new(2, 35, 13, 14, 12, 0.59, 0),
@@ -673,7 +700,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Boombox", category: Brakes, series: 11,
+        name: "Boombox", category: Brakes, series: 11, rarity: Epic,
         levels: &[
             LevelStats::new(1, 16, 42, 17, 14, 0.44, 0),
             LevelStats::new(2, 17, 45, 18, 15, 0.41, 0),
@@ -686,7 +713,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Grindlock", category: Brakes, series: 12,
+        name: "Grindlock", category: Brakes, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 19, 17, 49, 17, 0.52, 0),
             LevelStats::new(2, 20, 18, 51, 18, 0.50, 0),
@@ -701,7 +728,7 @@ static CATALOG: &[PartDefinition] = &[
 
     // ==================== GEARBOX ====================
     PartDefinition {
-        name: "Hustle", category: Gearbox, series: 1,
+        name: "Hustle", category: Gearbox, series: 1, rarity: Common,
         levels: &[
             LevelStats::new(1, 2, 2, 3, 1, 0.97, 0),
             LevelStats::new(2, 3, 3, 4, 2, 0.93, 0),
@@ -717,7 +744,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Slickshift", category: Gearbox, series: 2,
+        name: "Slickshift", category: Gearbox, series: 2, rarity: Rare,
         levels: &[
             LevelStats::new(1, 3, 2, 7, 7, 0.90, 0),
             LevelStats::new(2, 4, 3, 9, 9, 0.87, 0),
@@ -731,7 +758,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Beat", category: Gearbox, series: 3,
+        name: "Beat", category: Gearbox, series: 3, rarity: Common,
         levels: &[
             LevelStats::new(1, 2, 8, 4, 2, 0.79, 0),
             LevelStats::new(2, 3, 9, 5, 3, 0.74, 0),
@@ -747,7 +774,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Fury", category: Gearbox, series: 5,
+        name: "Fury", category: Gearbox, series: 5, rarity: Epic,
         levels: &[
             LevelStats::new(1, 17, 5, 7, 16, 0.76, 0),
             LevelStats::new(2, 19, 6, 8, 18, 0.72, 0),
@@ -760,7 +787,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Dynamo", category: Gearbox, series: 8,
+        name: "The Dynamo", category: Gearbox, series: 8, rarity: Rare,
         levels: &[
             LevelStats::new(1, 11, 8, 27, 11, 0.69, 0),
             LevelStats::new(2, 12, 9, 29, 12, 0.65, 0),
@@ -774,7 +801,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Metronome", category: Gearbox, series: 10,
+        name: "Metronome", category: Gearbox, series: 10, rarity: Rare,
         levels: &[
             LevelStats::new(1, 12, 33, 10, 14, 0.65, 0),
             LevelStats::new(2, 13, 36, 11, 15, 0.62, 0),
@@ -788,7 +815,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "The Beast", category: Gearbox, series: 12,
+        name: "The Beast", category: Gearbox, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 42, 15, 17, 16, 0.48, 0),
             LevelStats::new(2, 44, 16, 18, 17, 0.45, 0),
@@ -801,7 +828,7 @@ static CATALOG: &[PartDefinition] = &[
         ],
     },
     PartDefinition {
-        name: "Jittershift", category: Gearbox, series: 12,
+        name: "Jittershift", category: Gearbox, series: 12, rarity: Epic,
         levels: &[
             LevelStats::new(1, 17, 20, 46, 19, 0.52, 0),
             LevelStats::new(2, 18, 21, 48, 20, 0.50, 0),

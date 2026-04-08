@@ -48,7 +48,7 @@ pub fn list_page(items: &[InventoryItem]) -> Markup {
                                             @if let Some(part_def) = data::find_part(&item.part_name) {
                                                 @if let Some(stats) = part_def.stats_for_level(item.level) {
                                                     tr {
-                                                        td { (item.part_name) }
+                                                        td class=(part_def.rarity.css_class()) { (item.part_name) }
                                                         td { (part_def.series) }
                                                         td {
                                                             form method="post" action={"/inventory/" (item.id) "/level"} style="display:inline;margin:0" {
@@ -121,7 +121,7 @@ pub fn bulk_page(current_inventory: &[InventoryItem]) -> Markup {
                                             .map(|i| i.level)
                                             .unwrap_or(0);
                                         tr {
-                                            td { (part_def.name) }
+                                            td class=(part_def.rarity.css_class()) { (part_def.name) }
                                             td { (part_def.series) }
                                             td {
                                                 select name={"part:" (part_def.name)} class="inline-select" {

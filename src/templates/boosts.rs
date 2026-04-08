@@ -70,7 +70,7 @@ pub fn page(boosts: &[Boost]) -> Markup {
                                                             checked[is_boosted]
                                                             onchange={"toggleBoost('" (part_def.name) "', this.checked, '" (category.display_name()) "')"};
                                                     }
-                                                    td { (part_def.name) }
+                                                    td class=(part_def.rarity.css_class()) { (part_def.name) }
                                                     td { (part_def.series) }
                                                 }
                                             }
