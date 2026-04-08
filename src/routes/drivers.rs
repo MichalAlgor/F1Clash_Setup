@@ -4,13 +4,13 @@ use axum::routing::{delete, get, post};
 use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
-use sqlx::PgPool;
 
+use crate::AppState;
 use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
 use crate::templates;
 
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/drivers", get(list))
         .route("/drivers/bulk", get(bulk_form).post(bulk_save))
@@ -18,22 +18,26 @@ pub fn router() -> Router<PgPool> {
         .route("/drivers/{id}/level", post(update_level))
 }
 
-async fn list(State(pool): State<PgPool>) -> impl IntoResponse {
+async fn list(State(state): State<AppState>) -> impl IntoResponse {
+    let season = state.season().await;
     let items = sqlx::query_as::<_, DriverInventoryItem>(
-        "SELECT * FROM driver_inventory ORDER BY driver_name",
+        "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
     )
-    .fetch_all(&pool)
+    .bind(&season)
+    .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
     templates::drivers::list_page(&items)
 }
 
-async fn bulk_form(State(pool): State<PgPool>) -> impl IntoResponse {
+async fn bulk_form(State(state): State<AppState>) -> impl IntoResponse {
+    let season = state.season().await;
     let items = sqlx::query_as::<_, DriverInventoryItem>(
-        "SELECT * FROM driver_inventory ORDER BY driver_name",
+        "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
     )
-    .fetch_all(&pool)
+    .bind(&season)
+    .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
@@ -41,11 +45,14 @@ async fn bulk_form(State(pool): State<PgPool>) -> impl IntoResponse {
 }
 
 async fn bulk_save(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
-    sqlx::query("DELETE FROM driver_inventory")
-        .execute(&pool)
+    let season = state.season().await;
+
+    sqlx::query("DELETE FROM driver_inventory WHERE season = $1")
+        .bind(&season)
+        .execute(&state.pool)
         .await
         .unwrap();
 
@@ -57,11 +64,12 @@ async fn bulk_save(
         if level < 1 { continue; }
         if drivers_data::find_driver_by_db(name, rarity_str).is_none() { continue; }
 
-        sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level) VALUES ($1, $2, $3)")
+        sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level, season) VALUES ($1, $2, $3, $4)")
             .bind(name)
             .bind(rarity_str)
             .bind(level)
-            .execute(&pool)
+            .bind(&season)
+            .execute(&state.pool)
             .await
             .unwrap();
     }
@@ -75,24 +83,24 @@ pub struct LevelForm {
 }
 
 async fn update_level(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<i32>,
     Form(form): Form<LevelForm>,
 ) -> impl IntoResponse {
     sqlx::query("UPDATE driver_inventory SET level = $1 WHERE id = $2")
         .bind(form.level)
         .bind(id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .unwrap();
 
     Redirect::to("/drivers")
 }
 
-async fn destroy(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
+async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
     sqlx::query("DELETE FROM driver_inventory WHERE id = $1")
         .bind(id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .unwrap();
 

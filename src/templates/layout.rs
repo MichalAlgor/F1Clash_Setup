@@ -28,6 +28,13 @@ pub fn page(title: &str, content: Markup) -> Markup {
                             li { a href="/setups" { "Setups" } }
                             li { a href="/boosts" { "Boosts" } }
                             li { a href="/optimizer" { "Optimizer" } }
+                            li { a href="/export" { "Export" } }
+                            li { a href="/import" { "Import" } }
+                            li {
+                                a href="/season" class="season-badge" {
+                                    span hx-get="/api/season" hx-trigger="load" hx-swap="innerHTML" { "..." }
+                                }
+                            }
                         }
                     }
                 }
@@ -214,6 +221,16 @@ button.btn-delete {
     font-size: 0.75rem;
     color: var(--pico-muted-color);
     min-width: 80px;
+}
+
+/* Season badge */
+.season-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    font-size: 0.75rem;
+    text-decoration: none;
 }
 
 /* Rarity colors */

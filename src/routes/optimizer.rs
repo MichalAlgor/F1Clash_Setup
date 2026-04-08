@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect};
 use axum::routing::get;
 use axum::{Form, Router};
 use serde::Deserialize;
-use sqlx::PgPool;
+use crate::AppState;
 
 use crate::data;
 use crate::drivers_data;
@@ -12,7 +12,7 @@ use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem};
 use crate::templates;
 
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/optimizer", get(form))
         .route("/optimizer/run", get(run))
@@ -99,9 +99,10 @@ impl DriverPriorities {
 }
 
 async fn run(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     axum::extract::Query(query): axum::extract::Query<OptimizerQuery>,
 ) -> impl IntoResponse {
+    let season = state.season().await;
     let part_priorities = crate::data::StatPriorities {
         speed: query.speed,
         cornering: query.cornering,
@@ -117,10 +118,10 @@ async fn run(
     };
 
     // === Resolve parts ===
-    let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory ORDER BY part_name")
-        .fetch_all(&pool).await.unwrap_or_default();
-    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts")
-        .fetch_all(&pool).await.unwrap_or_default();
+    let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE season = $1 ORDER BY part_name")
+        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
+    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE season = $1")
+        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
 
     let categories = PartCategory::all();
     let mut parts_per_cat: Vec<Vec<ResolvedPart>> = Vec::new();
@@ -143,10 +144,10 @@ async fn run(
     }
 
     // === Resolve drivers ===
-    let driver_items = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory ORDER BY driver_name")
-        .fetch_all(&pool).await.unwrap_or_default();
-    let driver_boosts = sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts")
-        .fetch_all(&pool).await.unwrap_or_default();
+    let driver_items = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name")
+        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
+    let driver_boosts = sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts WHERE season = $1")
+        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
 
     let resolved_drivers: Vec<ResolvedDriver> = driver_items.iter().filter_map(|item| {
         let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity)?;
@@ -277,10 +278,11 @@ pub struct SaveForm {
     pub driver2_id: Option<i32>,
 }
 
-async fn save(State(pool): State<PgPool>, Form(form): Form<SaveForm>) -> impl IntoResponse {
+async fn save(State(state): State<AppState>, Form(form): Form<SaveForm>) -> impl IntoResponse {
+    let season = state.season().await;
     sqlx::query(
-        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, driver1_id, driver2_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, driver1_id, driver2_id, season)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -291,7 +293,8 @@ async fn save(State(pool): State<PgPool>, Form(form): Form<SaveForm>) -> impl In
     .bind(form.gearbox_id)
     .bind(form.driver1_id)
     .bind(form.driver2_id)
-    .execute(&pool)
+    .bind(&season)
+    .execute(&state.pool)
     .await
     .unwrap();
 

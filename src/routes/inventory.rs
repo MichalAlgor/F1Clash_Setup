@@ -4,13 +4,14 @@ use axum::routing::{delete, get, post};
 use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
-use sqlx::PgPool;
+
+use crate::AppState;
 
 use crate::data;
 use crate::models::setup::InventoryItem;
 use crate::templates;
 
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
         .route("/inventory", get(list))
@@ -23,22 +24,26 @@ async fn index() -> impl IntoResponse {
     Redirect::to("/inventory")
 }
 
-async fn list(State(pool): State<PgPool>) -> impl IntoResponse {
+async fn list(State(state): State<AppState>) -> impl IntoResponse {
+    let season = state.season().await;
     let items = sqlx::query_as::<_, InventoryItem>(
-        "SELECT * FROM inventory ORDER BY part_name",
+        "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
-    .fetch_all(&pool)
+    .bind(&season)
+    .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
     templates::inventory::list_page(&items)
 }
 
-async fn bulk_form(State(pool): State<PgPool>) -> impl IntoResponse {
+async fn bulk_form(State(state): State<AppState>) -> impl IntoResponse {
+    let season = state.season().await;
     let items = sqlx::query_as::<_, InventoryItem>(
-        "SELECT * FROM inventory ORDER BY part_name",
+        "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
-    .fetch_all(&pool)
+    .bind(&season)
+    .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
@@ -47,12 +52,15 @@ async fn bulk_form(State(pool): State<PgPool>) -> impl IntoResponse {
 
 /// Each part is submitted as `part:<name>=<level>` (0 means not owned)
 async fn bulk_save(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
-    // Clear existing inventory and re-insert
-    sqlx::query("DELETE FROM inventory")
-        .execute(&pool)
+    let season = state.season().await;
+
+    // Clear existing inventory for this season and re-insert
+    sqlx::query("DELETE FROM inventory WHERE season = $1")
+        .bind(&season)
+        .execute(&state.pool)
         .await
         .unwrap();
 
@@ -68,10 +76,11 @@ async fn bulk_save(
         if data::find_part(part_name).is_none() {
             continue;
         }
-        sqlx::query("INSERT INTO inventory (part_name, level) VALUES ($1, $2)")
+        sqlx::query("INSERT INTO inventory (part_name, level, season) VALUES ($1, $2, $3)")
             .bind(part_name)
             .bind(level)
-            .execute(&pool)
+            .bind(&season)
+            .execute(&state.pool)
             .await
             .unwrap();
     }
@@ -85,24 +94,24 @@ pub struct LevelForm {
 }
 
 async fn update_level(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Path(id): Path<i32>,
     Form(form): Form<LevelForm>,
 ) -> impl IntoResponse {
     sqlx::query("UPDATE inventory SET level = $1 WHERE id = $2")
         .bind(form.level)
         .bind(id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .unwrap();
 
     Redirect::to("/inventory")
 }
 
-async fn destroy(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoResponse {
+async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
     sqlx::query("DELETE FROM inventory WHERE id = $1")
         .bind(id)
-        .execute(&pool)
+        .execute(&state.pool)
         .await
         .unwrap();
 

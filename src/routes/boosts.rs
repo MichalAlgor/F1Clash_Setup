@@ -3,28 +3,34 @@ use axum::response::{IntoResponse, Redirect};
 use axum::routing::get;
 use axum::Form;
 use axum::Router;
-use sqlx::PgPool;
 
 use crate::data;
 use crate::drivers_data;
 use crate::models::driver::DriverBoost;
 use crate::models::setup::Boost;
 use crate::templates;
+use crate::AppState;
 
-pub fn router() -> Router<PgPool> {
+pub fn router() -> Router<AppState> {
     Router::new().route("/boosts", get(show).post(save))
 }
 
-async fn show(State(pool): State<PgPool>) -> impl IntoResponse {
-    let part_boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts ORDER BY part_name")
-        .fetch_all(&pool)
-        .await
-        .unwrap_or_default();
+async fn show(State(state): State<AppState>) -> impl IntoResponse {
+    let season = state.season().await;
+
+    let part_boosts = sqlx::query_as::<_, Boost>(
+        "SELECT * FROM boosts WHERE season = $1 ORDER BY part_name",
+    )
+    .bind(&season)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
 
     let driver_boosts = sqlx::query_as::<_, DriverBoost>(
-        "SELECT * FROM driver_boosts ORDER BY driver_name",
+        "SELECT * FROM driver_boosts WHERE season = $1 ORDER BY driver_name",
     )
-    .fetch_all(&pool)
+    .bind(&season)
+    .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
@@ -33,12 +39,22 @@ async fn show(State(pool): State<PgPool>) -> impl IntoResponse {
 
 /// Single save handler — form fields prefixed with `part:` or `driver:`
 async fn save(
-    State(pool): State<PgPool>,
+    State(state): State<AppState>,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
+    let season = state.season().await;
+
     // Clear both tables
-    sqlx::query("DELETE FROM boosts").execute(&pool).await.unwrap();
-    sqlx::query("DELETE FROM driver_boosts").execute(&pool).await.unwrap();
+    sqlx::query("DELETE FROM boosts WHERE season = $1")
+        .bind(&season)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM driver_boosts WHERE season = $1")
+        .bind(&season)
+        .execute(&state.pool)
+        .await
+        .unwrap();
 
     for (key, value) in &form {
         let percentage: i32 = value.parse().unwrap_or(0);
@@ -48,20 +64,22 @@ async fn save(
 
         if let Some(part_name) = key.strip_prefix("part:") {
             if data::find_part(part_name).is_none() { continue; }
-            sqlx::query("INSERT INTO boosts (part_name, percentage) VALUES ($1, $2)")
+            sqlx::query("INSERT INTO boosts (part_name, percentage, season) VALUES ($1, $2, $3)")
                 .bind(part_name)
                 .bind(percentage)
-                .execute(&pool)
+                .bind(&season)
+                .execute(&state.pool)
                 .await
                 .unwrap();
         } else if let Some(rest) = key.strip_prefix("driver:") {
             let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
             if drivers_data::find_driver_by_db(name, rarity_str).is_none() { continue; }
-            sqlx::query("INSERT INTO driver_boosts (driver_name, rarity, percentage) VALUES ($1, $2, $3)")
+            sqlx::query("INSERT INTO driver_boosts (driver_name, rarity, percentage, season) VALUES ($1, $2, $3, $4)")
                 .bind(name)
                 .bind(rarity_str)
                 .bind(percentage)
-                .execute(&pool)
+                .bind(&season)
+                .execute(&state.pool)
                 .await
                 .unwrap();
         }
