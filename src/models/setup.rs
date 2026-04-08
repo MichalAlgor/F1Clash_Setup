@@ -1,0 +1,25 @@
+use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
+
+use super::part::Stats;
+
+/// A saved car setup (7 parts, one per category)
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Setup {
+    pub id: i32,
+    pub name: String,
+    pub engine_id: i32,
+    pub front_wing_id: i32,
+    pub rear_wing_id: i32,
+    pub sidepod_id: i32,
+    pub underbody_id: i32,
+    pub suspension_id: i32,
+    pub brakes_id: i32,
+}
+
+/// A setup with its computed total stats
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetupWithStats {
+    pub setup: Setup,
+    pub stats: Stats,
+}
