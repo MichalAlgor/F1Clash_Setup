@@ -27,7 +27,6 @@ pub fn page(title: &str, content: Markup) -> Markup {
                             li { a href="/drivers" { "Drivers" } }
                             li { a href="/setups" { "Setups" } }
                             li { a href="/boosts" { "Boosts" } }
-                            li { a href="/driver-boosts" { "D.Boosts" } }
                             li { a href="/optimizer" { "Optimizer" } }
                         }
                     }
@@ -164,6 +163,31 @@ button.btn-delete {
     line-height: 1;
     cursor: pointer;
 }
+
+/* Tabs */
+.boost-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--pico-muted-border-color);
+}
+.boost-tab {
+    padding: 0.5rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--pico-muted-color);
+}
+.boost-tab.active {
+    color: var(--pico-color);
+    border-bottom-color: var(--pico-primary);
+    font-weight: 600;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
 /* Boost entries */
 #active-boosts {

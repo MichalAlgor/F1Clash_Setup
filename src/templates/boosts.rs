@@ -1,77 +1,155 @@
 use maud::{html, Markup, PreEscaped};
 
 use crate::data;
+use crate::drivers_data::{self, DriverCategory};
+use crate::models::driver::DriverBoost;
 use crate::models::part::PartCategory;
 use crate::models::setup::Boost;
 
-pub fn page(boosts: &[Boost]) -> Markup {
-    // Collect names of currently boosted parts for JS init
-    let boosted_names: Vec<&str> = boosts.iter().map(|b| b.part_name.as_str()).collect();
+pub fn page(part_boosts: &[Boost], driver_boosts: &[DriverBoost]) -> Markup {
+    let boosted_part_names: Vec<&str> = part_boosts.iter().map(|b| b.part_name.as_str()).collect();
+    let boosted_driver_keys: Vec<(String, String)> = driver_boosts
+        .iter()
+        .map(|b| (b.driver_name.clone(), b.rarity.clone()))
+        .collect();
+    let has_any_boost = !part_boosts.is_empty() || !driver_boosts.is_empty();
 
     super::layout::page(
         "Boosts",
         html! {
             hgroup {
-                h1 { "Global Boosts" }
-                p { "Check parts that have a boost, then set the percentage" }
+                h1 { "Boosts" }
+                p { "Manage part and driver boosts" }
             }
 
             form method="post" action="/boosts" id="boost-form" {
-                // Active boosts section
+                // Unified active boosts panel
                 div id="active-boosts" {
-                    @if boosts.is_empty() {
-                        p.secondary #no-boosts { "No boosts active. Select parts below." }
+                    @if !has_any_boost {
+                        p.secondary #no-boosts { "No boosts active. Select parts or drivers below." }
                     }
-                    @for boost in boosts {
+                    @for boost in part_boosts {
                         @if let Some(part_def) = data::find_part(&boost.part_name) {
-                            div class="boost-entry" data-part=(boost.part_name) {
-                                span class="boost-name" { (boost.part_name) }
+                            div class="boost-entry" data-part=(boost.part_name) data-type="part" {
+                                span class={"boost-name " (part_def.rarity.css_class())} { (boost.part_name) }
                                 span class="boost-cat" { (part_def.category.display_name()) }
                                 input type="number"
-                                    name={"boost:" (boost.part_name)}
+                                    name={"part:" (boost.part_name)}
                                     min="1" max="100" step="1"
                                     value=(boost.percentage)
                                     class="compact";
                                 span { "%" }
                                 button type="button" class="btn-delete outline"
-                                    onclick={"toggleBoost('" (boost.part_name) "', false)"} { "×" }
+                                    onclick={"togglePartBoost('" (boost.part_name) "', false)"} { "×" }
+                            }
+                        }
+                    }
+                    @for boost in driver_boosts {
+                        @if let Some(driver_def) = drivers_data::find_driver_by_db(&boost.driver_name, &boost.rarity) {
+                            div class="boost-entry" data-key={"d:" (boost.driver_name) ":" (boost.rarity)} data-type="driver" {
+                                span class={"boost-name " (driver_def.rarity.css_class())} { (boost.driver_name) }
+                                span class="boost-cat" { (driver_def.rarity.label()) }
+                                input type="number"
+                                    name={"driver:" (boost.driver_name) ":" (boost.rarity)}
+                                    min="1" max="100" step="1"
+                                    value=(boost.percentage)
+                                    class="compact";
+                                span { "%" }
+                                button type="button" class="btn-delete outline"
+                                    onclick={"toggleDriverBoost('" (boost.driver_name) "', '" (boost.rarity) "', false)"} { "×" }
                             }
                         }
                     }
                 }
 
-                button type="submit" { "Save Boosts" }
+                button type="submit" { "Save All Boosts" }
 
-                // Part selection by category
-                div class="category-grid" {
-                    @for category in PartCategory::all() {
-                        @let parts = data::parts_by_category(*category);
-                        @if !parts.is_empty() {
-                            section {
-                                h2 { (category.display_name()) }
-                                figure {
-                                    table {
-                                        thead {
-                                            tr {
-                                                th {}
-                                                th { "Part" }
-                                                th { "Series" }
+                // Tab buttons for selection area
+                div class="boost-tabs" {
+                    button type="button" class="boost-tab active" data-tab="parts-tab" onclick="switchTab('parts-tab')" { "Parts" }
+                    button type="button" class="boost-tab" data-tab="drivers-tab" onclick="switchTab('drivers-tab')" { "Drivers" }
+                }
+
+                // ===== PARTS SELECTION =====
+                div id="parts-tab" class="tab-content active" {
+                    div class="category-grid" {
+                        @for category in PartCategory::all() {
+                            @let parts = data::parts_by_category(*category);
+                            @if !parts.is_empty() {
+                                section {
+                                    h2 { (category.display_name()) }
+                                    figure {
+                                        table {
+                                            thead {
+                                                tr {
+                                                    th {}
+                                                    th { "Part" }
+                                                    th { "Series" }
+                                                }
+                                            }
+                                            tbody {
+                                                @for part_def in &parts {
+                                                    @let is_boosted = boosted_part_names.contains(&part_def.name);
+                                                    tr {
+                                                        td {
+                                                            input type="checkbox"
+                                                                class="boost-check"
+                                                                data-part=(part_def.name)
+                                                                data-category=(category.display_name())
+                                                                data-css=(part_def.rarity.css_class())
+                                                                checked[is_boosted]
+                                                                onchange={"togglePartBoost('" (part_def.name) "', this.checked, '" (category.display_name()) "', '" (part_def.rarity.css_class()) "')"};
+                                                        }
+                                                        td class=(part_def.rarity.css_class()) { (part_def.name) }
+                                                        td { (part_def.series) }
+                                                    }
+                                                }
                                             }
                                         }
-                                        tbody {
-                                            @for part_def in &parts {
-                                                @let is_boosted = boosted_names.contains(&part_def.name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ===== DRIVERS SELECTION =====
+                div id="drivers-tab" class="tab-content" {
+                    div class="category-grid" {
+                        @for category in DriverCategory::all() {
+                            @let drivers = drivers_data::drivers_by_category(*category);
+                            @if !drivers.is_empty() {
+                                section {
+                                    h2 { (category.display_name()) }
+                                    figure {
+                                        table {
+                                            thead {
                                                 tr {
-                                                    td {
-                                                        input type="checkbox"
-                                                            class="boost-check"
-                                                            data-part=(part_def.name)
-                                                            data-category=(category.display_name())
-                                                            checked[is_boosted]
-                                                            onchange={"toggleBoost('" (part_def.name) "', this.checked, '" (category.display_name()) "')"};
+                                                    th {}
+                                                    th { "Driver" }
+                                                    th { "Rarity" }
+                                                    th { "Series" }
+                                                }
+                                            }
+                                            tbody {
+                                                @for driver_def in &drivers {
+                                                    @let is_boosted = boosted_driver_keys.iter()
+                                                        .any(|(n, r)| n == driver_def.name && r == driver_def.rarity.db_key());
+                                                    tr {
+                                                        td {
+                                                            input type="checkbox"
+                                                                class="driver-boost-check"
+                                                                data-name=(driver_def.name)
+                                                                data-rarity=(driver_def.rarity.db_key())
+                                                                data-css=(driver_def.rarity.css_class())
+                                                                data-label=(driver_def.rarity.label())
+                                                                checked[is_boosted]
+                                                                onchange={"toggleDriverBoost('" (driver_def.name) "', '" (driver_def.rarity.db_key()) "', this.checked, '" (driver_def.rarity.css_class()) "', '" (driver_def.rarity.label()) "')"};
+                                                        }
+                                                        td class=(driver_def.rarity.css_class()) { (driver_def.name) }
+                                                        td { (driver_def.rarity.label()) }
+                                                        td { (driver_def.series) }
                                                     }
-                                                    td class=(part_def.rarity.css_class()) { (part_def.name) }
-                                                    td { (part_def.series) }
                                                 }
                                             }
                                         }
@@ -83,44 +161,86 @@ pub fn page(boosts: &[Boost]) -> Markup {
                 }
             }
 
-            (PreEscaped(BOOST_JS))
+            (PreEscaped(BOOSTS_JS))
         },
     )
 }
 
-const BOOST_JS: &str = r#"
+const BOOSTS_JS: &str = r#"
 <script>
-function toggleBoost(partName, enabled, category) {
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.boost-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`.boost-tab[data-tab="${tabId}"]`).classList.add('active');
+}
+
+function hideNoBoosts() {
+    const nb = document.getElementById('no-boosts');
+    if (nb) nb.remove();
+}
+
+function showNoBoostsIfEmpty() {
     const container = document.getElementById('active-boosts');
-    const noBoosts = document.getElementById('no-boosts');
-    const existing = container.querySelector(`[data-part="${partName}"]`);
+    if (!container.querySelector('.boost-entry')) {
+        const p = document.createElement('p');
+        p.className = 'secondary';
+        p.id = 'no-boosts';
+        p.textContent = 'No boosts active. Select parts or drivers below.';
+        container.appendChild(p);
+    }
+}
+
+function togglePartBoost(partName, enabled, category, cssClass) {
+    const container = document.getElementById('active-boosts');
+    const existing = container.querySelector(`.boost-entry[data-part="${partName}"]`);
 
     if (enabled && !existing) {
-        if (noBoosts) noBoosts.remove();
+        hideNoBoosts();
         const entry = document.createElement('div');
         entry.className = 'boost-entry';
         entry.dataset.part = partName;
+        entry.dataset.type = 'part';
         entry.innerHTML = `
-            <span class="boost-name">${partName}</span>
+            <span class="boost-name ${cssClass || ''}">${partName}</span>
             <span class="boost-cat">${category || ''}</span>
-            <input type="number" name="boost:${partName}" min="1" max="100" step="1" value="10" class="compact">
+            <input type="number" name="part:${partName}" min="1" max="100" step="1" value="10" class="compact">
             <span>%</span>
-            <button type="button" class="btn-delete outline" onclick="toggleBoost('${partName}', false)">×</button>
+            <button type="button" class="btn-delete outline" onclick="togglePartBoost('${partName}', false)">×</button>
         `;
         container.appendChild(entry);
     } else if (!enabled && existing) {
         existing.remove();
-        // Uncheck the checkbox
         const cb = document.querySelector(`.boost-check[data-part="${partName}"]`);
         if (cb) cb.checked = false;
-        // Show "no boosts" if empty
-        if (!container.querySelector('.boost-entry')) {
-            const p = document.createElement('p');
-            p.className = 'secondary';
-            p.id = 'no-boosts';
-            p.textContent = 'No boosts active. Select parts below.';
-            container.appendChild(p);
-        }
+        showNoBoostsIfEmpty();
+    }
+}
+
+function toggleDriverBoost(name, rarity, enabled, cssClass, label) {
+    const container = document.getElementById('active-boosts');
+    const key = 'd:' + name + ':' + rarity;
+    const existing = container.querySelector(`.boost-entry[data-key="${key}"]`);
+
+    if (enabled && !existing) {
+        hideNoBoosts();
+        const entry = document.createElement('div');
+        entry.className = 'boost-entry';
+        entry.dataset.key = key;
+        entry.dataset.type = 'driver';
+        entry.innerHTML = `
+            <span class="boost-name ${cssClass || ''}">${name}</span>
+            <span class="boost-cat">${label || rarity}</span>
+            <input type="number" name="driver:${name}:${rarity}" min="1" max="100" step="1" value="10" class="compact">
+            <span>%</span>
+            <button type="button" class="btn-delete outline" onclick="toggleDriverBoost('${name}', '${rarity}', false)">×</button>
+        `;
+        container.appendChild(entry);
+    } else if (!enabled && existing) {
+        existing.remove();
+        const cb = document.querySelector(`.driver-boost-check[data-name="${name}"][data-rarity="${rarity}"]`);
+        if (cb) cb.checked = false;
+        showNoBoostsIfEmpty();
     }
 }
 </script>
