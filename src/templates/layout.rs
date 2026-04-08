@@ -17,7 +17,7 @@ pub fn page(title: &str, content: Markup) -> Markup {
                         li { a href="/" { strong { "F1 Clash Setup" } } }
                     }
                     ul {
-                        li { a href="/parts" { "Parts" } }
+                        li { a href="/inventory" { "Inventory" } }
                         li { a href="/setups" { "Setups" } }
                     }
                 }

@@ -1,3 +1,4 @@
+pub mod data;
 mod models;
 mod routes;
 mod templates;
@@ -23,7 +24,7 @@ async fn main() {
     sqlx::migrate!().run(&pool).await.expect("Failed to run migrations");
 
     let app = Router::new()
-        .merge(routes::parts::router())
+        .merge(routes::inventory::router())
         .merge(routes::setups::router())
         .nest_service("/static", ServeDir::new("static"))
         .with_state(pool);

@@ -1,7 +1,8 @@
 use maud::{html, Markup};
 
-use crate::models::part::Part;
-use crate::models::setup::SetupWithStats;
+use crate::data;
+use crate::models::part::PartCategory;
+use crate::models::setup::{InventoryItem, SetupWithStats};
 
 pub fn list_page(setups: &[SetupWithStats]) -> Markup {
     super::layout::page(
@@ -15,7 +16,7 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
             a href="/setups/new" role="button" { "New Setup" }
 
             @if setups.is_empty() {
-                p { "No setups yet. Create one to get started!" }
+                p { "No setups yet. Add parts to your inventory, then create a setup." }
             } @else {
                 figure {
                     table {
@@ -59,7 +60,10 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
     )
 }
 
-pub fn form_page(parts_by_category: &[(String, Vec<Part>)], setup: Option<&crate::models::setup::Setup>) -> Markup {
+pub fn form_page(
+    inventory_by_category: &[(PartCategory, Vec<(InventoryItem, &data::LevelStats)>)],
+    setup: Option<&crate::models::setup::Setup>,
+) -> Markup {
     let title = if setup.is_some() { "Edit Setup" } else { "New Setup" };
     let action = match setup {
         Some(s) => format!("/setups/{}", s.id),
@@ -75,13 +79,15 @@ pub fn form_page(parts_by_category: &[(String, Vec<Part>)], setup: Option<&crate
                 input type="text" id="name" name="name" required
                     value=[setup.map(|s| s.name.as_str())];
 
-                @for (category_name, parts) in parts_by_category {
-                    label for=(category_name) { (category_name) }
-                    select id=(category_name) name=(category_name) required {
+                @for (category, items) in inventory_by_category {
+                    label for=(category.slug()) { (category.display_name()) }
+                    select id=(category.slug()) name=(category.slug()) required {
                         option value="" { "Select a part…" }
-                        @for part in parts {
-                            option value=(part.id) {
-                                (part.name) " (Lvl " (part.level) " — " (part.stats().total_performance()) " perf)"
+                        @for (item, stats) in items {
+                            option value=(item.id) {
+                                (item.part_name) " Lvl " (item.level)
+                                " — " (stats.speed + stats.cornering + stats.power_unit + stats.qualifying) " perf"
+                                " / " (format!("{:.2}", stats.pit_stop_time)) "s pit"
                             }
                         }
                     }

@@ -6,8 +6,9 @@ use maud::html;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::models::part::{Part, PartCategory, Stats};
-use crate::models::setup::{Setup, SetupWithStats};
+use crate::data;
+use crate::models::part::{PartCategory, Stats};
+use crate::models::setup::{InventoryItem, Setup, SetupWithStats};
 use crate::templates;
 
 pub fn router() -> Router<PgPool> {
@@ -34,42 +35,39 @@ async fn list(State(pool): State<PgPool>) -> impl IntoResponse {
 }
 
 async fn new(State(pool): State<PgPool>) -> impl IntoResponse {
-    let parts_by_category = load_parts_by_category(&pool).await;
-    templates::setups::form_page(&parts_by_category, None)
+    let inventory_by_category = load_inventory_by_category(&pool).await;
+    templates::setups::form_page(&inventory_by_category, None)
 }
 
 #[derive(Deserialize)]
 pub struct SetupForm {
     pub name: String,
-    #[serde(rename = "Engine")]
+    #[serde(rename = "engine")]
     pub engine_id: i32,
-    #[serde(rename = "Front Wing")]
+    #[serde(rename = "front_wing")]
     pub front_wing_id: i32,
-    #[serde(rename = "Rear Wing")]
+    #[serde(rename = "rear_wing")]
     pub rear_wing_id: i32,
-    #[serde(rename = "Sidepod")]
-    pub sidepod_id: i32,
-    #[serde(rename = "Underbody")]
-    pub underbody_id: i32,
-    #[serde(rename = "Suspension")]
+    #[serde(rename = "suspension")]
     pub suspension_id: i32,
-    #[serde(rename = "Brakes")]
+    #[serde(rename = "brakes")]
     pub brakes_id: i32,
+    #[serde(rename = "gearbox")]
+    pub gearbox_id: i32,
 }
 
 async fn create(State(pool): State<PgPool>, Form(form): Form<SetupForm>) -> impl IntoResponse {
     sqlx::query(
-        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, sidepod_id, underbody_id, suspension_id, brakes_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
     .bind(&form.name)
     .bind(form.engine_id)
     .bind(form.front_wing_id)
     .bind(form.rear_wing_id)
-    .bind(form.sidepod_id)
-    .bind(form.underbody_id)
     .bind(form.suspension_id)
     .bind(form.brakes_id)
+    .bind(form.gearbox_id)
     .execute(&pool)
     .await
     .unwrap();
@@ -102,6 +100,9 @@ async fn show(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoRespo
                         tr { td { "Power Unit" } td { (s.stats.power_unit) } }
                         tr { td { "Qualifying" } td { (s.stats.qualifying) } }
                         tr { td { "Pit Stop Time" } td { (format!("{:.2}s", s.stats.pit_stop_time)) } }
+                        @if s.stats.drs > 0 {
+                            tr { td { "DRS" } td { (s.stats.drs) } }
+                        }
                         tr { td { strong { "Total Performance" } } td { strong { (s.stats.total_performance()) } } }
                     }
                 }
@@ -117,17 +118,16 @@ async fn update(
     Form(form): Form<SetupForm>,
 ) -> impl IntoResponse {
     sqlx::query(
-        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, sidepod_id=$5, underbody_id=$6, suspension_id=$7, brakes_id=$8
-         WHERE id=$9",
+        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, suspension_id=$5, brakes_id=$6, gearbox_id=$7
+         WHERE id=$8",
     )
     .bind(&form.name)
     .bind(form.engine_id)
     .bind(form.front_wing_id)
     .bind(form.rear_wing_id)
-    .bind(form.sidepod_id)
-    .bind(form.underbody_id)
     .bind(form.suspension_id)
     .bind(form.brakes_id)
+    .bind(form.gearbox_id)
     .bind(id)
     .execute(&pool)
     .await
@@ -151,34 +151,61 @@ async fn compute_setup_stats(pool: &PgPool, setup: &Setup) -> Stats {
         setup.engine_id,
         setup.front_wing_id,
         setup.rear_wing_id,
-        setup.sidepod_id,
-        setup.underbody_id,
         setup.suspension_id,
         setup.brakes_id,
+        setup.gearbox_id,
     ];
 
-    let parts = sqlx::query_as::<_, Part>(
-        "SELECT * FROM parts WHERE id = ANY($1)",
+    let items = sqlx::query_as::<_, InventoryItem>(
+        "SELECT * FROM inventory WHERE id = ANY($1)",
     )
     .bind(&part_ids[..])
     .fetch_all(pool)
     .await
     .unwrap_or_default();
 
-    parts.iter().fold(Stats::default(), |acc, p| acc.add(&p.stats()))
+    let mut stats = Stats::default();
+    for item in &items {
+        if let Some(part_def) = data::find_part(&item.part_name) {
+            if let Some(level_stats) = part_def.stats_for_level(item.level) {
+                stats = stats.add(&Stats {
+                    speed: level_stats.speed,
+                    cornering: level_stats.cornering,
+                    power_unit: level_stats.power_unit,
+                    qualifying: level_stats.qualifying,
+                    pit_stop_time: level_stats.pit_stop_time,
+                    drs: level_stats.drs,
+                });
+            }
+        }
+    }
+    stats
 }
 
-async fn load_parts_by_category(pool: &PgPool) -> Vec<(String, Vec<Part>)> {
-    let parts = sqlx::query_as::<_, Part>("SELECT * FROM parts ORDER BY category, name")
-        .fetch_all(pool)
-        .await
-        .unwrap_or_default();
+/// For each category, load inventory items that belong to that category
+async fn load_inventory_by_category(pool: &PgPool) -> Vec<(PartCategory, Vec<(InventoryItem, &'static data::LevelStats)>)> {
+    let items = sqlx::query_as::<_, InventoryItem>(
+        "SELECT * FROM inventory ORDER BY part_name",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
 
     PartCategory::all()
         .iter()
         .map(|cat| {
-            let cat_parts: Vec<Part> = parts.iter().filter(|p| p.category == *cat).cloned().collect();
-            (cat.display_name().to_string(), cat_parts)
+            let cat_items: Vec<_> = items
+                .iter()
+                .filter_map(|item| {
+                    let part_def = data::find_part(&item.part_name)?;
+                    if part_def.category != *cat {
+                        return None;
+                    }
+                    let level_stats = part_def.stats_for_level(item.level)?;
+                    Some((item.clone(), level_stats))
+                })
+                .collect();
+            (*cat, cat_items)
         })
         .collect()
 }

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
 
 /// Car part categories in F1 Clash
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
@@ -8,10 +7,9 @@ pub enum PartCategory {
     Engine,
     FrontWing,
     RearWing,
-    Sidepod,
-    Underbody,
     Suspension,
     Brakes,
+    Gearbox,
 }
 
 impl PartCategory {
@@ -20,10 +18,9 @@ impl PartCategory {
             Self::Engine,
             Self::FrontWing,
             Self::RearWing,
-            Self::Sidepod,
-            Self::Underbody,
             Self::Suspension,
             Self::Brakes,
+            Self::Gearbox,
         ]
     }
 
@@ -32,22 +29,33 @@ impl PartCategory {
             Self::Engine => "Engine",
             Self::FrontWing => "Front Wing",
             Self::RearWing => "Rear Wing",
-            Self::Sidepod => "Sidepod",
-            Self::Underbody => "Underbody",
             Self::Suspension => "Suspension",
             Self::Brakes => "Brakes",
+            Self::Gearbox => "Gearbox",
+        }
+    }
+
+    pub fn slug(&self) -> &'static str {
+        match self {
+            Self::Engine => "engine",
+            Self::FrontWing => "front_wing",
+            Self::RearWing => "rear_wing",
+            Self::Suspension => "suspension",
+            Self::Brakes => "brakes",
+            Self::Gearbox => "gearbox",
         }
     }
 }
 
 /// Stats that car parts contribute to
-#[derive(Debug, Clone, Default, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Stats {
     pub speed: i32,
     pub cornering: i32,
     pub power_unit: i32,
     pub qualifying: i32,
     pub pit_stop_time: f64,
+    pub drs: i32,
 }
 
 impl Stats {
@@ -62,32 +70,7 @@ impl Stats {
             power_unit: self.power_unit + other.power_unit,
             qualifying: self.qualifying + other.qualifying,
             pit_stop_time: self.pit_stop_time + other.pit_stop_time,
-        }
-    }
-}
-
-/// A car part the player owns
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct Part {
-    pub id: i32,
-    pub name: String,
-    pub category: PartCategory,
-    pub level: i32,
-    pub speed: i32,
-    pub cornering: i32,
-    pub power_unit: i32,
-    pub qualifying: i32,
-    pub pit_stop_time: f64,
-}
-
-impl Part {
-    pub fn stats(&self) -> Stats {
-        Stats {
-            speed: self.speed,
-            cornering: self.cornering,
-            power_unit: self.power_unit,
-            qualifying: self.qualifying,
-            pit_stop_time: self.pit_stop_time,
+            drs: self.drs + other.drs,
         }
     }
 }
