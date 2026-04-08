@@ -15,12 +15,12 @@ pub enum PartCategory {
 impl PartCategory {
     pub fn all() -> &'static [PartCategory] {
         &[
-            Self::Engine,
-            Self::FrontWing,
-            Self::RearWing,
-            Self::Suspension,
             Self::Brakes,
             Self::Gearbox,
+            Self::RearWing,
+            Self::FrontWing,
+            Self::Suspension,
+            Self::Engine,
         ]
     }
 
@@ -71,6 +71,19 @@ impl Stats {
             qualifying: self.qualifying + other.qualifying,
             pit_stop_time: self.pit_stop_time + other.pit_stop_time,
             drs: self.drs + other.drs,
+        }
+    }
+
+    /// Apply a percentage boost to performance stats (pit_stop_time is reduced)
+    pub fn boosted(&self, percentage: i32) -> Stats {
+        let mult = percentage as f64 / 100.0;
+        Stats {
+            speed: self.speed + (self.speed as f64 * mult).round() as i32,
+            cornering: self.cornering + (self.cornering as f64 * mult).round() as i32,
+            power_unit: self.power_unit + (self.power_unit as f64 * mult).round() as i32,
+            qualifying: self.qualifying + (self.qualifying as f64 * mult).round() as i32,
+            pit_stop_time: self.pit_stop_time * (1.0 - mult),
+            drs: self.drs,
         }
     }
 }

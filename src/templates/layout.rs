@@ -19,6 +19,7 @@ pub fn page(title: &str, content: Markup) -> Markup {
                     ul {
                         li { a href="/inventory" { "Inventory" } }
                         li { a href="/setups" { "Setups" } }
+                        li { a href="/boosts" { "Boosts" } }
                     }
                 }
                 main.container {

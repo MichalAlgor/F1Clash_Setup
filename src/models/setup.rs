@@ -30,3 +30,11 @@ pub struct InventoryItem {
     pub part_name: String,
     pub level: i32,
 }
+
+/// A global boost applied to a specific part
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct Boost {
+    pub id: i32,
+    pub part_name: String,
+    pub percentage: i32,
+}

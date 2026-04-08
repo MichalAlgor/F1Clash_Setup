@@ -8,7 +8,7 @@ use sqlx::PgPool;
 
 use crate::data;
 use crate::models::part::{PartCategory, Stats};
-use crate::models::setup::{InventoryItem, Setup, SetupWithStats};
+use crate::models::setup::{Boost, InventoryItem, Setup, SetupWithStats};
 use crate::templates;
 
 pub fn router() -> Router<PgPool> {
@@ -164,18 +164,27 @@ async fn compute_setup_stats(pool: &PgPool, setup: &Setup) -> Stats {
     .await
     .unwrap_or_default();
 
+    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts")
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
     let mut stats = Stats::default();
     for item in &items {
         if let Some(part_def) = data::find_part(&item.part_name) {
             if let Some(level_stats) = part_def.stats_for_level(item.level) {
-                stats = stats.add(&Stats {
+                let mut part_stats = Stats {
                     speed: level_stats.speed,
                     cornering: level_stats.cornering,
                     power_unit: level_stats.power_unit,
                     qualifying: level_stats.qualifying,
                     pit_stop_time: level_stats.pit_stop_time,
                     drs: level_stats.drs,
-                });
+                };
+                if let Some(boost) = boosts.iter().find(|b| b.part_name == item.part_name) {
+                    part_stats = part_stats.boosted(boost.percentage);
+                }
+                stats = stats.add(&part_stats);
             }
         }
     }

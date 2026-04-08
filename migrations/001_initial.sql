@@ -13,6 +13,12 @@ CREATE TABLE inventory (
     level INTEGER NOT NULL DEFAULT 1
 );
 
+CREATE TABLE boosts (
+    id SERIAL PRIMARY KEY,
+    part_name TEXT NOT NULL UNIQUE,
+    percentage INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE setups (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,

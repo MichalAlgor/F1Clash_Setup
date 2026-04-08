@@ -26,6 +26,7 @@ async fn main() {
     let app = Router::new()
         .merge(routes::inventory::router())
         .merge(routes::setups::router())
+        .merge(routes::boosts::router())
         .nest_service("/static", ServeDir::new("static"))
         .with_state(pool);
 
