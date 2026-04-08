@@ -1,4 +1,5 @@
 pub mod data;
+pub mod drivers_data;
 mod models;
 mod routes;
 mod templates;
@@ -27,6 +28,8 @@ async fn main() {
         .merge(routes::inventory::router())
         .merge(routes::setups::router())
         .merge(routes::boosts::router())
+        .merge(routes::drivers::router())
+        .merge(routes::driver_boosts::router())
         .merge(routes::optimizer::router())
         .nest_service("/static", ServeDir::new("static"))
         .with_state(pool);

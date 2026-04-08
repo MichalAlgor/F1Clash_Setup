@@ -1,6 +1,8 @@
 use maud::{html, Markup};
 
 use crate::data;
+use crate::drivers_data;
+use crate::models::driver::DriverInventoryItem;
 use crate::models::part::PartCategory;
 use crate::models::setup::{InventoryItem, SetupWithStats};
 
@@ -29,6 +31,7 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
                                 th { "QUA" }
                                 th { "PIT (s)" }
                                 th { "Total" }
+                                th { "D.Total" }
                                 th {}
                             }
                         }
@@ -42,6 +45,7 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
                                     td { (s.stats.qualifying) }
                                     td { (format!("{:.2}", s.stats.pit_stop_time)) }
                                     td { strong { (s.stats.total_performance()) } }
+                                    td { (s.driver_stats.total()) }
                                     td {
                                         button.outline.secondary
                                             hx-delete={"/setups/" (s.setup.id)}
@@ -62,6 +66,7 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
 
 pub fn form_page(
     inventory_by_category: &[(PartCategory, Vec<(InventoryItem, &data::LevelStats)>)],
+    driver_items: &[DriverInventoryItem],
     setup: Option<&crate::models::setup::Setup>,
 ) -> Markup {
     let title = if setup.is_some() { "Edit Setup" } else { "New Setup" };
@@ -79,6 +84,7 @@ pub fn form_page(
                 input type="text" id="name" name="name" required
                     value=[setup.map(|s| s.name.as_str())];
 
+                h2 { "Parts" }
                 @for (category, items) in inventory_by_category {
                     label for=(category.slug()) { (category.display_name()) }
                     select id=(category.slug()) name=(category.slug()) required {
@@ -88,6 +94,25 @@ pub fn form_page(
                                 (item.part_name) " Lvl " (item.level)
                                 " — " (stats.speed + stats.cornering + stats.power_unit + stats.qualifying) " perf"
                                 " / " (format!("{:.2}", stats.pit_stop_time)) "s pit"
+                            }
+                        }
+                    }
+                }
+
+                h2 { "Drivers" }
+                @for slot in &["driver1_id", "driver2_id"] {
+                    @let label_text = if *slot == "driver1_id" { "Driver 1" } else { "Driver 2" };
+                    label for=(*slot) { (label_text) }
+                    select id=(*slot) name=(*slot) {
+                        option value="" { "No driver" }
+                        @for item in driver_items {
+                            @if let Some(driver_def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
+                                @if let Some(stats) = driver_def.stats_for_level(item.level) {
+                                    option value=(item.id) {
+                                        (item.driver_name) " (" (driver_def.rarity.label()) ") Lvl " (item.level)
+                                        " — " (stats.total()) " total"
+                                    }
+                                }
                             }
                         }
                     }

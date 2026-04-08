@@ -23,9 +23,11 @@ pub fn page(title: &str, content: Markup) -> Markup {
                             }
                         }
                         ul {
-                            li { a href="/inventory" { "Inventory" } }
+                            li { a href="/inventory" { "Parts" } }
+                            li { a href="/drivers" { "Drivers" } }
                             li { a href="/setups" { "Setups" } }
                             li { a href="/boosts" { "Boosts" } }
+                            li { a href="/driver-boosts" { "D.Boosts" } }
                             li { a href="/optimizer" { "Optimizer" } }
                         }
                     }
@@ -194,6 +196,11 @@ button.btn-delete {
 .rarity-common { color: #4a90d9; }
 .rarity-rare { color: #ed7d31; }
 .rarity-epic { color: #b46dd8; }
+.rarity-legendary { color: #ffd700; }
+.rarity-prospect-std { color: #2ecc71; }
+.rarity-prospect-turbo { color: #1abc9c; }
+.rarity-podium { color: #e74c3c; }
+.rarity-podium-legends { color: #ff6b6b; }
 
 /* Footer */
 footer.container {

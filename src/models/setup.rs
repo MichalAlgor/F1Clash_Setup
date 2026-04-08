@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+use super::driver::DriverStats;
 use super::part::Stats;
 
-/// A saved car setup (6 parts, one per category)
+/// A saved car setup (6 parts + 2 drivers)
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Setup {
     pub id: i32,
@@ -14,6 +15,8 @@ pub struct Setup {
     pub suspension_id: i32,
     pub brakes_id: i32,
     pub gearbox_id: i32,
+    pub driver1_id: Option<i32>,
+    pub driver2_id: Option<i32>,
 }
 
 /// A setup with its computed total stats
@@ -21,6 +24,7 @@ pub struct Setup {
 pub struct SetupWithStats {
     pub setup: Setup,
     pub stats: Stats,
+    pub driver_stats: DriverStats,
 }
 
 /// An inventory item — a part the player owns at a specific level

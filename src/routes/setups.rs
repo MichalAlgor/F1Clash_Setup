@@ -7,6 +7,8 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::data;
+use crate::drivers_data;
+use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem, Setup, SetupWithStats};
 use crate::templates;
@@ -27,8 +29,8 @@ async fn list(State(pool): State<PgPool>) -> impl IntoResponse {
 
     let mut with_stats = Vec::new();
     for setup in setups {
-        let stats = compute_setup_stats(&pool, &setup).await;
-        with_stats.push(SetupWithStats { setup, stats });
+        let (stats, driver_stats) = compute_all_stats(&pool, &setup).await;
+        with_stats.push(SetupWithStats { setup, stats, driver_stats });
     }
 
     templates::setups::list_page(&with_stats)
@@ -36,7 +38,8 @@ async fn list(State(pool): State<PgPool>) -> impl IntoResponse {
 
 async fn new(State(pool): State<PgPool>) -> impl IntoResponse {
     let inventory_by_category = load_inventory_by_category(&pool).await;
-    templates::setups::form_page(&inventory_by_category, None)
+    let driver_items = load_driver_inventory(&pool).await;
+    templates::setups::form_page(&inventory_by_category, &driver_items, None)
 }
 
 #[derive(Deserialize)]
@@ -54,12 +57,14 @@ pub struct SetupForm {
     pub brakes_id: i32,
     #[serde(rename = "gearbox")]
     pub gearbox_id: i32,
+    pub driver1_id: Option<i32>,
+    pub driver2_id: Option<i32>,
 }
 
 async fn create(State(pool): State<PgPool>, Form(form): Form<SetupForm>) -> impl IntoResponse {
     sqlx::query(
-        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, driver1_id, driver2_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -68,6 +73,8 @@ async fn create(State(pool): State<PgPool>, Form(form): Form<SetupForm>) -> impl
     .bind(form.suspension_id)
     .bind(form.brakes_id)
     .bind(form.gearbox_id)
+    .bind(form.driver1_id)
+    .bind(form.driver2_id)
     .execute(&pool)
     .await
     .unwrap();
@@ -82,18 +89,18 @@ async fn show(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoRespo
         .await
         .unwrap();
 
-    let stats = compute_setup_stats(&pool, &setup).await;
-    let s = SetupWithStats { setup, stats };
+    let (stats, driver_stats) = compute_all_stats(&pool, &setup).await;
+    let s = SetupWithStats { setup, stats, driver_stats };
 
     templates::layout::page(
         &s.setup.name,
         html! {
             h1 { (&s.setup.name) }
+
+            h2 { "Part Stats" }
             figure {
                 table {
-                    thead {
-                        tr { th { "Stat" } th { "Value" } }
-                    }
+                    thead { tr { th { "Stat" } th { "Value" } } }
                     tbody {
                         tr { td { "Speed" } td { (s.stats.speed) } }
                         tr { td { "Cornering" } td { (s.stats.cornering) } }
@@ -107,6 +114,24 @@ async fn show(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoRespo
                     }
                 }
             }
+
+            @if s.driver_stats.total() > 0 {
+                h2 { "Driver Stats" }
+                figure {
+                    table {
+                        thead { tr { th { "Stat" } th { "Value" } } }
+                        tbody {
+                            tr { td { "Overtaking" } td { (s.driver_stats.overtaking) } }
+                            tr { td { "Defending" } td { (s.driver_stats.defending) } }
+                            tr { td { "Qualifying" } td { (s.driver_stats.qualifying) } }
+                            tr { td { "Race Start" } td { (s.driver_stats.race_start) } }
+                            tr { td { "Tyre Management" } td { (s.driver_stats.tyre_management) } }
+                            tr { td { strong { "Total" } } td { strong { (s.driver_stats.total()) } } }
+                        }
+                    }
+                }
+            }
+
             a href="/setups" role="button" class="outline" { "← Back to setups" }
         },
     )
@@ -118,8 +143,8 @@ async fn update(
     Form(form): Form<SetupForm>,
 ) -> impl IntoResponse {
     sqlx::query(
-        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, suspension_id=$5, brakes_id=$6, gearbox_id=$7
-         WHERE id=$8",
+        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, suspension_id=$5, brakes_id=$6, gearbox_id=$7, driver1_id=$8, driver2_id=$9
+         WHERE id=$10",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -128,6 +153,8 @@ async fn update(
     .bind(form.suspension_id)
     .bind(form.brakes_id)
     .bind(form.gearbox_id)
+    .bind(form.driver1_id)
+    .bind(form.driver2_id)
     .bind(id)
     .execute(&pool)
     .await
@@ -146,7 +173,13 @@ async fn destroy(State(pool): State<PgPool>, Path(id): Path<i32>) -> impl IntoRe
     html! {}
 }
 
-async fn compute_setup_stats(pool: &PgPool, setup: &Setup) -> Stats {
+async fn compute_all_stats(pool: &PgPool, setup: &Setup) -> (Stats, DriverStats) {
+    let part_stats = compute_part_stats(pool, setup).await;
+    let driver_stats = compute_driver_stats(pool, setup).await;
+    (part_stats, driver_stats)
+}
+
+async fn compute_part_stats(pool: &PgPool, setup: &Setup) -> Stats {
     let part_ids = [
         setup.engine_id,
         setup.front_wing_id,
@@ -191,8 +224,46 @@ async fn compute_setup_stats(pool: &PgPool, setup: &Setup) -> Stats {
     stats
 }
 
+async fn compute_driver_stats(pool: &PgPool, setup: &Setup) -> DriverStats {
+    let driver_ids: Vec<i32> = [setup.driver1_id, setup.driver2_id]
+        .iter()
+        .filter_map(|id| *id)
+        .collect();
+
+    if driver_ids.is_empty() {
+        return DriverStats::default();
+    }
+
+    let items = sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory WHERE id = ANY($1)",
+    )
+    .bind(&driver_ids[..])
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    let boosts = sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts")
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+
+    let mut stats = DriverStats::default();
+    for item in &items {
+        if let Some(driver_def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
+            if let Some(level_stats) = driver_def.stats_for_level(item.level) {
+                let mut ds = level_stats.to_stats();
+                if let Some(boost) = boosts.iter().find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity) {
+                    ds = ds.boosted(boost.percentage);
+                }
+                stats = stats.add(&ds);
+            }
+        }
+    }
+    stats
+}
+
 /// For each category, load inventory items that belong to that category
-async fn load_inventory_by_category(pool: &PgPool) -> Vec<(PartCategory, Vec<(InventoryItem, &'static data::LevelStats)>)> {
+pub async fn load_inventory_by_category(pool: &PgPool) -> Vec<(PartCategory, Vec<(InventoryItem, &'static data::LevelStats)>)> {
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory ORDER BY part_name",
     )
@@ -217,4 +288,13 @@ async fn load_inventory_by_category(pool: &PgPool) -> Vec<(PartCategory, Vec<(In
             (*cat, cat_items)
         })
         .collect()
+}
+
+pub async fn load_driver_inventory(pool: &PgPool) -> Vec<DriverInventoryItem> {
+    sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory ORDER BY driver_name",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
 }
