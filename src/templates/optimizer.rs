@@ -1,8 +1,11 @@
 use maud::{html, Markup};
 
 use crate::data::StatPriorities;
+use crate::drivers_data;
+use crate::models::driver::{DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::InventoryItem;
+use crate::routes::optimizer::DriverPriorities;
 
 pub fn form_page() -> Markup {
     super::layout::page(
@@ -15,7 +18,7 @@ pub fn form_page() -> Markup {
 
             form method="get" action="/optimizer/run" {
                 fieldset {
-                    legend { "Prioritize stats" }
+                    legend { "Part stats" }
                     label {
                         input type="checkbox" name="speed" value="true";
                         " Speed"
@@ -34,6 +37,30 @@ pub fn form_page() -> Markup {
                     }
                 }
 
+                fieldset {
+                    legend { "Driver stats" }
+                    label {
+                        input type="checkbox" name="overtaking" value="true";
+                        " Overtaking"
+                    }
+                    label {
+                        input type="checkbox" name="defending" value="true";
+                        " Defending"
+                    }
+                    label {
+                        input type="checkbox" name="d_qualifying" value="true";
+                        " Qualifying"
+                    }
+                    label {
+                        input type="checkbox" name="race_start" value="true";
+                        " Race Start"
+                    }
+                    label {
+                        input type="checkbox" name="tyre_management" value="true";
+                        " Tyre Mgmt"
+                    }
+                }
+
                 button type="submit" { "Find Best Setup" }
             }
         },
@@ -41,25 +68,49 @@ pub fn form_page() -> Markup {
 }
 
 pub fn result_page(
-    priorities: &StatPriorities,
-    picks: &[(PartCategory, InventoryItem, Stats)],
-    total: &Stats,
+    part_priorities: &StatPriorities,
+    driver_priorities: &DriverPriorities,
+    part_picks: &[(PartCategory, InventoryItem, Stats)],
+    driver1: Option<&(DriverInventoryItem, DriverStats)>,
+    driver2: Option<&(DriverInventoryItem, DriverStats)>,
+    total_parts: &Stats,
+    total_drivers: &DriverStats,
 ) -> Markup {
-    let priority_labels = priorities.labels().join(", ");
+    let part_labels = part_priorities.labels().join(", ");
+    let driver_labels = driver_priorities.labels().join(", ");
+    let all_labels = {
+        let mut v = Vec::new();
+        if !part_labels.is_empty() { v.push(part_labels.clone()); }
+        if !driver_labels.is_empty() { v.push(driver_labels.clone()); }
+        if v.is_empty() { "Total".to_string() } else { v.join(", ") }
+    };
 
     super::layout::page(
         "Optimizer Result",
         html! {
             h1 { "Optimized Setup" }
-            @if priorities.any_selected() {
-                p { "Prioritizing: " strong { (priority_labels) } }
+
+            @if part_priorities.any_selected() || driver_priorities.any_selected() {
+                p {
+                    @if !part_labels.is_empty() {
+                        "Part priorities: " strong { (part_labels) }
+                    }
+                    @if !part_labels.is_empty() && !driver_labels.is_empty() {
+                        " | "
+                    }
+                    @if !driver_labels.is_empty() {
+                        "Driver priorities: " strong { (driver_labels) }
+                    }
+                }
             } @else {
-                p { "No priorities selected — optimizing for highest total performance" }
+                p { "No priorities selected — optimizing for highest totals" }
             }
 
-            @if picks.is_empty() {
-                p { "No parts in inventory. Add parts first!" }
+            @if part_picks.is_empty() {
+                p { "No parts in inventory for one or more categories. Add parts first!" }
             } @else {
+                // Parts table
+                h2 { "Parts" }
                 figure {
                     table {
                         thead {
@@ -76,7 +127,7 @@ pub fn result_page(
                             }
                         }
                         tbody {
-                            @for (cat, item, stats) in picks {
+                            @for (cat, item, stats) in part_picks {
                                 tr {
                                     td { (cat.display_name()) }
                                     td { strong { (item.part_name.clone()) } }
@@ -93,26 +144,86 @@ pub fn result_page(
                         tfoot {
                             tr {
                                 td colspan="3" { strong { "Total" } }
-                                td { strong { (total.speed) } }
-                                td { strong { (total.cornering) } }
-                                td { strong { (total.power_unit) } }
-                                td { strong { (total.qualifying) } }
-                                td { strong { (format!("{:.2}", total.pit_stop_time)) } }
-                                td { strong { (total.total_performance()) } }
+                                td { strong { (total_parts.speed) } }
+                                td { strong { (total_parts.cornering) } }
+                                td { strong { (total_parts.power_unit) } }
+                                td { strong { (total_parts.qualifying) } }
+                                td { strong { (format!("{:.2}", total_parts.pit_stop_time)) } }
+                                td { strong { (total_parts.total_performance()) } }
                             }
                         }
                     }
                 }
 
-                // Save as setup form
+                // Drivers table
+                h2 { "Drivers" }
+                @if driver1.is_none() && driver2.is_none() {
+                    p { "No drivers in inventory." }
+                } @else {
+                    figure {
+                        table {
+                            thead {
+                                tr {
+                                    th { "Driver" }
+                                    th { "Rarity" }
+                                    th { "Lvl" }
+                                    th { "OVT" }
+                                    th { "DEF" }
+                                    th { "QUA" }
+                                    th { "RST" }
+                                    th { "TYR" }
+                                    th { "Total" }
+                                }
+                            }
+                            tbody {
+                                @for driver_opt in &[driver1, driver2] {
+                                    @if let Some((item, stats)) = driver_opt {
+                                        @if let Some(def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
+                                            tr {
+                                                td class=(def.rarity.css_class()) { strong { (item.driver_name.clone()) } }
+                                                td { (def.rarity.label()) }
+                                                td { (item.level) }
+                                                td { (stats.overtaking) }
+                                                td { (stats.defending) }
+                                                td { (stats.qualifying) }
+                                                td { (stats.race_start) }
+                                                td { (stats.tyre_management) }
+                                                td { (stats.total()) }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            tfoot {
+                                tr {
+                                    td colspan="3" { strong { "Total" } }
+                                    td { strong { (total_drivers.overtaking) } }
+                                    td { strong { (total_drivers.defending) } }
+                                    td { strong { (total_drivers.qualifying) } }
+                                    td { strong { (total_drivers.race_start) } }
+                                    td { strong { (total_drivers.tyre_management) } }
+                                    td { strong { (total_drivers.total()) } }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Save form
                 h2 { "Save this setup" }
                 form method="post" action="/optimizer/save" {
                     label for="name" { "Setup Name" }
                     input type="text" id="name" name="name" required
-                        value=(format!("Optimized ({})", if priority_labels.is_empty() { "Total".to_string() } else { priority_labels }));
+                        value=(format!("Optimized ({all_labels})"));
 
-                    @for (cat, item, _stats) in picks {
+                    @for (cat, item, _) in part_picks {
                         input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                    }
+                    @if let Some((item, _)) = driver1 {
+                        input type="hidden" name="driver1_id" value=(item.id);
+                    }
+                    @if let Some((item, _)) = driver2 {
+                        input type="hidden" name="driver2_id" value=(item.id);
                     }
 
                     button type="submit" { "Save Setup" }
