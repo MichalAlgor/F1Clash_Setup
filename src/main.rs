@@ -27,6 +27,7 @@ async fn main() {
         .merge(routes::inventory::router())
         .merge(routes::setups::router())
         .merge(routes::boosts::router())
+        .merge(routes::optimizer::router())
         .nest_service("/static", ServeDir::new("static"))
         .with_state(pool);
 

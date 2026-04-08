@@ -25,6 +25,48 @@ impl LevelStats {
     }
 }
 
+impl LevelStats {
+    pub fn priority_score(&self, priorities: &StatPriorities) -> i32 {
+        let mut score = 0;
+        if priorities.speed { score += self.speed; }
+        if priorities.cornering { score += self.cornering; }
+        if priorities.power_unit { score += self.power_unit; }
+        if priorities.qualifying { score += self.qualifying; }
+        score
+    }
+
+    pub fn total_performance(&self) -> i32 {
+        self.speed + self.cornering + self.power_unit + self.qualifying
+    }
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+pub struct StatPriorities {
+    #[serde(default)]
+    pub speed: bool,
+    #[serde(default)]
+    pub cornering: bool,
+    #[serde(default)]
+    pub power_unit: bool,
+    #[serde(default)]
+    pub qualifying: bool,
+}
+
+impl StatPriorities {
+    pub fn any_selected(&self) -> bool {
+        self.speed || self.cornering || self.power_unit || self.qualifying
+    }
+
+    pub fn labels(&self) -> Vec<&'static str> {
+        let mut out = Vec::new();
+        if self.speed { out.push("Speed"); }
+        if self.cornering { out.push("Cornering"); }
+        if self.power_unit { out.push("Power Unit"); }
+        if self.qualifying { out.push("Qualifying"); }
+        out
+    }
+}
+
 impl PartDefinition {
     pub fn stats_for_level(&self, level: i32) -> Option<&LevelStats> {
         self.levels.iter().find(|l| l.level == level)
