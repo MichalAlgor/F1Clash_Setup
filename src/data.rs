@@ -120,6 +120,148 @@ pub fn catalog_index(name: &str) -> usize {
     CATALOG.iter().position(|p| p.name == name).unwrap_or(usize::MAX)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn level_stats(speed: i32, cornering: i32, power_unit: i32, qualifying: i32) -> LevelStats {
+        LevelStats { level: 1, speed, cornering, power_unit, qualifying, pit_stop_time: 1.0, drs: 0 }
+    }
+
+    // --- LevelStats ---
+
+    #[test]
+    fn level_stats_total_performance() {
+        let ls = level_stats(10, 20, 30, 40);
+        assert_eq!(ls.total_performance(), 100);
+    }
+
+    #[test]
+    fn level_stats_priority_score_no_priorities() {
+        let ls = level_stats(10, 20, 30, 40);
+        let p = StatPriorities::default();
+        assert_eq!(ls.priority_score(&p), 0);
+    }
+
+    #[test]
+    fn level_stats_priority_score_speed_only() {
+        let ls = level_stats(10, 20, 30, 40);
+        let p = StatPriorities { speed: true, ..Default::default() };
+        assert_eq!(ls.priority_score(&p), 10);
+    }
+
+    #[test]
+    fn level_stats_priority_score_all_priorities() {
+        let ls = level_stats(10, 20, 30, 40);
+        let p = StatPriorities { speed: true, cornering: true, power_unit: true, qualifying: true };
+        assert_eq!(ls.priority_score(&p), ls.total_performance());
+    }
+
+    #[test]
+    fn level_stats_priority_score_partial_selection() {
+        let ls = level_stats(10, 20, 30, 40);
+        let p = StatPriorities { speed: true, qualifying: true, ..Default::default() };
+        assert_eq!(ls.priority_score(&p), 50); // 10 + 40
+    }
+
+    // --- StatPriorities ---
+
+    #[test]
+    fn stat_priorities_any_selected_false_when_all_false() {
+        assert!(!StatPriorities::default().any_selected());
+    }
+
+    #[test]
+    fn stat_priorities_any_selected_true_when_one_set() {
+        assert!(StatPriorities { speed: true, ..Default::default() }.any_selected());
+        assert!(StatPriorities { cornering: true, ..Default::default() }.any_selected());
+        assert!(StatPriorities { power_unit: true, ..Default::default() }.any_selected());
+        assert!(StatPriorities { qualifying: true, ..Default::default() }.any_selected());
+    }
+
+    #[test]
+    fn stat_priorities_labels_empty_when_none_selected() {
+        assert!(StatPriorities::default().labels().is_empty());
+    }
+
+    #[test]
+    fn stat_priorities_labels_correct_order() {
+        let p = StatPriorities { speed: true, cornering: true, power_unit: true, qualifying: true };
+        assert_eq!(p.labels(), vec!["Speed", "Cornering", "Power Unit", "Qualifying"]);
+    }
+
+    #[test]
+    fn stat_priorities_labels_single() {
+        let p = StatPriorities { qualifying: true, ..Default::default() };
+        assert_eq!(p.labels(), vec!["Qualifying"]);
+    }
+
+    // --- Catalog lookups ---
+
+    #[test]
+    fn find_part_returns_some_for_known_part() {
+        assert!(find_part("Pivot").is_some());
+        assert_eq!(find_part("Pivot").unwrap().name, "Pivot");
+    }
+
+    #[test]
+    fn find_part_returns_none_for_unknown_part() {
+        assert!(find_part("Not A Real Part").is_none());
+    }
+
+    #[test]
+    fn find_part_is_case_sensitive() {
+        assert!(find_part("pivot").is_none());
+    }
+
+    #[test]
+    fn parts_by_category_returns_non_empty_for_all_categories() {
+        for cat in PartCategory::all() {
+            assert!(!parts_by_category(*cat).is_empty(), "{:?} has no parts", cat);
+        }
+    }
+
+    #[test]
+    fn parts_by_category_only_contains_correct_category() {
+        for cat in PartCategory::all() {
+            for part in parts_by_category(*cat) {
+                assert_eq!(part.category, *cat);
+            }
+        }
+    }
+
+    // --- PartDefinition ---
+
+    #[test]
+    fn stats_for_level_found() {
+        let part = find_part("Pivot").unwrap();
+        assert!(part.stats_for_level(1).is_some());
+        assert_eq!(part.stats_for_level(1).unwrap().level, 1);
+    }
+
+    #[test]
+    fn stats_for_level_not_found() {
+        let part = find_part("Pivot").unwrap();
+        assert!(part.stats_for_level(999).is_none());
+    }
+
+    #[test]
+    fn max_level_returns_highest_level() {
+        let part = find_part("Pivot").unwrap();
+        assert_eq!(part.max_level(), 11);
+    }
+
+    #[test]
+    fn pivot_level_1_stats_match_catalog() {
+        let ls = find_part("Pivot").unwrap().stats_for_level(1).unwrap();
+        assert_eq!(ls.speed, 2);
+        assert_eq!(ls.cornering, 2);
+        assert_eq!(ls.power_unit, 1);
+        assert_eq!(ls.qualifying, 3);
+        assert!((ls.pit_stop_time - 0.97).abs() < 1e-9);
+    }
+}
+
 use PartCategory::*;
 use Rarity::*;
 

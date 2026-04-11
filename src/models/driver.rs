@@ -47,6 +47,67 @@ pub struct DriverInventoryItem {
     pub level: i32,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn ds(overtaking: i32, defending: i32, qualifying: i32, race_start: i32, tyre_management: i32) -> DriverStats {
+        DriverStats { overtaking, defending, qualifying, race_start, tyre_management }
+    }
+
+    #[test]
+    fn total_sums_all_five_stats() {
+        assert_eq!(ds(10, 20, 30, 40, 50).total(), 150);
+    }
+
+    #[test]
+    fn total_with_zeros() {
+        assert_eq!(ds(0, 0, 0, 0, 0).total(), 0);
+    }
+
+    #[test]
+    fn add_combines_all_fields() {
+        let a = ds(10, 20, 30, 40, 50);
+        let b = ds(1, 2, 3, 4, 5);
+        let c = a.add(&b);
+        assert_eq!(c.overtaking, 11);
+        assert_eq!(c.defending, 22);
+        assert_eq!(c.qualifying, 33);
+        assert_eq!(c.race_start, 44);
+        assert_eq!(c.tyre_management, 55);
+    }
+
+    #[test]
+    fn boosted_zero_percent_is_identity() {
+        let s = ds(30, 25, 20, 15, 10);
+        let b = s.boosted(0);
+        assert_eq!(b.overtaking, 30);
+        assert_eq!(b.defending, 25);
+        assert_eq!(b.qualifying, 20);
+        assert_eq!(b.race_start, 15);
+        assert_eq!(b.tyre_management, 10);
+    }
+
+    #[test]
+    fn boosted_100_percent_doubles_all_stats() {
+        let s = ds(10, 20, 30, 40, 50);
+        let b = s.boosted(100);
+        assert_eq!(b.overtaking, 20);
+        assert_eq!(b.defending, 40);
+        assert_eq!(b.qualifying, 60);
+        assert_eq!(b.race_start, 80);
+        assert_eq!(b.tyre_management, 100);
+    }
+
+    #[test]
+    fn boosted_50_percent_rounds_half_away_from_zero() {
+        // 3 * 0.5 = 1.5, rounds to 2
+        let s = ds(3, 0, 0, 0, 0);
+        let b = s.boosted(50);
+        assert_eq!(b.overtaking, 5); // 3 + round(1.5) = 3 + 2 = 5
+    }
+}
+
 /// A boost applied to a driver
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct DriverBoost {

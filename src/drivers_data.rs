@@ -151,6 +151,131 @@ pub fn driver_catalog_index(name: &str, rarity: &DriverRarity) -> usize {
     DRIVER_CATALOG.iter().position(|d| d.name == name && d.rarity == *rarity).unwrap_or(usize::MAX)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- DriverRarity::from_db ---
+
+    #[test]
+    fn from_db_parses_all_variants() {
+        assert_eq!(DriverRarity::from_db("Common"), Some(DriverRarity::Common));
+        assert_eq!(DriverRarity::from_db("Rare"), Some(DriverRarity::Rare));
+        assert_eq!(DriverRarity::from_db("Epic"), Some(DriverRarity::Epic));
+        assert_eq!(DriverRarity::from_db("Legendary"), Some(DriverRarity::Legendary));
+        assert_eq!(DriverRarity::from_db("Prospect Standard"), Some(DriverRarity::ProspectStandard));
+        assert_eq!(DriverRarity::from_db("Prospect Turbocharged"), Some(DriverRarity::ProspectTurbocharged));
+        assert_eq!(DriverRarity::from_db("Podium Stars"), Some(DriverRarity::PodiumStars));
+        assert_eq!(DriverRarity::from_db("Podium Stars Legends"), Some(DriverRarity::PodiumStarsLegends));
+    }
+
+    #[test]
+    fn from_db_returns_none_for_unknown() {
+        assert!(DriverRarity::from_db("").is_none());
+        assert!(DriverRarity::from_db("common").is_none()); // case-sensitive
+        assert!(DriverRarity::from_db("Unknown").is_none());
+    }
+
+    // --- DriverRarity::category ---
+
+    #[test]
+    fn category_normal_for_common_rare_epic() {
+        assert_eq!(DriverRarity::Common.category(), DriverCategory::Normal);
+        assert_eq!(DriverRarity::Rare.category(), DriverCategory::Normal);
+        assert_eq!(DriverRarity::Epic.category(), DriverCategory::Normal);
+    }
+
+    #[test]
+    fn category_legendary_for_legendary() {
+        assert_eq!(DriverRarity::Legendary.category(), DriverCategory::Legendary);
+    }
+
+    #[test]
+    fn category_special_edition_for_rest() {
+        assert_eq!(DriverRarity::ProspectStandard.category(), DriverCategory::SpecialEdition);
+        assert_eq!(DriverRarity::ProspectTurbocharged.category(), DriverCategory::SpecialEdition);
+        assert_eq!(DriverRarity::PodiumStars.category(), DriverCategory::SpecialEdition);
+        assert_eq!(DriverRarity::PodiumStarsLegends.category(), DriverCategory::SpecialEdition);
+    }
+
+    // --- DriverLevelStats ---
+
+    #[test]
+    fn driver_level_stats_total_sums_five_fields() {
+        let ls = DriverLevelStats::new(1, 10, 20, 30, 40, 50, 0, 0, 0);
+        assert_eq!(ls.total(), 150);
+    }
+
+    #[test]
+    fn driver_level_stats_to_stats_copies_all_fields() {
+        let ls = DriverLevelStats::new(1, 10, 20, 30, 40, 50, 0, 0, 0);
+        let ds = ls.to_stats();
+        assert_eq!(ds.overtaking, 10);
+        assert_eq!(ds.defending, 20);
+        assert_eq!(ds.qualifying, 30);
+        assert_eq!(ds.race_start, 40);
+        assert_eq!(ds.tyre_management, 50);
+    }
+
+    // --- Catalog lookups ---
+
+    #[test]
+    fn find_driver_by_db_returns_some_for_known_driver() {
+        let d = find_driver_by_db("Hadjar", "Common");
+        assert!(d.is_some());
+        assert_eq!(d.unwrap().name, "Hadjar");
+    }
+
+    #[test]
+    fn find_driver_by_db_returns_none_for_unknown_driver() {
+        assert!(find_driver_by_db("No One", "Common").is_none());
+    }
+
+    #[test]
+    fn find_driver_by_db_returns_none_for_invalid_rarity() {
+        assert!(find_driver_by_db("Hadjar", "not_a_rarity").is_none());
+    }
+
+    #[test]
+    fn drivers_by_category_non_empty_for_all_categories() {
+        for cat in DriverCategory::all() {
+            assert!(!drivers_by_category(*cat).is_empty(), "{:?} has no drivers", cat);
+        }
+    }
+
+    #[test]
+    fn drivers_by_category_only_contains_correct_category() {
+        for cat in DriverCategory::all() {
+            for d in drivers_by_category(*cat) {
+                assert_eq!(d.rarity.category(), *cat);
+            }
+        }
+    }
+
+    #[test]
+    fn hadjar_level_1_stats_match_catalog() {
+        let ls = find_driver_by_db("Hadjar", "Common").unwrap().stats_for_level(1).unwrap();
+        assert_eq!(ls.overtaking, 6);
+        assert_eq!(ls.defending, 3);
+        assert_eq!(ls.qualifying, 2);
+        assert_eq!(ls.race_start, 4);
+        assert_eq!(ls.tyre_management, 5);
+    }
+
+    #[test]
+    fn driver_definition_stats_for_level_found_and_not_found() {
+        let d = find_driver_by_db("Hadjar", "Common").unwrap();
+        assert!(d.stats_for_level(1).is_some());
+        assert!(d.stats_for_level(999).is_none());
+    }
+
+    #[test]
+    fn driver_definition_max_level() {
+        let d = find_driver_by_db("Hadjar", "Common").unwrap();
+        assert_eq!(d.max_level(), 11);
+    }
+}
+
 use DriverRarity::*;
 
 static DRIVER_CATALOG: &[DriverDefinition] = &[

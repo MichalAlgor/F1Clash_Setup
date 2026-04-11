@@ -87,3 +87,96 @@ impl Stats {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn stats(speed: i32, cornering: i32, power_unit: i32, qualifying: i32, pit_stop_time: f64, drs: i32) -> Stats {
+        Stats { speed, cornering, power_unit, qualifying, pit_stop_time, drs }
+    }
+
+    #[test]
+    fn total_performance_sums_four_stats() {
+        let s = stats(10, 20, 30, 40, 1.0, 5);
+        assert_eq!(s.total_performance(), 100);
+    }
+
+    #[test]
+    fn total_performance_excludes_pit_stop_and_drs() {
+        let s = stats(0, 0, 0, 0, 99.9, 999);
+        assert_eq!(s.total_performance(), 0);
+    }
+
+    #[test]
+    fn add_combines_all_fields() {
+        let a = stats(10, 20, 30, 40, 1.0, 5);
+        let b = stats(1, 2, 3, 4, 0.5, 1);
+        let c = a.add(&b);
+        assert_eq!(c.speed, 11);
+        assert_eq!(c.cornering, 22);
+        assert_eq!(c.power_unit, 33);
+        assert_eq!(c.qualifying, 44);
+        assert!((c.pit_stop_time - 1.5).abs() < 1e-9);
+        assert_eq!(c.drs, 6);
+    }
+
+    #[test]
+    fn boosted_zero_percent_is_identity() {
+        let s = stats(100, 50, 30, 20, 2.0, 7);
+        let b = s.boosted(0);
+        assert_eq!(b.speed, 100);
+        assert_eq!(b.cornering, 50);
+        assert_eq!(b.power_unit, 30);
+        assert_eq!(b.qualifying, 20);
+        assert!((b.pit_stop_time - 2.0).abs() < 1e-9);
+        assert_eq!(b.drs, 7);
+    }
+
+    #[test]
+    fn boosted_100_percent_doubles_performance_stats() {
+        let s = stats(50, 40, 30, 20, 2.0, 5);
+        let b = s.boosted(100);
+        assert_eq!(b.speed, 100);
+        assert_eq!(b.cornering, 80);
+        assert_eq!(b.power_unit, 60);
+        assert_eq!(b.qualifying, 40);
+        assert!((b.pit_stop_time - 0.0).abs() < 1e-9);
+        assert_eq!(b.drs, 5); // drs unchanged
+    }
+
+    #[test]
+    fn boosted_50_percent_rounds_half_away_from_zero() {
+        // 3 * 0.5 = 1.5, rounds to 2
+        let s = stats(3, 0, 0, 0, 1.0, 0);
+        let b = s.boosted(50);
+        assert_eq!(b.speed, 5); // 3 + round(1.5) = 3 + 2 = 5
+    }
+
+    #[test]
+    fn boosted_drs_is_always_unchanged() {
+        let s = stats(100, 100, 100, 100, 1.0, 42);
+        assert_eq!(s.boosted(25).drs, 42);
+        assert_eq!(s.boosted(100).drs, 42);
+    }
+
+    #[test]
+    fn part_category_all_contains_all_variants() {
+        let all = PartCategory::all();
+        assert!(all.contains(&PartCategory::Engine));
+        assert!(all.contains(&PartCategory::FrontWing));
+        assert!(all.contains(&PartCategory::RearWing));
+        assert!(all.contains(&PartCategory::Suspension));
+        assert!(all.contains(&PartCategory::Brakes));
+        assert!(all.contains(&PartCategory::Gearbox));
+        assert_eq!(all.len(), 6);
+    }
+
+    #[test]
+    fn part_category_display_name_and_slug_are_consistent() {
+        for cat in PartCategory::all() {
+            assert!(!cat.display_name().is_empty());
+            assert!(!cat.slug().is_empty());
+        }
+    }
+}

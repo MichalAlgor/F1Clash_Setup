@@ -265,6 +265,120 @@ fn score_part_combo(stats: &Stats, priorities: &crate::data::StatPriorities) -> 
     (min, sum)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::StatPriorities;
+
+    fn ds(overtaking: i32, defending: i32, qualifying: i32, race_start: i32, tyre_management: i32) -> DriverStats {
+        DriverStats { overtaking, defending, qualifying, race_start, tyre_management }
+    }
+
+    fn part_stats(speed: i32, cornering: i32, power_unit: i32, qualifying: i32) -> Stats {
+        Stats { speed, cornering, power_unit, qualifying, pit_stop_time: 1.0, drs: 0 }
+    }
+
+    // --- DriverPriorities::any_selected ---
+
+    #[test]
+    fn driver_priorities_any_selected_false_when_all_false() {
+        assert!(!DriverPriorities::default().any_selected());
+    }
+
+    #[test]
+    fn driver_priorities_any_selected_true_for_each_field() {
+        assert!(DriverPriorities { overtaking: true, ..Default::default() }.any_selected());
+        assert!(DriverPriorities { defending: true, ..Default::default() }.any_selected());
+        assert!(DriverPriorities { qualifying: true, ..Default::default() }.any_selected());
+        assert!(DriverPriorities { race_start: true, ..Default::default() }.any_selected());
+        assert!(DriverPriorities { tyre_management: true, ..Default::default() }.any_selected());
+    }
+
+    // --- DriverPriorities::labels ---
+
+    #[test]
+    fn driver_priorities_labels_empty_when_none_selected() {
+        assert!(DriverPriorities::default().labels().is_empty());
+    }
+
+    #[test]
+    fn driver_priorities_labels_correct_order() {
+        let p = DriverPriorities {
+            overtaking: true, defending: true, qualifying: true,
+            race_start: true, tyre_management: true,
+        };
+        assert_eq!(p.labels(), vec!["Overtaking", "Defending", "Qualifying", "Race Start", "Tyre Mgmt"]);
+    }
+
+    // --- DriverPriorities::score ---
+
+    #[test]
+    fn driver_score_no_priorities_returns_total_twice() {
+        let stats = ds(10, 20, 30, 40, 50); // total = 150
+        let p = DriverPriorities::default();
+        assert_eq!(p.score(&stats), (150, 150));
+    }
+
+    #[test]
+    fn driver_score_single_priority_returns_that_stat_twice() {
+        let stats = ds(10, 20, 30, 40, 50);
+        let p = DriverPriorities { overtaking: true, ..Default::default() };
+        assert_eq!(p.score(&stats), (10, 10));
+    }
+
+    #[test]
+    fn driver_score_multiple_priorities_returns_min_and_sum() {
+        let stats = ds(10, 20, 30, 40, 50);
+        let p = DriverPriorities { overtaking: true, defending: true, ..Default::default() };
+        // values = [10, 20], min=10, sum=30
+        assert_eq!(p.score(&stats), (10, 30));
+    }
+
+    #[test]
+    fn driver_score_prefers_higher_min_first() {
+        // Equal sum, different min — higher min wins
+        let high_min = ds(15, 15, 0, 0, 0);
+        let low_min  = ds(10, 20, 0, 0, 0);
+        let p = DriverPriorities { overtaking: true, defending: true, ..Default::default() };
+        let s_high = p.score(&high_min);
+        let s_low  = p.score(&low_min);
+        // Both sum=30, but high_min has min=15 vs low_min min=10
+        assert!(s_high > s_low);
+    }
+
+    // --- score_part_combo ---
+
+    #[test]
+    fn score_part_combo_no_priorities_returns_total_performance_twice() {
+        let stats = part_stats(10, 20, 30, 40); // total = 100
+        let p = StatPriorities::default();
+        assert_eq!(score_part_combo(&stats, &p), (100, 100));
+    }
+
+    #[test]
+    fn score_part_combo_speed_only_returns_speed_twice() {
+        let stats = part_stats(50, 20, 10, 5);
+        let p = StatPriorities { speed: true, ..Default::default() };
+        assert_eq!(score_part_combo(&stats, &p), (50, 50));
+    }
+
+    #[test]
+    fn score_part_combo_multiple_priorities_returns_min_and_sum() {
+        let stats = part_stats(100, 50, 0, 0);
+        let p = StatPriorities { speed: true, cornering: true, ..Default::default() };
+        // values = [100, 50], min=50, sum=150
+        assert_eq!(score_part_combo(&stats, &p), (50, 150));
+    }
+
+    #[test]
+    fn score_part_combo_all_priorities_matches_total_when_equal_stats() {
+        let stats = part_stats(25, 25, 25, 25); // total = 100
+        let p = StatPriorities { speed: true, cornering: true, power_unit: true, qualifying: true };
+        // min=25, sum=100
+        assert_eq!(score_part_combo(&stats, &p), (25, 100));
+    }
+}
+
 #[derive(Deserialize)]
 pub struct SaveForm {
     pub name: String,
