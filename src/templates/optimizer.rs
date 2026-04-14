@@ -61,6 +61,20 @@ pub fn form_page() -> Markup {
                     }
                 }
 
+                fieldset {
+                    legend { "Series limits" }
+                    div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" {
+                        label {
+                            "Max part series (1–12)"
+                            input type="number" name="max_part_series" min="1" max="12" placeholder="any";
+                        }
+                        label {
+                            "Max driver series (1–12)"
+                            input type="number" name="max_driver_series" min="1" max="12" placeholder="any";
+                        }
+                    }
+                }
+
                 button type="submit" { "Find Best Setup" }
             }
         },
@@ -207,6 +221,13 @@ pub fn result_page(
                             }
                         }
                     }
+                }
+
+                // Combined score
+                p {
+                    "Combined score: "
+                    strong { (total_parts.total_performance() + total_drivers.total()) }
+                    " (" (total_parts.total_performance()) " parts + " (total_drivers.total()) " drivers)"
                 }
 
                 // Save form

@@ -50,6 +50,10 @@ async fn bulk_save(
 ) -> impl IntoResponse {
     let season = state.season().await;
 
+    sqlx::query("UPDATE setups SET driver1_id = NULL WHERE driver1_id IN (SELECT id FROM driver_inventory WHERE season = $1)")
+        .bind(&season).execute(&state.pool).await.unwrap();
+    sqlx::query("UPDATE setups SET driver2_id = NULL WHERE driver2_id IN (SELECT id FROM driver_inventory WHERE season = $1)")
+        .bind(&season).execute(&state.pool).await.unwrap();
     sqlx::query("DELETE FROM driver_inventory WHERE season = $1")
         .bind(&season)
         .execute(&state.pool)
@@ -98,6 +102,10 @@ async fn update_level(
 }
 
 async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    sqlx::query("UPDATE setups SET driver1_id = NULL WHERE driver1_id = $1")
+        .bind(id).execute(&state.pool).await.unwrap();
+    sqlx::query("UPDATE setups SET driver2_id = NULL WHERE driver2_id = $1")
+        .bind(id).execute(&state.pool).await.unwrap();
     sqlx::query("DELETE FROM driver_inventory WHERE id = $1")
         .bind(id)
         .execute(&state.pool)

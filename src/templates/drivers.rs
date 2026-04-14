@@ -118,6 +118,7 @@ pub fn bulk_page(current_inventory: &[DriverInventoryItem]) -> Markup {
                                             tr {
                                                 th { "Name" }
                                                 th { "Rarity" }
+                                                th { "Series" }
                                                 th { "Level" }
                                             }
                                         }
@@ -130,6 +131,7 @@ pub fn bulk_page(current_inventory: &[DriverInventoryItem]) -> Markup {
                                                 tr {
                                                     td class=(driver_def.rarity.css_class()) { (driver_def.name) }
                                                     td { (driver_def.rarity.label()) }
+                                                    td { (driver_def.series) }
                                                     td {
                                                         select name={"driver:" (driver_def.name) ":" (driver_def.rarity.db_key())} class="inline-select" {
                                                             option value="0" selected[current_level == 0] { "—" }

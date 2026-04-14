@@ -30,8 +30,9 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
                                 th { "PWR" }
                                 th { "QUA" }
                                 th { "PIT (s)" }
-                                th { "Total" }
+                                th { "P.Total" }
                                 th { "D.Total" }
+                                th { "Score" }
                                 th {}
                             }
                         }
@@ -44,8 +45,9 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
                                     td { (s.stats.power_unit) }
                                     td { (s.stats.qualifying) }
                                     td { (format!("{:.2}", s.stats.pit_stop_time)) }
-                                    td { strong { (s.stats.total_performance()) } }
+                                    td { (s.stats.total_performance()) }
                                     td { (s.driver_stats.total()) }
+                                    td { strong { (s.stats.total_performance() + s.driver_stats.total()) } }
                                     td {
                                         button.outline.secondary
                                             hx-delete={"/setups/" (s.setup.id)}

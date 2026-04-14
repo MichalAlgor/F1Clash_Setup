@@ -45,6 +45,9 @@ pub struct OptimizerQuery {
     pub race_start: bool,
     #[serde(default)]
     pub tyre_management: bool,
+    // Series limits
+    pub max_part_series: Option<i32>,
+    pub max_driver_series: Option<i32>,
 }
 
 struct ResolvedPart {
@@ -123,11 +126,15 @@ async fn run(
     let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE season = $1")
         .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
 
+    let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
+    let max_driver_series = query.max_driver_series.unwrap_or(i32::MAX);
+
     let categories = PartCategory::all();
     let mut parts_per_cat: Vec<Vec<ResolvedPart>> = Vec::new();
     for cat in categories {
         let cat_parts: Vec<ResolvedPart> = items.iter().filter_map(|item| {
             let part_def = data::find_part(&item.part_name)?;
+            if part_def.series > max_part_series { return None; }
             if part_def.category != *cat { return None; }
             let level_stats = part_def.stats_for_level(item.level)?;
             let mut s = Stats {
@@ -151,6 +158,8 @@ async fn run(
 
     let resolved_drivers: Vec<ResolvedDriver> = driver_items.iter().filter_map(|item| {
         let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity)?;
+        let driver_series = def.series.parse::<i32>().unwrap_or(i32::MAX);
+        if driver_series > max_driver_series { return None; }
         let ls = def.stats_for_level(item.level)?;
         let mut ds = ls.to_stats();
         if let Some(b) = driver_boosts.iter().find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity) {
