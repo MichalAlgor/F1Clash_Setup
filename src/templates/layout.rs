@@ -10,6 +10,8 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "F1 Clash Setup — " (title) }
+                link rel="icon" type="image/webp" href="/static/logo.webp";
+                meta property="og:image" content="/static/logo.webp";
                 link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css";
                 script src="https://unpkg.com/htmx.org@2.0.4" {}
                 style { (PreEscaped(CUSTOM_CSS)) }
@@ -20,7 +22,8 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                         ul {
                             li {
                                 a href="/" class="brand" {
-                                    strong { "F1 Clash Setup" }
+                                    img src="/static/logo.webp" alt="F1 Clash" class="nav-logo";
+                                    strong { "Setup" }
                                 }
                             }
                         }
@@ -83,11 +86,30 @@ main.container, header.container, footer.container {
 }
 
 .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     text-decoration: none;
     font-size: 1.15rem;
     letter-spacing: -0.02em;
 }
+.nav-logo {
+    height: 1.6rem;
+    width: 1.6rem;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 50%;
+    padding: 0.15rem;
+    display: block;
+}
 
+header.container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--pico-background-color);
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
 header.container nav {
     padding: 0.5rem 0;
 }
