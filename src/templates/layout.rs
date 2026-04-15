@@ -32,7 +32,7 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                             li { a href="/optimizer" { "Optimizer" } }
                             li { a href="/export" { "Export" } }
                             li { a href="/import" { "Import" } }
-                            @if auth.logged_in {
+                            @if !auth.enabled || auth.logged_in {
                                 li { a href="/admin/parts" { "Admin" } }
                             }
                             li {

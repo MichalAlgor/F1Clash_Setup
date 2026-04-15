@@ -4,13 +4,14 @@ A web app for managing car part inventory, building setups, comparing configurat
 
 ## Features
 
-- **Inventory management** — track all your car parts with their stats
-- **Setup builder** — create and compare 7-part car setups
-- **Boosts** — manage and track boost cards
+- **Inventory management** — track all your car parts with their stats per season
+- **Setup builder** — create and compare car setups using your owned parts
+- **Boosts** — manage and track boost cards for parts and drivers
 - **Drivers** — track driver inventory and stats
 - **Optimizer** — automatically find the best setup from your inventory based on stat priorities
-- **Seasons** — switch between game seasons
-- **Export / Import** — back up and restore your data
+- **Seasons** — switch between game seasons from the nav bar; each season has its own inventory, setups, and part catalog
+- **Export / Import** — back up and restore your inventory data as JSON
+- **Admin UI** — manage the parts catalog and season settings from the browser (no code changes required)
 
 ## Tech Stack
 
@@ -23,35 +24,50 @@ A web app for managing car part inventory, building setups, comparing configurat
 | Database | [PostgreSQL](https://www.postgresql.org/) via [sqlx](https://github.com/launchbasis/sqlx) |
 | Hosting | [Render.com](https://render.com/) (Docker-based) |
 
-## Prerequisites
+## Running with Docker (recommended)
 
-- [Rust](https://rustup.rs/) (edition 2024, stable)
-- A PostgreSQL database (local or hosted, e.g. [Neon](https://neon.tech/))
-- [sqlx-cli](https://github.com/launchbasis/sqlx/tree/main/sqlx-cli) (optional, for migrations and offline query prep)
+The easiest way to run the app locally. Requires [Docker](https://docs.docker.com/get-docker/).
 
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/your-username/F1ClashSetup.git
-cd F1ClashSetup
-```
-
-### 2. Configure environment
+### 1. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set your database connection string:
+Edit `.env`:
 
 ```env
-DATABASE_URL=postgres://user:password@localhost:5432/f1clash
-PORT=3000
+DATABASE_URL=postgres://user:password@localhost:5432/f1clash  # ignored by Docker Compose
+ADMIN_PASSWORD=yourpassword   # protects /admin/* routes; omit to leave admin open
 ```
 
-### 3. Run the app
+### 2. Start the app
+
+```bash
+docker compose up --build
+```
+
+The app will be available at `http://localhost:3000`. On first run, migrations and catalog seeding happen automatically.
+
+To stop: `Ctrl+C`. To reset the database: `docker compose down -v`.
+
+## Running without Docker
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (stable, edition 2024)
+- A PostgreSQL database (local or hosted, e.g. [Neon](https://neon.tech/))
+
+### 1. Clone and configure
+
+```bash
+git clone https://github.com/your-username/F1ClashSetup.git
+cd F1ClashSetup
+cp .env.example .env
+# Edit .env and set DATABASE_URL
+```
+
+### 2. Run
 
 ```bash
 cargo run
@@ -65,67 +81,70 @@ Migrations run automatically on startup. The app will be available at `http://lo
 cargo check           # Type-check without building
 cargo build           # Build debug binary
 cargo run             # Run dev server
+cargo test            # Run tests
 cargo build --release # Build optimized release binary
 ```
 
-### Working with sqlx offline mode
+## Admin UI
 
-sqlx performs compile-time query verification against a live database. For builds without a database (CI, Docker):
+Visiting `/admin/parts` lets you add, edit, and delete parts directly in the browser — no code changes or redeploys needed.
 
-```bash
-# Generate offline query cache (requires a running database)
-cargo sqlx prepare
+Access is controlled by the `ADMIN_PASSWORD` environment variable:
+- **Set** → a password input appears in the nav; logging in grants access to all `/admin/*` routes
+- **Not set** → admin is open (fine for local dev)
 
-# Build using the cached query data
-SQLX_OFFLINE=true cargo build
-```
+### Season Settings (`/admin/seasons`)
 
-## Docker
+Each season has its own set of active part categories. You can define which categories (Engine, Battery, etc.) are available in a given season. The optimizer, setup builder, and inventory all adapt automatically.
 
-A multi-stage Dockerfile is included. It builds a minimal Debian-based image:
+### Parts Catalog
 
-```bash
-docker build -t f1clash-setup .
-docker run -e DATABASE_URL=your_connection_string -p 3000:3000 f1clash-setup
-```
+Parts are stored in the database and seeded on startup from `parts.json`. After making changes via the admin UI, use **Export parts.json** to download an updated seed file and commit it so fresh deployments stay in sync.
 
 ## Project Structure
 
 ```
 src/
-  main.rs              # Server setup, DB pool, router composition
-  data.rs              # Static game data (parts)
-  drivers_data.rs      # Static game data (drivers)
-  models/              # Domain types with sqlx FromRow derivations
-    part.rs            # Part, PartCategory, Stats
+  main.rs              # Server setup, DB pool, AppState, router composition
+  auth.rs              # Session-cookie auth (AuthStatus extractor)
+  catalog.rs           # Catalog seed/load functions + season categories
+  data.rs              # StatPriorities, Rarity (game constants)
+  drivers_data.rs      # Static driver catalog
+  models/
+    part.rs            # PartCategory, Stats, OwnedPartDefinition, OwnedLevelStats
     setup.rs           # Setup, Boost, InventoryItem
-    driver.rs          # Driver, DriverBoost, DriverStats
-  routes/              # Axum request handlers (one file per resource)
+    driver.rs          # DriverStats, DriverInventoryItem, DriverBoost
+  routes/
+    admin.rs           # Parts catalog CRUD + season category management
+    auth_routes.rs     # Login / logout
     inventory.rs
     setups.rs
     boosts.rs
     drivers.rs
     optimizer.rs
-    season.rs
+    season.rs          # Season switch + nav selector API
     export_import.rs
-  templates/           # Maud HTML templates
-    layout.rs          # Base page shell (nav, CDN links)
+  templates/
+    layout.rs          # Base page shell (nav, auth form, season selector)
+    admin.rs
     inventory.rs
     setups.rs
     boosts.rs
     drivers.rs
     optimizer.rs
 migrations/            # SQLx migrations (auto-run on startup)
+parts.json             # Seed data for the parts catalog (grouped by season)
 static/                # Static assets served at /static
 ```
 
 ## Architecture Notes
 
-- **Server-side rendering** — all HTML is generated by Maud templates; no client-side JS framework
+- **Server-side rendering** — all HTML generated by Maud templates; no client-side JS framework
 - **htmx** drives dynamic updates via HTML attributes (`hx-delete`, `hx-swap`, etc.)
-- **AppState** holds a `PgPool` and the active season, injected into handlers via Axum's `State` extractor
-- **Part categories** — 7 fixed types: Engine, FrontWing, RearWing, Sidepod, Underbody, Suspension, Brakes
-- **Stats** — each part has 5 stats: speed, cornering, power_unit, reliability, pit_stop; setup stats are the sum of its 7 parts
+- **AppState** holds a `PgPool`, active season, full parts catalog, and season→category mapping; injected into handlers via Axum's `State` extractor
+- **Parts catalog** is stored in PostgreSQL (`part_catalog` + `part_level_stats`), loaded into memory at startup, and seeded from `parts.json`
+- **Season-aware categories** — each season declares which part slots are active (e.g. 2025 has Rear Wing; 2026 has Battery instead); the optimizer and setup form adapt accordingly
+- **Additional stat** — a generic secondary stat per part type (`additional_stat_value` + `additional_stat_details`) covers DRS (Rear Wing, 2025) and Overtake Mode (Battery, 2026) without schema changes per season
 
 ## License
 
