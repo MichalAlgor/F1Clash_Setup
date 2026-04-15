@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/admin/parts/new", get(new_part_form))
         .route("/admin/parts/{id}/edit", get(edit_part_form))
         .route("/admin/parts/{id}", delete(delete_part).post(update_part))
+        .route("/admin/seasons", get(list_seasons).post(save_season_categories))
 }
 
 /// Returns a redirect if auth is required but the user isn't logged in.
@@ -65,6 +66,8 @@ pub struct PartForm {
     pub category: String,
     pub series: i32,
     pub rarity: String,
+    #[serde(default)]
+    pub additional_stat_name: Option<String>,
     pub levels_json: String,
 }
 
@@ -81,6 +84,10 @@ async fn create_part(
         Err(_) => return Redirect::to("/admin/parts/new").into_response(),
     };
 
+    let additional_stat_name = form.additional_stat_name.as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.trim().to_string());
+
     let sort_order: i32 = sqlx::query_scalar(
         "SELECT COALESCE(MAX(sort_order) + 1, 0) FROM part_catalog WHERE season = $1",
     )
@@ -90,8 +97,8 @@ async fn create_part(
     .unwrap_or(0);
 
     let part_id: i32 = sqlx::query_scalar(
-        "INSERT INTO part_catalog (name, season, category, series, rarity, sort_order)
-         VALUES ($1, $2, $3::part_category, $4, $5, $6)
+        "INSERT INTO part_catalog (name, season, category, series, rarity, sort_order, additional_stat_name)
+         VALUES ($1, $2, $3::part_category, $4, $5, $6, $7)
          RETURNING id",
     )
     .bind(&form.name)
@@ -100,6 +107,7 @@ async fn create_part(
     .bind(form.series)
     .bind(&form.rarity)
     .bind(sort_order)
+    .bind(&additional_stat_name)
     .fetch_one(&state.pool)
     .await
     .unwrap();
@@ -122,14 +130,19 @@ async fn update_part(
         Err(_) => return Redirect::to("/admin/parts").into_response(),
     };
 
+    let additional_stat_name = form.additional_stat_name.as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.trim().to_string());
+
     sqlx::query(
-        "UPDATE part_catalog SET name=$1, category=$2::part_category, series=$3, rarity=$4
-         WHERE id=$5",
+        "UPDATE part_catalog SET name=$1, category=$2::part_category, series=$3, rarity=$4, additional_stat_name=$5
+         WHERE id=$6",
     )
     .bind(&form.name)
     .bind(&form.category)
     .bind(form.series)
     .bind(&form.rarity)
+    .bind(&additional_stat_name)
     .bind(id)
     .execute(&state.pool)
     .await
@@ -178,6 +191,7 @@ async fn export_parts(State(state): State<AppState>, auth: AuthStatus) -> impl I
             "series": part.series,
             "rarity": part.rarity,
             "sort_order": part.sort_order,
+            "additional_stat_name": part.additional_stat_name,
             "levels": part.levels,
         }));
     }
@@ -193,12 +207,74 @@ async fn export_parts(State(state): State<AppState>, auth: AuthStatus) -> impl I
         .into_response()
 }
 
+// ── Season categories ────────────────────────────────────────────────────────
+
+async fn list_seasons(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+    let season_cats = state.season_categories.read().await.clone();
+    let active = state.season().await;
+    templates::admin::seasons_page(&season_cats, &active, &auth).into_response()
+}
+
+async fn save_season_categories(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    Form(form): Form<Vec<(String, String)>>,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+
+    let season = form.iter()
+        .find(|(k, _)| k == "season")
+        .map(|(_, v)| v.clone())
+        .unwrap_or_default();
+
+    if season.is_empty() {
+        return Redirect::to("/admin/seasons").into_response();
+    }
+
+    let categories: Vec<&str> = form.iter()
+        .filter(|(k, _)| k == "categories")
+        .map(|(_, v)| v.as_str())
+        .collect();
+
+    // Replace categories for this season
+    sqlx::query("DELETE FROM season_categories WHERE season = $1")
+        .bind(&season)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+
+    for cat_slug in &categories {
+        sqlx::query(
+            "INSERT INTO season_categories (season, category)
+             VALUES ($1, $2::part_category)
+             ON CONFLICT DO NOTHING",
+        )
+        .bind(&season)
+        .bind(*cat_slug)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+    }
+
+    // Reload season categories
+    let new_cats = catalog::load_season_categories(&state.pool).await;
+    *state.season_categories.write().await = new_cats;
+
+    Redirect::to("/admin/seasons").into_response()
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 async fn insert_levels(state: &AppState, part_id: i32, levels: &[OwnedLevelStats]) {
     for lvl in levels {
+        let details = serde_json::to_value(&lvl.additional_stat_details)
+            .unwrap_or(serde_json::json!({}));
         sqlx::query(
             "INSERT INTO part_level_stats
-             (part_id, level, speed, cornering, power_unit, qualifying, pit_stop_time, drs)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+             (part_id, level, speed, cornering, power_unit, qualifying, pit_stop_time,
+              additional_stat_value, additional_stat_details)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         )
         .bind(part_id)
         .bind(lvl.level)
@@ -207,7 +283,8 @@ async fn insert_levels(state: &AppState, part_id: i32, levels: &[OwnedLevelStats
         .bind(lvl.power_unit)
         .bind(lvl.qualifying)
         .bind(lvl.pit_stop_time)
-        .bind(lvl.drs)
+        .bind(lvl.additional_stat_value)
+        .bind(details)
         .execute(&state.pool)
         .await
         .unwrap();

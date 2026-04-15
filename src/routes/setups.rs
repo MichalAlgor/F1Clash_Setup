@@ -43,7 +43,8 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
 async fn new(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let catalog = state.catalog_for_season().await;
-    let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog).await;
+    let categories = state.categories_for_season().await;
+    let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog, &categories).await;
     let driver_items = load_driver_inventory(&state.pool, &season).await;
     templates::setups::form_page(&inventory_by_category, &driver_items, None, &auth)
 }
@@ -51,18 +52,20 @@ async fn new(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespon
 #[derive(Deserialize)]
 pub struct SetupForm {
     pub name: String,
-    #[serde(rename = "engine")]
-    pub engine_id: i32,
-    #[serde(rename = "front_wing")]
-    pub front_wing_id: i32,
-    #[serde(rename = "rear_wing")]
-    pub rear_wing_id: i32,
-    #[serde(rename = "suspension")]
-    pub suspension_id: i32,
-    #[serde(rename = "brakes")]
-    pub brakes_id: i32,
-    #[serde(rename = "gearbox")]
-    pub gearbox_id: i32,
+    #[serde(rename = "engine", default)]
+    pub engine_id: Option<i32>,
+    #[serde(rename = "front_wing", default)]
+    pub front_wing_id: Option<i32>,
+    #[serde(rename = "rear_wing", default)]
+    pub rear_wing_id: Option<i32>,
+    #[serde(rename = "suspension", default)]
+    pub suspension_id: Option<i32>,
+    #[serde(rename = "brakes", default)]
+    pub brakes_id: Option<i32>,
+    #[serde(rename = "gearbox", default)]
+    pub gearbox_id: Option<i32>,
+    #[serde(rename = "battery", default)]
+    pub battery_id: Option<i32>,
     pub driver1_id: Option<i32>,
     pub driver2_id: Option<i32>,
 }
@@ -70,8 +73,8 @@ pub struct SetupForm {
 async fn create(State(state): State<AppState>, Form(form): Form<SetupForm>) -> impl IntoResponse {
     let season = state.season().await;
     sqlx::query(
-        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, driver1_id, driver2_id, season)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -80,6 +83,7 @@ async fn create(State(state): State<AppState>, Form(form): Form<SetupForm>) -> i
     .bind(form.suspension_id)
     .bind(form.brakes_id)
     .bind(form.gearbox_id)
+    .bind(form.battery_id)
     .bind(form.driver1_id)
     .bind(form.driver2_id)
     .bind(&season)
@@ -99,6 +103,11 @@ async fn show(State(state): State<AppState>, Path(id): Path<i32>, auth: AuthStat
         .unwrap();
 
     let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog).await;
+
+    // Find the label for this season's special stat (e.g. "DRS", "Overtake Mode")
+    let additional_stat_label = catalog.iter()
+        .find_map(|p| p.additional_stat_name.clone());
+
     let s = SetupWithStats { setup, stats, driver_stats };
 
     crate::templates::layout::page(
@@ -117,8 +126,9 @@ async fn show(State(state): State<AppState>, Path(id): Path<i32>, auth: AuthStat
                         tr { td { "Power Unit" } td { (s.stats.power_unit) } }
                         tr { td { "Qualifying" } td { (s.stats.qualifying) } }
                         tr { td { "Pit Stop Time" } td { (format!("{:.2}s", s.stats.pit_stop_time)) } }
-                        @if s.stats.drs > 0 {
-                            tr { td { "DRS" } td { (s.stats.drs) } }
+                        @if s.stats.additional_stat_value > 0 {
+                            @let label = additional_stat_label.as_deref().unwrap_or("Special");
+                            tr { td { (label) } td { (s.stats.additional_stat_value) } }
                         }
                         tr { td { strong { "Total Performance" } } td { strong { (s.stats.total_performance()) } } }
                     }
@@ -153,8 +163,8 @@ async fn update(
     Form(form): Form<SetupForm>,
 ) -> impl IntoResponse {
     sqlx::query(
-        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, suspension_id=$5, brakes_id=$6, gearbox_id=$7, driver1_id=$8, driver2_id=$9
-         WHERE id=$10",
+        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, suspension_id=$5, brakes_id=$6, gearbox_id=$7, battery_id=$8, driver1_id=$9, driver2_id=$10
+         WHERE id=$11",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -163,6 +173,7 @@ async fn update(
     .bind(form.suspension_id)
     .bind(form.brakes_id)
     .bind(form.gearbox_id)
+    .bind(form.battery_id)
     .bind(form.driver1_id)
     .bind(form.driver2_id)
     .bind(id)
@@ -198,10 +209,12 @@ async fn compute_part_stats(
     setup: &Setup,
     catalog: &[OwnedPartDefinition],
 ) -> Stats {
-    let part_ids = [
+    let mut part_ids: Vec<i32> = vec![
         setup.engine_id, setup.front_wing_id, setup.rear_wing_id,
         setup.suspension_id, setup.brakes_id, setup.gearbox_id,
     ];
+    if let Some(id) = setup.battery_id { part_ids.push(id); }
+
     let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE id = ANY($1)")
         .bind(&part_ids[..]).fetch_all(pool).await.unwrap_or_default();
     let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts")
@@ -214,7 +227,8 @@ async fn compute_part_stats(
                 let mut ps = Stats {
                     speed: level_stats.speed, cornering: level_stats.cornering,
                     power_unit: level_stats.power_unit, qualifying: level_stats.qualifying,
-                    pit_stop_time: level_stats.pit_stop_time, drs: level_stats.drs,
+                    pit_stop_time: level_stats.pit_stop_time,
+                    additional_stat_value: level_stats.additional_stat_value,
                 };
                 if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
                     ps = ps.boosted(b.percentage);
@@ -255,11 +269,12 @@ pub async fn load_inventory_by_category(
     pool: &PgPool,
     season: &str,
     catalog: &[OwnedPartDefinition],
+    categories: &[PartCategory],
 ) -> Vec<(PartCategory, Vec<(InventoryItem, OwnedLevelStats)>)> {
     let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE season = $1 ORDER BY part_name")
         .bind(season).fetch_all(pool).await.unwrap_or_default();
 
-    PartCategory::all().iter().map(|cat| {
+    categories.iter().map(|cat| {
         let cat_items: Vec<_> = items.iter().filter_map(|item| {
             let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
             if part_def.category != *cat { return None; }

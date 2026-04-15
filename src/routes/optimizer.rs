@@ -9,7 +9,7 @@ use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
 use crate::drivers_data;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
-use crate::models::part::{PartCategory, Stats};
+use crate::models::part::Stats;
 use crate::models::setup::{Boost, InventoryItem};
 use crate::templates;
 
@@ -129,7 +129,8 @@ async fn run(
     let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
     let max_driver_series = query.max_driver_series.unwrap_or(i32::MAX);
 
-    let categories = PartCategory::all();
+    let season_categories = state.categories_for_season().await;
+    let categories = season_categories.as_slice();
     let mut parts_per_cat: Vec<Vec<ResolvedPart>> = Vec::new();
     for cat in categories {
         let cat_parts: Vec<ResolvedPart> = items.iter().filter_map(|item| {
@@ -140,7 +141,8 @@ async fn run(
             let mut s = Stats {
                 speed: level_stats.speed, cornering: level_stats.cornering,
                 power_unit: level_stats.power_unit, qualifying: level_stats.qualifying,
-                pit_stop_time: level_stats.pit_stop_time, drs: level_stats.drs,
+                pit_stop_time: level_stats.pit_stop_time,
+                additional_stat_value: level_stats.additional_stat_value,
             };
             if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
                 s = s.boosted(b.percentage);
@@ -274,7 +276,7 @@ mod tests {
     }
 
     fn part_stats(speed: i32, cornering: i32, power_unit: i32, qualifying: i32) -> Stats {
-        Stats { speed, cornering, power_unit, qualifying, pit_stop_time: 1.0, drs: 0 }
+        Stats { speed, cornering, power_unit, qualifying, pit_stop_time: 1.0, additional_stat_value: 0 }
     }
 
     #[test]
@@ -368,12 +370,20 @@ mod tests {
 #[derive(Deserialize)]
 pub struct SaveForm {
     pub name: String,
-    pub brakes_id: i32,
-    pub gearbox_id: i32,
-    pub rear_wing_id: i32,
-    pub front_wing_id: i32,
-    pub suspension_id: i32,
-    pub engine_id: i32,
+    #[serde(default)]
+    pub brakes_id: Option<i32>,
+    #[serde(default)]
+    pub gearbox_id: Option<i32>,
+    #[serde(default)]
+    pub rear_wing_id: Option<i32>,
+    #[serde(default)]
+    pub front_wing_id: Option<i32>,
+    #[serde(default)]
+    pub suspension_id: Option<i32>,
+    #[serde(default)]
+    pub engine_id: Option<i32>,
+    #[serde(default)]
+    pub battery_id: Option<i32>,
     pub driver1_id: Option<i32>,
     pub driver2_id: Option<i32>,
 }
@@ -381,8 +391,8 @@ pub struct SaveForm {
 async fn save(State(state): State<AppState>, Form(form): Form<SaveForm>) -> impl IntoResponse {
     let season = state.season().await;
     sqlx::query(
-        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, driver1_id, driver2_id, season)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -391,6 +401,7 @@ async fn save(State(state): State<AppState>, Form(form): Form<SaveForm>) -> impl
     .bind(form.suspension_id)
     .bind(form.brakes_id)
     .bind(form.gearbox_id)
+    .bind(form.battery_id)
     .bind(form.driver1_id)
     .bind(form.driver2_id)
     .bind(&season)

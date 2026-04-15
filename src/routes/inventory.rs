@@ -27,6 +27,7 @@ async fn index() -> impl IntoResponse {
 async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let catalog = state.catalog_for_season().await;
+    let categories = state.categories_for_season().await;
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
@@ -35,12 +36,13 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
     .await
     .unwrap_or_default();
 
-    templates::inventory::list_page(&items, &catalog, &auth)
+    templates::inventory::list_page(&items, &catalog, &categories, &auth)
 }
 
 async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let catalog = state.catalog_for_season().await;
+    let categories = state.categories_for_season().await;
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
@@ -49,7 +51,7 @@ async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl Into
     .await
     .unwrap_or_default();
 
-    templates::inventory::bulk_page(&items, &catalog, &auth)
+    templates::inventory::bulk_page(&items, &catalog, &categories, &auth)
 }
 
 async fn bulk_save(

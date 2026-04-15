@@ -6,6 +6,7 @@ mod models;
 mod routes;
 mod templates;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use axum::Router;
 use sqlx::PgPool;
@@ -20,6 +21,8 @@ pub struct AppState {
     pub pool: PgPool,
     pub active_season: Arc<RwLock<String>>,
     pub catalog: Arc<RwLock<Vec<OwnedPartDefinition>>>,
+    /// Which part categories are active per season.
+    pub season_categories: Arc<RwLock<HashMap<String, Vec<PartCategory>>>>,
     /// Plain-text password for verification on login (None = no auth).
     pub admin_password: Option<String>,
     /// Opaque token stored in the session cookie (derived from password).
@@ -64,6 +67,17 @@ impl AppState {
             .filter(|p| p.season == season && p.category == category)
             .cloned()
             .collect()
+    }
+
+    /// The ordered list of part categories active in the current season.
+    pub async fn categories_for_season(&self) -> Vec<PartCategory> {
+        let season = self.season().await;
+        self.season_categories
+            .read()
+            .await
+            .get(&season)
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -113,6 +127,9 @@ async fn main() {
     // Load the full catalog (all seasons) into memory
     let parts = catalog::load_catalog(&pool).await;
 
+    // Load season → category mappings
+    let season_cats = catalog::load_season_categories(&pool).await;
+
     // Auth setup
     let admin_password = std::env::var("ADMIN_PASSWORD").ok();
     let session_token = admin_password
@@ -127,6 +144,7 @@ async fn main() {
         pool,
         active_season: Arc::new(RwLock::new(season)),
         catalog: Arc::new(RwLock::new(parts)),
+        season_categories: Arc::new(RwLock::new(season_cats)),
         admin_password,
         session_token,
     };

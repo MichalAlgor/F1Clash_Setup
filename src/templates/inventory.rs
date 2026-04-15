@@ -4,7 +4,12 @@ use crate::auth::AuthStatus;
 use crate::models::part::{OwnedPartDefinition, PartCategory};
 use crate::models::setup::InventoryItem;
 
-pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth: &AuthStatus) -> Markup {
+pub fn list_page(
+    items: &[InventoryItem],
+    catalog: &[OwnedPartDefinition],
+    categories: &[PartCategory],
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Inventory",
         auth,
@@ -17,7 +22,7 @@ pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth:
             a href="/inventory/bulk" role="button" { "Manage All Parts" }
 
             div class="category-grid" {
-                @for category in PartCategory::all() {
+                @for category in categories {
                     @let cat_items: Vec<_> = {
                         let mut v: Vec<_> = items.iter()
                             .filter(|item| {
@@ -31,6 +36,11 @@ pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth:
                         });
                         v
                     };
+
+                    // Determine if this category has an additional stat
+                    @let additional_stat_name: Option<String> = catalog.iter()
+                        .find(|p| p.category == *category && p.additional_stat_name.is_some())
+                        .and_then(|p| p.additional_stat_name.clone());
 
                     @if !cat_items.is_empty() {
                         section {
@@ -48,6 +58,9 @@ pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth:
                                             th { "QUA" }
                                             th { "PIT (s)" }
                                             th { "Total" }
+                                            @if let Some(ref stat_name) = additional_stat_name {
+                                                th { (stat_name) }
+                                            }
                                             th {}
                                         }
                                     }
@@ -75,6 +88,29 @@ pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth:
                                                         td { (stats.qualifying) }
                                                         td { (format!("{:.2}", stats.pit_stop_time)) }
                                                         td { strong { (stats.speed + stats.cornering + stats.power_unit + stats.qualifying) } }
+                                                        @if additional_stat_name.is_some() {
+                                                            td {
+                                                                @if stats.additional_stat_value > 0 {
+                                                                    (stats.additional_stat_value)
+                                                                    @if !stats.additional_stat_details.is_empty() {
+                                                                        @let sub: Vec<_> = {
+                                                                            let mut v: Vec<_> = stats.additional_stat_details.iter().collect();
+                                                                            v.sort_by_key(|(k, _)| k.as_str());
+                                                                            v
+                                                                        };
+                                                                        br;
+                                                                        small class="secondary" {
+                                                                            @for (i, (key, val)) in sub.iter().enumerate() {
+                                                                                @if i > 0 { " · " }
+                                                                                (key) ": " (val)
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                } @else {
+                                                                    "—"
+                                                                }
+                                                            }
+                                                        }
                                                         td {
                                                             button.outline.secondary
                                                                 hx-delete={"/inventory/" (item.id)}
@@ -98,7 +134,13 @@ pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth:
     )
 }
 
-pub fn bulk_page(current_inventory: &[InventoryItem], catalog: &[OwnedPartDefinition], auth: &AuthStatus) -> Markup {
+/// Bulk edit page: shows every catalog part with a level selector (0 = not owned)
+pub fn bulk_page(
+    current_inventory: &[InventoryItem],
+    catalog: &[OwnedPartDefinition],
+    categories: &[PartCategory],
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Manage All Parts",
         auth,
@@ -108,7 +150,7 @@ pub fn bulk_page(current_inventory: &[InventoryItem], catalog: &[OwnedPartDefini
 
             form method="post" action="/inventory/bulk" {
                 div class="category-grid" {
-                @for category in PartCategory::all() {
+                @for category in categories {
                     @let parts: Vec<_> = catalog.iter().filter(|p| p.category == *category).collect();
                     @if !parts.is_empty() {
                         section {

@@ -4,7 +4,7 @@ use sqlx::FromRow;
 use super::driver::DriverStats;
 use super::part::Stats;
 
-/// A saved car setup (6 parts + 2 drivers)
+/// A saved car setup (part slots + 2 drivers). Nullable slots are absent in some seasons.
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Setup {
     pub id: i32,
@@ -15,6 +15,7 @@ pub struct Setup {
     pub suspension_id: i32,
     pub brakes_id: i32,
     pub gearbox_id: i32,
+    pub battery_id: Option<i32>,
     pub driver1_id: Option<i32>,
     pub driver2_id: Option<i32>,
 }
