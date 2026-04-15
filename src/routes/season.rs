@@ -1,24 +1,25 @@
 use axum::extract::State;
 use axum::response::{IntoResponse, Redirect};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
-use crate::auth::AuthStatus;
 use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/season", get(show).post(switch))
+        .route("/season", post(switch))
         .route("/api/season", get(api_season))
+        .route("/api/season-selector", get(season_selector))
 }
 
 async fn api_season(State(state): State<AppState>) -> impl IntoResponse {
     state.season().await
 }
 
-async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
+/// Returns an inline form with a season <select> for the nav bar.
+async fn season_selector(State(state): State<AppState>) -> impl IntoResponse {
     let current = state.season().await;
 
     let seasons: Vec<String> = sqlx::query_scalar(
@@ -27,53 +28,34 @@ async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
             UNION SELECT season AS s FROM driver_inventory
             UNION SELECT season AS s FROM setups
             UNION SELECT value AS s FROM settings WHERE key = 'active_season'
+            UNION SELECT season AS s FROM season_categories
         ) AS all_seasons ORDER BY s",
     )
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
-    crate::templates::layout::page(
-        "Season",
-        &auth,
-        html! {
-            hgroup {
-                h1 { "Season" }
-                p { "Switch between seasons or create a new one" }
-            }
-
-            p { "Active season: " strong { (&current) } }
-
-            form method="post" action="/season" {
-                label for="season" { "Switch to season" }
-                select id="season" name="season" {
-                    @for s in &seasons {
-                        option value=(s) selected[*s == current] { (s) }
-                    }
+    html! {
+        form method="post" action="/season" style="display:inline;margin:0" {
+            select name="season" onchange="this.form.submit()" class="inline-select season-select" {
+                @for s in &seasons {
+                    option value=(s) selected[*s == current] { (s) }
                 }
-
-                label for="new_season" { "Or create new season" }
-                input type="text" id="new_season" name="new_season" placeholder="e.g. 2026";
-
-                button type="submit" { "Switch Season" }
             }
-        },
-    )
+        }
+    }
 }
 
 #[derive(Deserialize)]
 pub struct SeasonForm {
     pub season: String,
-    #[serde(default)]
-    pub new_season: String,
 }
 
 async fn switch(State(state): State<AppState>, Form(form): Form<SeasonForm>) -> impl IntoResponse {
-    let target = if form.new_season.trim().is_empty() {
-        form.season.clone()
-    } else {
-        form.new_season.trim().to_string()
-    };
+    let target = form.season.trim().to_string();
+    if target.is_empty() {
+        return Redirect::to("/");
+    }
 
     sqlx::query("UPDATE settings SET value = $1 WHERE key = 'active_season'")
         .bind(&target)
@@ -83,5 +65,5 @@ async fn switch(State(state): State<AppState>, Form(form): Form<SeasonForm>) -> 
 
     *state.active_season.write().await = target;
 
-    Redirect::to("/season")
+    Redirect::to("/")
 }

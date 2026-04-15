@@ -32,10 +32,12 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                             li { a href="/optimizer" { "Optimizer" } }
                             li { a href="/export" { "Export" } }
                             li { a href="/import" { "Import" } }
-                            li { a href="/admin/parts" { "Admin" } }
+                            @if auth.logged_in {
+                                li { a href="/admin/parts" { "Admin" } }
+                            }
                             li {
-                                a href="/season" class="season-badge" {
-                                    span hx-get="/api/season" hx-trigger="load" hx-swap="innerHTML" { "..." }
+                                span hx-get="/api/season-selector" hx-trigger="load" hx-swap="outerHTML" {
+                                    span class="season-badge" { "..." }
                                 }
                             }
                             @if auth.enabled {
@@ -243,14 +245,16 @@ button.btn-delete {
     min-width: 80px;
 }
 
-/* Season badge */
-.season-badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border: 1px solid var(--pico-muted-border-color);
-    border-radius: var(--pico-border-radius);
+/* Season selector in nav */
+select.season-select {
+    margin: 0;
+    padding: 0.15rem 2rem 0.15rem 0.4rem;
+    width: auto;
+    min-width: 70px;
     font-size: 0.75rem;
-    text-decoration: none;
+    border-color: var(--pico-muted-border-color);
+    background-color: transparent;
+    display: inline-block;
 }
 
 /* Rarity colors */
