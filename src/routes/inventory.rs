@@ -5,9 +5,9 @@ use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
+use crate::auth::AuthStatus;
 use crate::AppState;
 
-use crate::data;
 use crate::models::setup::InventoryItem;
 use crate::templates;
 
@@ -24,8 +24,9 @@ async fn index() -> impl IntoResponse {
     Redirect::to("/inventory")
 }
 
-async fn list(State(state): State<AppState>) -> impl IntoResponse {
+async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
+    let catalog = state.catalog_for_season().await;
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
@@ -34,11 +35,12 @@ async fn list(State(state): State<AppState>) -> impl IntoResponse {
     .await
     .unwrap_or_default();
 
-    templates::inventory::list_page(&items)
+    templates::inventory::list_page(&items, &catalog, &auth)
 }
 
-async fn bulk_form(State(state): State<AppState>) -> impl IntoResponse {
+async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
+    let catalog = state.catalog_for_season().await;
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
@@ -47,17 +49,15 @@ async fn bulk_form(State(state): State<AppState>) -> impl IntoResponse {
     .await
     .unwrap_or_default();
 
-    templates::inventory::bulk_page(&items)
+    templates::inventory::bulk_page(&items, &catalog, &auth)
 }
 
-/// Each part is submitted as `part:<name>=<level>` (0 means not owned)
 async fn bulk_save(
     State(state): State<AppState>,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
     let season = state.season().await;
 
-    // Clear existing inventory for this season and re-insert
     sqlx::query("DELETE FROM inventory WHERE season = $1")
         .bind(&season)
         .execute(&state.pool)
@@ -72,8 +72,7 @@ async fn bulk_save(
         if level < 1 {
             continue;
         }
-        // Verify the part exists in catalog
-        if data::find_part(part_name).is_none() {
+        if state.find_part(part_name).await.is_none() {
             continue;
         }
         sqlx::query("INSERT INTO inventory (part_name, level, season) VALUES ($1, $2, $3)")

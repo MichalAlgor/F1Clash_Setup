@@ -1,11 +1,13 @@
 use maud::{html, Markup};
 
+use crate::auth::AuthStatus;
 use crate::drivers_data::{self, DriverCategory, DriverRarity};
 use crate::models::driver::DriverInventoryItem;
 
-pub fn list_page(items: &[DriverInventoryItem]) -> Markup {
+pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
     super::layout::page(
         "Drivers",
+        auth,
         html! {
             hgroup {
                 h1 { "Driver Inventory" }
@@ -98,9 +100,10 @@ pub fn list_page(items: &[DriverInventoryItem]) -> Markup {
     )
 }
 
-pub fn bulk_page(current_inventory: &[DriverInventoryItem]) -> Markup {
+pub fn bulk_page(current_inventory: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
     super::layout::page(
         "Manage All Drivers",
+        auth,
         html! {
             h1 { "Manage All Drivers" }
             p { "Set the level for each driver you own. Leave at \"—\" for drivers you don't have." }

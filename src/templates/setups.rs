@@ -1,14 +1,15 @@
 use maud::{html, Markup};
 
-use crate::data;
+use crate::auth::AuthStatus;
 use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
-use crate::models::part::PartCategory;
+use crate::models::part::{OwnedLevelStats, PartCategory};
 use crate::models::setup::{InventoryItem, SetupWithStats};
 
-pub fn list_page(setups: &[SetupWithStats]) -> Markup {
+pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
     super::layout::page(
         "Setups",
+        auth,
         html! {
             hgroup {
                 h1 { "Car Setups" }
@@ -67,9 +68,10 @@ pub fn list_page(setups: &[SetupWithStats]) -> Markup {
 }
 
 pub fn form_page(
-    inventory_by_category: &[(PartCategory, Vec<(InventoryItem, &data::LevelStats)>)],
+    inventory_by_category: &[(PartCategory, Vec<(InventoryItem, OwnedLevelStats)>)],
     driver_items: &[DriverInventoryItem],
     setup: Option<&crate::models::setup::Setup>,
+    auth: &AuthStatus,
 ) -> Markup {
     let title = if setup.is_some() { "Edit Setup" } else { "New Setup" };
     let action = match setup {
@@ -79,6 +81,7 @@ pub fn form_page(
 
     super::layout::page(
         title,
+        auth,
         html! {
             h1 { (title) }
             form method="post" action=(action) {

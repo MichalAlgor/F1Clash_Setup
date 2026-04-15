@@ -4,7 +4,7 @@ use axum::routing::get;
 use axum::Form;
 use axum::Router;
 
-use crate::data;
+use crate::auth::AuthStatus;
 use crate::drivers_data;
 use crate::models::driver::DriverBoost;
 use crate::models::setup::Boost;
@@ -15,8 +15,9 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/boosts", get(show).post(save))
 }
 
-async fn show(State(state): State<AppState>) -> impl IntoResponse {
+async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
+    let catalog = state.catalog_for_season().await;
 
     let part_boosts = sqlx::query_as::<_, Boost>(
         "SELECT * FROM boosts WHERE season = $1 ORDER BY part_name",
@@ -34,17 +35,15 @@ async fn show(State(state): State<AppState>) -> impl IntoResponse {
     .await
     .unwrap_or_default();
 
-    templates::boosts::page(&part_boosts, &driver_boosts)
+    templates::boosts::page(&part_boosts, &driver_boosts, &catalog, &auth)
 }
 
-/// Single save handler — form fields prefixed with `part:` or `driver:`
 async fn save(
     State(state): State<AppState>,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
     let season = state.season().await;
 
-    // Clear both tables
     sqlx::query("DELETE FROM boosts WHERE season = $1")
         .bind(&season)
         .execute(&state.pool)
@@ -63,7 +62,7 @@ async fn save(
         }
 
         if let Some(part_name) = key.strip_prefix("part:") {
-            if data::find_part(part_name).is_none() { continue; }
+            if state.find_part(part_name).await.is_none() { continue; }
             sqlx::query("INSERT INTO boosts (part_name, percentage, season) VALUES ($1, $2, $3)")
                 .bind(part_name)
                 .bind(percentage)

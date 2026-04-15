@@ -5,6 +5,7 @@ use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
+use crate::auth::AuthStatus;
 use crate::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -17,10 +18,9 @@ async fn api_season(State(state): State<AppState>) -> impl IntoResponse {
     state.season().await
 }
 
-async fn show(State(state): State<AppState>) -> impl IntoResponse {
+async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let current = state.season().await;
 
-    // Get all known seasons
     let seasons: Vec<String> = sqlx::query_scalar(
         "SELECT DISTINCT s FROM (
             SELECT season AS s FROM inventory
@@ -35,6 +35,7 @@ async fn show(State(state): State<AppState>) -> impl IntoResponse {
 
     crate::templates::layout::page(
         "Season",
+        &auth,
         html! {
             hgroup {
                 h1 { "Season" }
@@ -74,14 +75,12 @@ async fn switch(State(state): State<AppState>, Form(form): Form<SeasonForm>) -> 
         form.new_season.trim().to_string()
     };
 
-    // Update DB setting
     sqlx::query("UPDATE settings SET value = $1 WHERE key = 'active_season'")
         .bind(&target)
         .execute(&state.pool)
         .await
         .unwrap();
 
-    // Update in-memory state
     *state.active_season.write().await = target;
 
     Redirect::to("/season")

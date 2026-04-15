@@ -1,12 +1,17 @@
 use maud::{html, Markup, PreEscaped};
 
-use crate::data;
+use crate::auth::AuthStatus;
 use crate::drivers_data::{self, DriverCategory};
 use crate::models::driver::DriverBoost;
-use crate::models::part::PartCategory;
+use crate::models::part::{OwnedPartDefinition, PartCategory};
 use crate::models::setup::Boost;
 
-pub fn page(part_boosts: &[Boost], driver_boosts: &[DriverBoost]) -> Markup {
+pub fn page(
+    part_boosts: &[Boost],
+    driver_boosts: &[DriverBoost],
+    catalog: &[OwnedPartDefinition],
+    auth: &AuthStatus,
+) -> Markup {
     let boosted_part_names: Vec<&str> = part_boosts.iter().map(|b| b.part_name.as_str()).collect();
     let boosted_driver_keys: Vec<(String, String)> = driver_boosts
         .iter()
@@ -16,6 +21,7 @@ pub fn page(part_boosts: &[Boost], driver_boosts: &[DriverBoost]) -> Markup {
 
     super::layout::page(
         "Boosts",
+        auth,
         html! {
             hgroup {
                 h1 { "Boosts" }
@@ -29,9 +35,9 @@ pub fn page(part_boosts: &[Boost], driver_boosts: &[DriverBoost]) -> Markup {
                         p.secondary #no-boosts { "No boosts active. Select parts or drivers below." }
                     }
                     @for boost in part_boosts {
-                        @if let Some(part_def) = data::find_part(&boost.part_name) {
+                        @if let Some(part_def) = catalog.iter().find(|p| p.name == boost.part_name) {
                             div class="boost-entry" data-part=(boost.part_name) data-type="part" {
-                                span class={"boost-name " (part_def.rarity.css_class())} { (boost.part_name) }
+                                span class={"boost-name " (part_def.rarity_css_class())} { (boost.part_name) }
                                 span class="boost-cat" { (part_def.category.display_name()) }
                                 input type="number"
                                     name={"part:" (boost.part_name)}
@@ -74,7 +80,7 @@ pub fn page(part_boosts: &[Boost], driver_boosts: &[DriverBoost]) -> Markup {
                 div id="parts-tab" class="tab-content active" {
                     div class="category-grid" {
                         @for category in PartCategory::all() {
-                            @let parts = data::parts_by_category(*category);
+                            @let parts: Vec<_> = catalog.iter().filter(|p| p.category == *category).collect();
                             @if !parts.is_empty() {
                                 section {
                                     h2 { (category.display_name()) }
@@ -89,18 +95,18 @@ pub fn page(part_boosts: &[Boost], driver_boosts: &[DriverBoost]) -> Markup {
                                             }
                                             tbody {
                                                 @for part_def in &parts {
-                                                    @let is_boosted = boosted_part_names.contains(&part_def.name);
+                                                    @let is_boosted = boosted_part_names.contains(&part_def.name.as_str());
                                                     tr {
                                                         td {
                                                             input type="checkbox"
                                                                 class="boost-check"
                                                                 data-part=(part_def.name)
                                                                 data-category=(category.display_name())
-                                                                data-css=(part_def.rarity.css_class())
+                                                                data-css=(part_def.rarity_css_class())
                                                                 checked[is_boosted]
-                                                                onchange={"togglePartBoost('" (part_def.name) "', this.checked, '" (category.display_name()) "', '" (part_def.rarity.css_class()) "')"};
+                                                                onchange={"togglePartBoost('" (part_def.name) "', this.checked, '" (category.display_name()) "', '" (part_def.rarity_css_class()) "')"};
                                                         }
-                                                        td class=(part_def.rarity.css_class()) { (part_def.name) }
+                                                        td class=(part_def.rarity_css_class()) { (part_def.name) }
                                                         td { (part_def.series) }
                                                     }
                                                 }

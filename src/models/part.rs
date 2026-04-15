@@ -1,8 +1,10 @@
+use crate::data::StatPriorities;
 use serde::{Deserialize, Serialize};
 
 /// Car part categories in F1 Clash
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "part_category", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum PartCategory {
     Engine,
     FrontWing,
@@ -84,6 +86,64 @@ impl Stats {
             qualifying: self.qualifying + (self.qualifying as f64 * mult).round() as i32,
             pit_stop_time: self.pit_stop_time * (1.0 - mult),
             drs: self.drs,
+        }
+    }
+}
+
+/// Level stats for a single upgrade level — owned version loaded from DB.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OwnedLevelStats {
+    pub level: i32,
+    pub speed: i32,
+    pub cornering: i32,
+    pub power_unit: i32,
+    pub qualifying: i32,
+    pub pit_stop_time: f64,
+    pub drs: i32,
+}
+
+impl OwnedLevelStats {
+    pub fn priority_score(&self, priorities: &StatPriorities) -> i32 {
+        let mut score = 0;
+        if priorities.speed { score += self.speed; }
+        if priorities.cornering { score += self.cornering; }
+        if priorities.power_unit { score += self.power_unit; }
+        if priorities.qualifying { score += self.qualifying; }
+        score
+    }
+
+    pub fn total_performance(&self) -> i32 {
+        self.speed + self.cornering + self.power_unit + self.qualifying
+    }
+}
+
+/// A part definition loaded from the DB, scoped to a season.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OwnedPartDefinition {
+    pub id: i32,
+    pub name: String,
+    pub season: String,
+    pub category: PartCategory,
+    pub series: i32,
+    pub rarity: String, // "Common" | "Rare" | "Epic"
+    pub sort_order: i32,
+    pub levels: Vec<OwnedLevelStats>,
+}
+
+impl OwnedPartDefinition {
+    pub fn stats_for_level(&self, level: i32) -> Option<&OwnedLevelStats> {
+        self.levels.iter().find(|l| l.level == level)
+    }
+
+    pub fn max_level(&self) -> i32 {
+        self.levels.last().map_or(1, |l| l.level)
+    }
+
+    pub fn rarity_css_class(&self) -> &'static str {
+        match self.rarity.as_str() {
+            "Rare" => "rarity-rare",
+            "Epic" => "rarity-epic",
+            _ => "rarity-common",
         }
     }
 }

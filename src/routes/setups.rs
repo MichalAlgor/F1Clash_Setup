@@ -6,10 +6,10 @@ use maud::html;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::data;
+use crate::auth::AuthStatus;
 use crate::drivers_data;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
-use crate::models::part::{PartCategory, Stats};
+use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem, Setup, SetupWithStats};
 use crate::templates;
 use crate::AppState;
@@ -22,8 +22,9 @@ pub fn router() -> Router<AppState> {
         .route("/setups/{id}", delete(destroy))
 }
 
-async fn list(State(state): State<AppState>) -> impl IntoResponse {
+async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
+    let catalog = state.catalog_for_season().await;
     let setups = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE season = $1 ORDER BY name")
         .bind(&season)
         .fetch_all(&state.pool)
@@ -32,18 +33,19 @@ async fn list(State(state): State<AppState>) -> impl IntoResponse {
 
     let mut with_stats = Vec::new();
     for setup in setups {
-        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup).await;
+        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog).await;
         with_stats.push(SetupWithStats { setup, stats, driver_stats });
     }
 
-    templates::setups::list_page(&with_stats)
+    templates::setups::list_page(&with_stats, &auth)
 }
 
-async fn new(State(state): State<AppState>) -> impl IntoResponse {
+async fn new(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
-    let inventory_by_category = load_inventory_by_category(&state.pool, &season).await;
+    let catalog = state.catalog_for_season().await;
+    let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog).await;
     let driver_items = load_driver_inventory(&state.pool, &season).await;
-    templates::setups::form_page(&inventory_by_category, &driver_items, None)
+    templates::setups::form_page(&inventory_by_category, &driver_items, None, &auth)
 }
 
 #[derive(Deserialize)]
@@ -88,18 +90,20 @@ async fn create(State(state): State<AppState>, Form(form): Form<SetupForm>) -> i
     Redirect::to("/setups")
 }
 
-async fn show(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+async fn show(State(state): State<AppState>, Path(id): Path<i32>, auth: AuthStatus) -> impl IntoResponse {
+    let catalog = state.catalog_for_season().await;
     let setup = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1")
         .bind(id)
         .fetch_one(&state.pool)
         .await
         .unwrap();
 
-    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup).await;
+    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog).await;
     let s = SetupWithStats { setup, stats, driver_stats };
 
-    templates::layout::page(
+    crate::templates::layout::page(
         &s.setup.name,
+        &auth,
         html! {
             h1 { (&s.setup.name) }
 
@@ -179,13 +183,21 @@ async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl Int
     html! {}
 }
 
-async fn compute_all_stats(pool: &PgPool, setup: &Setup) -> (Stats, DriverStats) {
-    let part_stats = compute_part_stats(pool, setup).await;
+async fn compute_all_stats(
+    pool: &PgPool,
+    setup: &Setup,
+    catalog: &[OwnedPartDefinition],
+) -> (Stats, DriverStats) {
+    let part_stats = compute_part_stats(pool, setup, catalog).await;
     let driver_stats = compute_driver_stats(pool, setup).await;
     (part_stats, driver_stats)
 }
 
-async fn compute_part_stats(pool: &PgPool, setup: &Setup) -> Stats {
+async fn compute_part_stats(
+    pool: &PgPool,
+    setup: &Setup,
+    catalog: &[OwnedPartDefinition],
+) -> Stats {
     let part_ids = [
         setup.engine_id, setup.front_wing_id, setup.rear_wing_id,
         setup.suspension_id, setup.brakes_id, setup.gearbox_id,
@@ -197,7 +209,7 @@ async fn compute_part_stats(pool: &PgPool, setup: &Setup) -> Stats {
 
     let mut stats = Stats::default();
     for item in &items {
-        if let Some(part_def) = data::find_part(&item.part_name) {
+        if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name) {
             if let Some(level_stats) = part_def.stats_for_level(item.level) {
                 let mut ps = Stats {
                     speed: level_stats.speed, cornering: level_stats.cornering,
@@ -239,15 +251,19 @@ async fn compute_driver_stats(pool: &PgPool, setup: &Setup) -> DriverStats {
     stats
 }
 
-pub async fn load_inventory_by_category(pool: &PgPool, season: &str) -> Vec<(PartCategory, Vec<(InventoryItem, &'static data::LevelStats)>)> {
+pub async fn load_inventory_by_category(
+    pool: &PgPool,
+    season: &str,
+    catalog: &[OwnedPartDefinition],
+) -> Vec<(PartCategory, Vec<(InventoryItem, OwnedLevelStats)>)> {
     let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE season = $1 ORDER BY part_name")
         .bind(season).fetch_all(pool).await.unwrap_or_default();
 
     PartCategory::all().iter().map(|cat| {
         let cat_items: Vec<_> = items.iter().filter_map(|item| {
-            let part_def = data::find_part(&item.part_name)?;
+            let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
             if part_def.category != *cat { return None; }
-            let level_stats = part_def.stats_for_level(item.level)?;
+            let level_stats = part_def.stats_for_level(item.level)?.clone();
             Some((item.clone(), level_stats))
         }).collect();
         (*cat, cat_items)

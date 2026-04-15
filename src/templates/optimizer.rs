@@ -1,5 +1,6 @@
 use maud::{html, Markup};
 
+use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
 use crate::drivers_data;
 use crate::models::driver::{DriverInventoryItem, DriverStats};
@@ -7,9 +8,10 @@ use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::InventoryItem;
 use crate::routes::optimizer::DriverPriorities;
 
-pub fn form_page() -> Markup {
+pub fn form_page(auth: &AuthStatus) -> Markup {
     super::layout::page(
         "Optimizer",
+        auth,
         html! {
             hgroup {
                 h1 { "Setup Optimizer" }
@@ -89,6 +91,7 @@ pub fn result_page(
     driver2: Option<&(DriverInventoryItem, DriverStats)>,
     total_parts: &Stats,
     total_drivers: &DriverStats,
+    auth: &AuthStatus,
 ) -> Markup {
     let part_labels = part_priorities.labels().join(", ");
     let driver_labels = driver_priorities.labels().join(", ");
@@ -101,6 +104,7 @@ pub fn result_page(
 
     super::layout::page(
         "Optimizer Result",
+        auth,
         html! {
             h1 { "Optimized Setup" }
 
@@ -123,7 +127,6 @@ pub fn result_page(
             @if part_picks.is_empty() {
                 p { "No parts in inventory for one or more categories. Add parts first!" }
             } @else {
-                // Parts table
                 h2 { "Parts" }
                 figure {
                     table {
@@ -169,7 +172,6 @@ pub fn result_page(
                     }
                 }
 
-                // Drivers table
                 h2 { "Drivers" }
                 @if driver1.is_none() && driver2.is_none() {
                     p { "No drivers in inventory." }
@@ -223,14 +225,12 @@ pub fn result_page(
                     }
                 }
 
-                // Combined score
                 p {
                     "Combined score: "
                     strong { (total_parts.total_performance() + total_drivers.total()) }
                     " (" (total_parts.total_performance()) " parts + " (total_drivers.total()) " drivers)"
                 }
 
-                // Save form
                 h2 { "Save this setup" }
                 form method="post" action="/optimizer/save" {
                     label for="name" { "Setup Name" }

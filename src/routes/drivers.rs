@@ -5,6 +5,7 @@ use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
+use crate::auth::AuthStatus;
 use crate::AppState;
 use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
@@ -18,7 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/drivers/{id}/level", post(update_level))
 }
 
-async fn list(State(state): State<AppState>) -> impl IntoResponse {
+async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let items = sqlx::query_as::<_, DriverInventoryItem>(
         "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
@@ -28,10 +29,10 @@ async fn list(State(state): State<AppState>) -> impl IntoResponse {
     .await
     .unwrap_or_default();
 
-    templates::drivers::list_page(&items)
+    templates::drivers::list_page(&items, &auth)
 }
 
-async fn bulk_form(State(state): State<AppState>) -> impl IntoResponse {
+async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let items = sqlx::query_as::<_, DriverInventoryItem>(
         "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
@@ -41,7 +42,7 @@ async fn bulk_form(State(state): State<AppState>) -> impl IntoResponse {
     .await
     .unwrap_or_default();
 
-    templates::drivers::bulk_page(&items)
+    templates::drivers::bulk_page(&items, &auth)
 }
 
 async fn bulk_save(
@@ -61,7 +62,6 @@ async fn bulk_save(
         .unwrap();
 
     for (key, value) in &form {
-        // Keys are "driver:<Name>:<Rarity>"
         let Some(rest) = key.strip_prefix("driver:") else { continue };
         let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
         let level: i32 = value.parse().unwrap_or(0);

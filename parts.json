@@ -1,0 +1,915 @@
+{
+  "2025": [
+    {
+      "name": "Pivot",
+      "category": "brakes",
+      "series": 1,
+      "rarity": "Common",
+      "sort_order": 0,
+      "levels": [
+        { "level": 1, "speed": 2, "cornering": 2, "power_unit": 1, "qualifying": 3, "pit_stop_time": 0.97, "drs": 0 },
+        { "level": 2, "speed": 3, "cornering": 3, "power_unit": 2, "qualifying": 4, "pit_stop_time": 0.94, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 4, "power_unit": 3, "qualifying": 5, "pit_stop_time": 0.91, "drs": 0 },
+        { "level": 4, "speed": 5, "cornering": 5, "power_unit": 3, "qualifying": 6, "pit_stop_time": 0.88, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 6, "power_unit": 4, "qualifying": 7, "pit_stop_time": 0.85, "drs": 0 },
+        { "level": 6, "speed": 7, "cornering": 7, "power_unit": 5, "qualifying": 8, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 7, "power_unit": 6, "qualifying": 8, "pit_stop_time": 0.80, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 8, "power_unit": 7, "qualifying": 9, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 9, "speed": 9, "cornering": 9, "power_unit": 7, "qualifying": 10, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 10, "speed": 10, "cornering": 10, "power_unit": 8, "qualifying": 11, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 11, "speed": 11, "cornering": 11, "power_unit": 9, "qualifying": 12, "pit_stop_time": 0.69, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Stabiliser",
+      "category": "brakes",
+      "series": 2,
+      "rarity": "Common",
+      "sort_order": 1,
+      "levels": [
+        { "level": 1, "speed": 3, "cornering": 5, "power_unit": 2, "qualifying": 1, "pit_stop_time": 0.86, "drs": 0 },
+        { "level": 2, "speed": 4, "cornering": 7, "power_unit": 3, "qualifying": 2, "pit_stop_time": 0.81, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 8, "power_unit": 3, "qualifying": 2, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 4, "speed": 5, "cornering": 10, "power_unit": 4, "qualifying": 3, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 5, "speed": 5, "cornering": 11, "power_unit": 4, "qualifying": 3, "pit_stop_time": 0.68, "drs": 0 },
+        { "level": 6, "speed": 6, "cornering": 13, "power_unit": 5, "qualifying": 4, "pit_stop_time": 0.63, "drs": 0 },
+        { "level": 7, "speed": 6, "cornering": 14, "power_unit": 5, "qualifying": 4, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 8, "speed": 7, "cornering": 16, "power_unit": 6, "qualifying": 5, "pit_stop_time": 0.54, "drs": 0 },
+        { "level": 9, "speed": 7, "cornering": 17, "power_unit": 6, "qualifying": 5, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 10, "speed": 8, "cornering": 19, "power_unit": 7, "qualifying": 6, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 11, "speed": 8, "cornering": 20, "power_unit": 7, "qualifying": 6, "pit_stop_time": 0.41, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Supernova",
+      "category": "brakes",
+      "series": 3,
+      "rarity": "Epic",
+      "sort_order": 2,
+      "levels": [
+        { "level": 1, "speed": 15, "cornering": 5, "power_unit": 6, "qualifying": 7, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 2, "speed": 18, "cornering": 6, "power_unit": 7, "qualifying": 8, "pit_stop_time": 0.80, "drs": 0 },
+        { "level": 3, "speed": 20, "cornering": 7, "power_unit": 8, "qualifying": 9, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 4, "speed": 23, "cornering": 8, "power_unit": 9, "qualifying": 10, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 5, "speed": 25, "cornering": 8, "power_unit": 10, "qualifying": 11, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 6, "speed": 28, "cornering": 9, "power_unit": 11, "qualifying": 12, "pit_stop_time": 0.68, "drs": 0 },
+        { "level": 7, "speed": 30, "cornering": 10, "power_unit": 12, "qualifying": 13, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 8, "speed": 33, "cornering": 11, "power_unit": 13, "qualifying": 14, "pit_stop_time": 0.62, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Descent",
+      "category": "brakes",
+      "series": 5,
+      "rarity": "Rare",
+      "sort_order": 3,
+      "levels": [
+        { "level": 1, "speed": 5, "cornering": 15, "power_unit": 6, "qualifying": 14, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 2, "speed": 6, "cornering": 17, "power_unit": 7, "qualifying": 16, "pit_stop_time": 0.80, "drs": 0 },
+        { "level": 3, "speed": 6, "cornering": 19, "power_unit": 8, "qualifying": 17, "pit_stop_time": 0.78, "drs": 0 },
+        { "level": 4, "speed": 7, "cornering": 20, "power_unit": 8, "qualifying": 19, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 5, "speed": 8, "cornering": 22, "power_unit": 9, "qualifying": 21, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 6, "speed": 8, "cornering": 24, "power_unit": 10, "qualifying": 22, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 7, "speed": 9, "cornering": 26, "power_unit": 11, "qualifying": 24, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 8, "speed": 9, "cornering": 27, "power_unit": 11, "qualifying": 25, "pit_stop_time": 0.67, "drs": 0 },
+        { "level": 9, "speed": 10, "cornering": 29, "power_unit": 12, "qualifying": 27, "pit_stop_time": 0.65, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Rumble",
+      "category": "brakes",
+      "series": 8,
+      "rarity": "Rare",
+      "sort_order": 4,
+      "levels": [
+        { "level": 1, "speed": 8, "cornering": 10, "power_unit": 28, "qualifying": 11, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 2, "speed": 9, "cornering": 11, "power_unit": 30, "qualifying": 12, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 3, "speed": 10, "cornering": 12, "power_unit": 32, "qualifying": 13, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 4, "speed": 11, "cornering": 13, "power_unit": 34, "qualifying": 14, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 5, "speed": 12, "cornering": 14, "power_unit": 36, "qualifying": 15, "pit_stop_time": 0.56, "drs": 0 },
+        { "level": 6, "speed": 12, "cornering": 15, "power_unit": 38, "qualifying": 16, "pit_stop_time": 0.53, "drs": 0 },
+        { "level": 7, "speed": 13, "cornering": 16, "power_unit": 40, "qualifying": 17, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 8, "speed": 14, "cornering": 17, "power_unit": 42, "qualifying": 18, "pit_stop_time": 0.47, "drs": 0 },
+        { "level": 9, "speed": 15, "cornering": 18, "power_unit": 44, "qualifying": 19, "pit_stop_time": 0.44, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Flow 1K",
+      "category": "brakes",
+      "series": 10,
+      "rarity": "Rare",
+      "sort_order": 5,
+      "levels": [
+        { "level": 1, "speed": 33, "cornering": 12, "power_unit": 13, "qualifying": 11, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 2, "speed": 35, "cornering": 13, "power_unit": 14, "qualifying": 12, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 3, "speed": 38, "cornering": 14, "power_unit": 15, "qualifying": 13, "pit_stop_time": 0.57, "drs": 0 },
+        { "level": 4, "speed": 40, "cornering": 15, "power_unit": 16, "qualifying": 14, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 5, "speed": 42, "cornering": 16, "power_unit": 17, "qualifying": 15, "pit_stop_time": 0.53, "drs": 0 },
+        { "level": 6, "speed": 44, "cornering": 17, "power_unit": 18, "qualifying": 16, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 7, "speed": 47, "cornering": 18, "power_unit": 19, "qualifying": 17, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 8, "speed": 49, "cornering": 19, "power_unit": 20, "qualifying": 18, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 9, "speed": 51, "cornering": 20, "power_unit": 21, "qualifying": 19, "pit_stop_time": 0.44, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Boombox",
+      "category": "brakes",
+      "series": 11,
+      "rarity": "Epic",
+      "sort_order": 6,
+      "levels": [
+        { "level": 1, "speed": 16, "cornering": 42, "power_unit": 17, "qualifying": 14, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 2, "speed": 17, "cornering": 45, "power_unit": 18, "qualifying": 15, "pit_stop_time": 0.41, "drs": 0 },
+        { "level": 3, "speed": 18, "cornering": 47, "power_unit": 19, "qualifying": 16, "pit_stop_time": 0.37, "drs": 0 },
+        { "level": 4, "speed": 19, "cornering": 50, "power_unit": 20, "qualifying": 17, "pit_stop_time": 0.34, "drs": 0 },
+        { "level": 5, "speed": 19, "cornering": 52, "power_unit": 20, "qualifying": 18, "pit_stop_time": 0.30, "drs": 0 },
+        { "level": 6, "speed": 20, "cornering": 55, "power_unit": 21, "qualifying": 19, "pit_stop_time": 0.27, "drs": 0 },
+        { "level": 7, "speed": 21, "cornering": 57, "power_unit": 22, "qualifying": 20, "pit_stop_time": 0.23, "drs": 0 },
+        { "level": 8, "speed": 22, "cornering": 60, "power_unit": 23, "qualifying": 21, "pit_stop_time": 0.20, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Grindlock",
+      "category": "brakes",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 7,
+      "levels": [
+        { "level": 1, "speed": 19, "cornering": 17, "power_unit": 49, "qualifying": 17, "pit_stop_time": 0.52, "drs": 0 },
+        { "level": 2, "speed": 20, "cornering": 18, "power_unit": 51, "qualifying": 18, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 3, "speed": 21, "cornering": 19, "power_unit": 53, "qualifying": 19, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 4, "speed": 22, "cornering": 20, "power_unit": 55, "qualifying": 20, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 5, "speed": 23, "cornering": 22, "power_unit": 57, "qualifying": 22, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 6, "speed": 25, "cornering": 23, "power_unit": 59, "qualifying": 23, "pit_stop_time": 0.39, "drs": 0 },
+        { "level": 7, "speed": 26, "cornering": 25, "power_unit": 61, "qualifying": 25, "pit_stop_time": 0.36, "drs": 0 },
+        { "level": 8, "speed": 28, "cornering": 27, "power_unit": 63, "qualifying": 27, "pit_stop_time": 0.35, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Hustle",
+      "category": "gearbox",
+      "series": 1,
+      "rarity": "Common",
+      "sort_order": 8,
+      "levels": [
+        { "level": 1, "speed": 2, "cornering": 2, "power_unit": 3, "qualifying": 1, "pit_stop_time": 0.97, "drs": 0 },
+        { "level": 2, "speed": 3, "cornering": 3, "power_unit": 4, "qualifying": 2, "pit_stop_time": 0.93, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 4, "power_unit": 5, "qualifying": 3, "pit_stop_time": 0.90, "drs": 0 },
+        { "level": 4, "speed": 4, "cornering": 5, "power_unit": 6, "qualifying": 3, "pit_stop_time": 0.87, "drs": 0 },
+        { "level": 5, "speed": 5, "cornering": 6, "power_unit": 7, "qualifying": 4, "pit_stop_time": 0.84, "drs": 0 },
+        { "level": 6, "speed": 6, "cornering": 7, "power_unit": 8, "qualifying": 5, "pit_stop_time": 0.81, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 7, "power_unit": 8, "qualifying": 6, "pit_stop_time": 0.78, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 8, "power_unit": 9, "qualifying": 7, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 9, "speed": 8, "cornering": 9, "power_unit": 10, "qualifying": 7, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 10, "speed": 9, "cornering": 10, "power_unit": 11, "qualifying": 8, "pit_stop_time": 0.68, "drs": 0 },
+        { "level": 11, "speed": 10, "cornering": 11, "power_unit": 12, "qualifying": 9, "pit_stop_time": 0.65, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Slickshift",
+      "category": "gearbox",
+      "series": 2,
+      "rarity": "Rare",
+      "sort_order": 9,
+      "levels": [
+        { "level": 1, "speed": 3, "cornering": 2, "power_unit": 7, "qualifying": 7, "pit_stop_time": 0.90, "drs": 0 },
+        { "level": 2, "speed": 4, "cornering": 3, "power_unit": 9, "qualifying": 9, "pit_stop_time": 0.87, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 3, "power_unit": 11, "qualifying": 11, "pit_stop_time": 0.84, "drs": 0 },
+        { "level": 4, "speed": 5, "cornering": 4, "power_unit": 12, "qualifying": 12, "pit_stop_time": 0.82, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 5, "power_unit": 14, "qualifying": 14, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 6, "speed": 6, "cornering": 5, "power_unit": 16, "qualifying": 16, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 6, "power_unit": 18, "qualifying": 18, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 8, "speed": 7, "cornering": 6, "power_unit": 19, "qualifying": 19, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 9, "speed": 8, "cornering": 7, "power_unit": 21, "qualifying": 21, "pit_stop_time": 0.69, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Beat",
+      "category": "gearbox",
+      "series": 3,
+      "rarity": "Common",
+      "sort_order": 10,
+      "levels": [
+        { "level": 1, "speed": 2, "cornering": 8, "power_unit": 4, "qualifying": 2, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 2, "speed": 3, "cornering": 9, "power_unit": 5, "qualifying": 3, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 3, "speed": 3, "cornering": 11, "power_unit": 5, "qualifying": 3, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 4, "speed": 4, "cornering": 12, "power_unit": 6, "qualifying": 4, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 5, "speed": 4, "cornering": 14, "power_unit": 7, "qualifying": 4, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 6, "speed": 5, "cornering": 15, "power_unit": 8, "qualifying": 5, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 7, "speed": 5, "cornering": 16, "power_unit": 8, "qualifying": 5, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 8, "speed": 6, "cornering": 18, "power_unit": 9, "qualifying": 6, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 9, "speed": 6, "cornering": 19, "power_unit": 10, "qualifying": 6, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 10, "speed": 7, "cornering": 21, "power_unit": 10, "qualifying": 7, "pit_stop_time": 0.35, "drs": 0 },
+        { "level": 11, "speed": 7, "cornering": 22, "power_unit": 11, "qualifying": 7, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Fury",
+      "category": "gearbox",
+      "series": 5,
+      "rarity": "Epic",
+      "sort_order": 11,
+      "levels": [
+        { "level": 1, "speed": 17, "cornering": 5, "power_unit": 7, "qualifying": 16, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 2, "speed": 19, "cornering": 6, "power_unit": 8, "qualifying": 18, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 3, "speed": 21, "cornering": 7, "power_unit": 9, "qualifying": 19, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 4, "speed": 23, "cornering": 8, "power_unit": 10, "qualifying": 21, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 5, "speed": 24, "cornering": 8, "power_unit": 10, "qualifying": 23, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 6, "speed": 26, "cornering": 9, "power_unit": 11, "qualifying": 25, "pit_stop_time": 0.58, "drs": 0 },
+        { "level": 7, "speed": 28, "cornering": 10, "power_unit": 12, "qualifying": 26, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 8, "speed": 30, "cornering": 11, "power_unit": 13, "qualifying": 28, "pit_stop_time": 0.51, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Dynamo",
+      "category": "gearbox",
+      "series": 8,
+      "rarity": "Rare",
+      "sort_order": 12,
+      "levels": [
+        { "level": 1, "speed": 11, "cornering": 8, "power_unit": 27, "qualifying": 11, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 2, "speed": 12, "cornering": 9, "power_unit": 29, "qualifying": 12, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 3, "speed": 13, "cornering": 10, "power_unit": 31, "qualifying": 13, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 4, "speed": 14, "cornering": 11, "power_unit": 33, "qualifying": 14, "pit_stop_time": 0.58, "drs": 0 },
+        { "level": 5, "speed": 15, "cornering": 12, "power_unit": 36, "qualifying": 15, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 6, "speed": 15, "cornering": 12, "power_unit": 38, "qualifying": 15, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 7, "speed": 16, "cornering": 13, "power_unit": 40, "qualifying": 16, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 8, "speed": 17, "cornering": 14, "power_unit": 42, "qualifying": 17, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 9, "speed": 18, "cornering": 15, "power_unit": 44, "qualifying": 18, "pit_stop_time": 0.41, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Metronome",
+      "category": "gearbox",
+      "series": 10,
+      "rarity": "Rare",
+      "sort_order": 13,
+      "levels": [
+        { "level": 1, "speed": 12, "cornering": 33, "power_unit": 10, "qualifying": 14, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 2, "speed": 13, "cornering": 36, "power_unit": 11, "qualifying": 15, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 3, "speed": 14, "cornering": 38, "power_unit": 12, "qualifying": 16, "pit_stop_time": 0.58, "drs": 0 },
+        { "level": 4, "speed": 15, "cornering": 41, "power_unit": 13, "qualifying": 16, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 5, "speed": 16, "cornering": 43, "power_unit": 14, "qualifying": 17, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 6, "speed": 16, "cornering": 46, "power_unit": 14, "qualifying": 18, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 7, "speed": 17, "cornering": 48, "power_unit": 15, "qualifying": 19, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 8, "speed": 18, "cornering": 51, "power_unit": 16, "qualifying": 19, "pit_stop_time": 0.41, "drs": 0 },
+        { "level": 9, "speed": 19, "cornering": 53, "power_unit": 17, "qualifying": 20, "pit_stop_time": 0.37, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Beast",
+      "category": "gearbox",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 14,
+      "levels": [
+        { "level": 1, "speed": 42, "cornering": 15, "power_unit": 17, "qualifying": 16, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 2, "speed": 44, "cornering": 16, "power_unit": 18, "qualifying": 17, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 3, "speed": 47, "cornering": 17, "power_unit": 19, "qualifying": 18, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 4, "speed": 49, "cornering": 17, "power_unit": 20, "qualifying": 19, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 5, "speed": 51, "cornering": 18, "power_unit": 21, "qualifying": 20, "pit_stop_time": 0.37, "drs": 0 },
+        { "level": 6, "speed": 53, "cornering": 19, "power_unit": 21, "qualifying": 20, "pit_stop_time": 0.34, "drs": 0 },
+        { "level": 7, "speed": 56, "cornering": 20, "power_unit": 22, "qualifying": 21, "pit_stop_time": 0.32, "drs": 0 },
+        { "level": 8, "speed": 60, "cornering": 21, "power_unit": 24, "qualifying": 23, "pit_stop_time": 0.27, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Jittershift",
+      "category": "gearbox",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 15,
+      "levels": [
+        { "level": 1, "speed": 17, "cornering": 20, "power_unit": 46, "qualifying": 19, "pit_stop_time": 0.52, "drs": 0 },
+        { "level": 2, "speed": 18, "cornering": 21, "power_unit": 48, "qualifying": 20, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 3, "speed": 19, "cornering": 22, "power_unit": 50, "qualifying": 21, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 4, "speed": 20, "cornering": 23, "power_unit": 52, "qualifying": 22, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 5, "speed": 22, "cornering": 24, "power_unit": 55, "qualifying": 23, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 6, "speed": 23, "cornering": 26, "power_unit": 57, "qualifying": 25, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 7, "speed": 25, "cornering": 28, "power_unit": 59, "qualifying": 26, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 8, "speed": 27, "cornering": 30, "power_unit": 61, "qualifying": 28, "pit_stop_time": 0.38, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Motion",
+      "category": "rear_wing",
+      "series": 1,
+      "rarity": "Common",
+      "sort_order": 16,
+      "levels": [
+        { "level": 1, "speed": 2, "cornering": 3, "power_unit": 2, "qualifying": 1, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 2, "speed": 3, "cornering": 4, "power_unit": 3, "qualifying": 2, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 5, "power_unit": 4, "qualifying": 3, "pit_stop_time": 0.73, "drs": 0 },
+        { "level": 4, "speed": 4, "cornering": 6, "power_unit": 5, "qualifying": 3, "pit_stop_time": 0.70, "drs": 0 },
+        { "level": 5, "speed": 5, "cornering": 7, "power_unit": 6, "qualifying": 4, "pit_stop_time": 0.66, "drs": 0 },
+        { "level": 6, "speed": 6, "cornering": 8, "power_unit": 7, "qualifying": 5, "pit_stop_time": 0.63, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 8, "power_unit": 7, "qualifying": 6, "pit_stop_time": 0.60, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 9, "power_unit": 8, "qualifying": 7, "pit_stop_time": 0.57, "drs": 0 },
+        { "level": 9, "speed": 8, "cornering": 10, "power_unit": 9, "qualifying": 7, "pit_stop_time": 0.54, "drs": 0 },
+        { "level": 10, "speed": 9, "cornering": 11, "power_unit": 10, "qualifying": 8, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 11, "speed": 10, "cornering": 12, "power_unit": 11, "qualifying": 9, "pit_stop_time": 0.48, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Gale Force",
+      "category": "rear_wing",
+      "series": 3,
+      "rarity": "Common",
+      "sort_order": 17,
+      "levels": [
+        { "level": 1, "speed": 4, "cornering": 8, "power_unit": 2, "qualifying": 2, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 2, "speed": 5, "cornering": 9, "power_unit": 3, "qualifying": 3, "pit_stop_time": 0.61, "drs": 0 },
+        { "level": 3, "speed": 5, "cornering": 11, "power_unit": 3, "qualifying": 3, "pit_stop_time": 0.57, "drs": 0 },
+        { "level": 4, "speed": 6, "cornering": 12, "power_unit": 4, "qualifying": 4, "pit_stop_time": 0.53, "drs": 0 },
+        { "level": 5, "speed": 7, "cornering": 14, "power_unit": 4, "qualifying": 4, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 6, "speed": 8, "cornering": 15, "power_unit": 5, "qualifying": 5, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 7, "speed": 8, "cornering": 16, "power_unit": 5, "qualifying": 5, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 8, "speed": 9, "cornering": 18, "power_unit": 6, "qualifying": 6, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 9, "speed": 10, "cornering": 19, "power_unit": 6, "qualifying": 6, "pit_stop_time": 0.34, "drs": 0 },
+        { "level": 10, "speed": 10, "cornering": 21, "power_unit": 7, "qualifying": 7, "pit_stop_time": 0.30, "drs": 0 },
+        { "level": 11, "speed": 11, "cornering": 22, "power_unit": 7, "qualifying": 7, "pit_stop_time": 0.27, "drs": 0 }
+      ]
+    },
+    {
+      "name": "X-Hale",
+      "category": "rear_wing",
+      "series": 4,
+      "rarity": "Epic",
+      "sort_order": 18,
+      "levels": [
+        { "level": 1, "speed": 17, "cornering": 16, "power_unit": 7, "qualifying": 5, "pit_stop_time": 0.72, "drs": 27 },
+        { "level": 2, "speed": 19, "cornering": 18, "power_unit": 8, "qualifying": 6, "pit_stop_time": 0.69, "drs": 30 },
+        { "level": 3, "speed": 21, "cornering": 19, "power_unit": 9, "qualifying": 7, "pit_stop_time": 0.65, "drs": 32 },
+        { "level": 4, "speed": 23, "cornering": 21, "power_unit": 10, "qualifying": 8, "pit_stop_time": 0.62, "drs": 35 },
+        { "level": 5, "speed": 24, "cornering": 23, "power_unit": 10, "qualifying": 8, "pit_stop_time": 0.58, "drs": 37 },
+        { "level": 6, "speed": 26, "cornering": 25, "power_unit": 11, "qualifying": 9, "pit_stop_time": 0.55, "drs": 40 },
+        { "level": 7, "speed": 28, "cornering": 26, "power_unit": 12, "qualifying": 10, "pit_stop_time": 0.51, "drs": 42 },
+        { "level": 8, "speed": 30, "cornering": 28, "power_unit": 13, "qualifying": 11, "pit_stop_time": 0.48, "drs": 45 }
+      ]
+    },
+    {
+      "name": "The Spire",
+      "category": "rear_wing",
+      "series": 6,
+      "rarity": "Rare",
+      "sort_order": 19,
+      "levels": [
+        { "level": 1, "speed": 6, "cornering": 5, "power_unit": 15, "qualifying": 14, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 2, "speed": 7, "cornering": 5, "power_unit": 17, "qualifying": 15, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 3, "speed": 7, "cornering": 6, "power_unit": 19, "qualifying": 17, "pit_stop_time": 0.75, "drs": 0 },
+        { "level": 4, "speed": 8, "cornering": 6, "power_unit": 20, "qualifying": 18, "pit_stop_time": 0.73, "drs": 0 },
+        { "level": 5, "speed": 8, "cornering": 7, "power_unit": 22, "qualifying": 20, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 6, "speed": 9, "cornering": 7, "power_unit": 24, "qualifying": 21, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 7, "speed": 9, "cornering": 7, "power_unit": 26, "qualifying": 22, "pit_stop_time": 0.66, "drs": 0 },
+        { "level": 8, "speed": 10, "cornering": 8, "power_unit": 27, "qualifying": 24, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 9, "speed": 10, "cornering": 8, "power_unit": 29, "qualifying": 25, "pit_stop_time": 0.62, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Power Lift",
+      "category": "rear_wing",
+      "series": 7,
+      "rarity": "Rare",
+      "sort_order": 20,
+      "levels": [
+        { "level": 1, "speed": 30, "cornering": 12, "power_unit": 10, "qualifying": 12, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 2, "speed": 32, "cornering": 13, "power_unit": 11, "qualifying": 13, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 3, "speed": 35, "cornering": 14, "power_unit": 12, "qualifying": 14, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 4, "speed": 37, "cornering": 15, "power_unit": 13, "qualifying": 15, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 5, "speed": 39, "cornering": 16, "power_unit": 14, "qualifying": 16, "pit_stop_time": 0.56, "drs": 0 },
+        { "level": 6, "speed": 41, "cornering": 16, "power_unit": 14, "qualifying": 16, "pit_stop_time": 0.53, "drs": 0 },
+        { "level": 7, "speed": 44, "cornering": 17, "power_unit": 15, "qualifying": 17, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 8, "speed": 46, "cornering": 18, "power_unit": 16, "qualifying": 18, "pit_stop_time": 0.47, "drs": 0 },
+        { "level": 9, "speed": 48, "cornering": 19, "power_unit": 17, "qualifying": 19, "pit_stop_time": 0.44, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Aero Blade",
+      "category": "rear_wing",
+      "series": 9,
+      "rarity": "Rare",
+      "sort_order": 21,
+      "levels": [
+        { "level": 1, "speed": 10, "cornering": 12, "power_unit": 33, "qualifying": 14, "pit_stop_time": 0.97, "drs": 42 },
+        { "level": 2, "speed": 11, "cornering": 13, "power_unit": 36, "qualifying": 15, "pit_stop_time": 0.94, "drs": 45 },
+        { "level": 3, "speed": 12, "cornering": 14, "power_unit": 38, "qualifying": 16, "pit_stop_time": 0.91, "drs": 47 },
+        { "level": 4, "speed": 13, "cornering": 15, "power_unit": 41, "qualifying": 16, "pit_stop_time": 0.89, "drs": 50 },
+        { "level": 5, "speed": 14, "cornering": 16, "power_unit": 43, "qualifying": 17, "pit_stop_time": 0.86, "drs": 52 },
+        { "level": 6, "speed": 14, "cornering": 16, "power_unit": 46, "qualifying": 18, "pit_stop_time": 0.83, "drs": 54 },
+        { "level": 7, "speed": 15, "cornering": 17, "power_unit": 48, "qualifying": 19, "pit_stop_time": 0.81, "drs": 56 },
+        { "level": 8, "speed": 16, "cornering": 18, "power_unit": 51, "qualifying": 19, "pit_stop_time": 0.78, "drs": 58 },
+        { "level": 9, "speed": 17, "cornering": 19, "power_unit": 53, "qualifying": 20, "pit_stop_time": 0.76, "drs": 60 }
+      ]
+    },
+    {
+      "name": "The Valkyrie",
+      "category": "rear_wing",
+      "series": 11,
+      "rarity": "Epic",
+      "sort_order": 22,
+      "levels": [
+        { "level": 1, "speed": 42, "cornering": 16, "power_unit": 15, "qualifying": 17, "pit_stop_time": 0.48, "drs": 17 },
+        { "level": 2, "speed": 45, "cornering": 17, "power_unit": 16, "qualifying": 18, "pit_stop_time": 0.45, "drs": 19 },
+        { "level": 3, "speed": 47, "cornering": 18, "power_unit": 17, "qualifying": 19, "pit_stop_time": 0.42, "drs": 21 },
+        { "level": 4, "speed": 50, "cornering": 19, "power_unit": 18, "qualifying": 20, "pit_stop_time": 0.39, "drs": 23 },
+        { "level": 5, "speed": 52, "cornering": 20, "power_unit": 18, "qualifying": 21, "pit_stop_time": 0.36, "drs": 24 },
+        { "level": 6, "speed": 55, "cornering": 21, "power_unit": 19, "qualifying": 22, "pit_stop_time": 0.33, "drs": 26 },
+        { "level": 7, "speed": 57, "cornering": 22, "power_unit": 20, "qualifying": 23, "pit_stop_time": 0.30, "drs": 28 },
+        { "level": 8, "speed": 60, "cornering": 23, "power_unit": 21, "qualifying": 24, "pit_stop_time": 0.27, "drs": 30 }
+      ]
+    },
+    {
+      "name": "Phantom Arc",
+      "category": "rear_wing",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 23,
+      "levels": [
+        { "level": 1, "speed": 11, "cornering": 46, "power_unit": 12, "qualifying": 13, "pit_stop_time": 0.94, "drs": 46 },
+        { "level": 2, "speed": 12, "cornering": 48, "power_unit": 13, "qualifying": 14, "pit_stop_time": 0.94, "drs": 48 },
+        { "level": 3, "speed": 13, "cornering": 50, "power_unit": 14, "qualifying": 15, "pit_stop_time": 0.93, "drs": 50 },
+        { "level": 4, "speed": 14, "cornering": 52, "power_unit": 15, "qualifying": 16, "pit_stop_time": 0.93, "drs": 52 },
+        { "level": 5, "speed": 14, "cornering": 54, "power_unit": 15, "qualifying": 16, "pit_stop_time": 0.92, "drs": 54 },
+        { "level": 6, "speed": 15, "cornering": 56, "power_unit": 16, "qualifying": 17, "pit_stop_time": 0.92, "drs": 56 },
+        { "level": 7, "speed": 16, "cornering": 58, "power_unit": 17, "qualifying": 18, "pit_stop_time": 0.91, "drs": 58 },
+        { "level": 8, "speed": 17, "cornering": 60, "power_unit": 18, "qualifying": 19, "pit_stop_time": 0.90, "drs": 60 }
+      ]
+    },
+    {
+      "name": "The Dash",
+      "category": "front_wing",
+      "series": 1,
+      "rarity": "Common",
+      "sort_order": 24,
+      "levels": [
+        { "level": 1, "speed": 2, "cornering": 2, "power_unit": 3, "qualifying": 1, "pit_stop_time": 0.97, "drs": 0 },
+        { "level": 2, "speed": 3, "cornering": 3, "power_unit": 4, "qualifying": 2, "pit_stop_time": 0.94, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 4, "power_unit": 5, "qualifying": 3, "pit_stop_time": 0.92, "drs": 0 },
+        { "level": 4, "speed": 5, "cornering": 4, "power_unit": 6, "qualifying": 4, "pit_stop_time": 0.89, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 5, "power_unit": 7, "qualifying": 5, "pit_stop_time": 0.87, "drs": 0 },
+        { "level": 6, "speed": 7, "cornering": 6, "power_unit": 8, "qualifying": 6, "pit_stop_time": 0.84, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 7, "power_unit": 8, "qualifying": 7, "pit_stop_time": 0.82, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 8, "power_unit": 9, "qualifying": 8, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 9, "speed": 9, "cornering": 8, "power_unit": 10, "qualifying": 9, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 10, "speed": 10, "cornering": 9, "power_unit": 11, "qualifying": 10, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 11, "speed": 11, "cornering": 10, "power_unit": 12, "qualifying": 11, "pit_stop_time": 0.72, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Glide",
+      "category": "front_wing",
+      "series": 2,
+      "rarity": "Common",
+      "sort_order": 25,
+      "levels": [
+        { "level": 1, "speed": 5, "cornering": 2, "power_unit": 2, "qualifying": 4, "pit_stop_time": 0.97, "drs": 0 },
+        { "level": 2, "speed": 6, "cornering": 3, "power_unit": 3, "qualifying": 5, "pit_stop_time": 0.94, "drs": 0 },
+        { "level": 3, "speed": 8, "cornering": 3, "power_unit": 3, "qualifying": 6, "pit_stop_time": 0.92, "drs": 0 },
+        { "level": 4, "speed": 9, "cornering": 4, "power_unit": 4, "qualifying": 8, "pit_stop_time": 0.89, "drs": 0 },
+        { "level": 5, "speed": 10, "cornering": 4, "power_unit": 4, "qualifying": 9, "pit_stop_time": 0.87, "drs": 0 },
+        { "level": 6, "speed": 12, "cornering": 5, "power_unit": 5, "qualifying": 10, "pit_stop_time": 0.84, "drs": 0 },
+        { "level": 7, "speed": 13, "cornering": 6, "power_unit": 6, "qualifying": 11, "pit_stop_time": 0.82, "drs": 0 },
+        { "level": 8, "speed": 14, "cornering": 6, "power_unit": 6, "qualifying": 12, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 9, "speed": 15, "cornering": 7, "power_unit": 7, "qualifying": 14, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 10, "speed": 17, "cornering": 7, "power_unit": 7, "qualifying": 15, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 11, "speed": 18, "cornering": 8, "power_unit": 8, "qualifying": 16, "pit_stop_time": 0.72, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Synergy",
+      "category": "front_wing",
+      "series": 4,
+      "rarity": "Common",
+      "sort_order": 26,
+      "levels": [
+        { "level": 1, "speed": 4, "cornering": 3, "power_unit": 7, "qualifying": 2, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 2, "speed": 5, "cornering": 4, "power_unit": 8, "qualifying": 3, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 3, "speed": 5, "cornering": 4, "power_unit": 10, "qualifying": 3, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 4, "speed": 6, "cornering": 5, "power_unit": 11, "qualifying": 4, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 5, "power_unit": 13, "qualifying": 4, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 6, "speed": 7, "cornering": 6, "power_unit": 14, "qualifying": 5, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 7, "speed": 8, "cornering": 7, "power_unit": 15, "qualifying": 5, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 7, "power_unit": 17, "qualifying": 6, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 9, "speed": 9, "cornering": 8, "power_unit": 18, "qualifying": 6, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 10, "speed": 9, "cornering": 8, "power_unit": 20, "qualifying": 7, "pit_stop_time": 0.35, "drs": 0 },
+        { "level": 11, "speed": 10, "cornering": 9, "power_unit": 21, "qualifying": 7, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Vortex",
+      "category": "front_wing",
+      "series": 6,
+      "rarity": "Epic",
+      "sort_order": 27,
+      "levels": [
+        { "level": 1, "speed": 13, "cornering": 35, "power_unit": 14, "qualifying": 15, "pit_stop_time": 0.58, "drs": 0 },
+        { "level": 2, "speed": 14, "cornering": 38, "power_unit": 15, "qualifying": 16, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 3, "speed": 15, "cornering": 40, "power_unit": 16, "qualifying": 17, "pit_stop_time": 0.52, "drs": 0 },
+        { "level": 4, "speed": 16, "cornering": 43, "power_unit": 17, "qualifying": 18, "pit_stop_time": 0.49, "drs": 0 },
+        { "level": 5, "speed": 16, "cornering": 46, "power_unit": 18, "qualifying": 19, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 6, "speed": 17, "cornering": 49, "power_unit": 19, "qualifying": 20, "pit_stop_time": 0.43, "drs": 0 },
+        { "level": 7, "speed": 18, "cornering": 51, "power_unit": 20, "qualifying": 21, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 8, "speed": 19, "cornering": 54, "power_unit": 21, "qualifying": 22, "pit_stop_time": 0.37, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Sabre",
+      "category": "front_wing",
+      "series": 8,
+      "rarity": "Rare",
+      "sort_order": 28,
+      "levels": [
+        { "level": 1, "speed": 15, "cornering": 13, "power_unit": 5, "qualifying": 6, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 2, "speed": 17, "cornering": 15, "power_unit": 6, "qualifying": 7, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 3, "speed": 19, "cornering": 16, "power_unit": 7, "qualifying": 7, "pit_stop_time": 0.75, "drs": 0 },
+        { "level": 4, "speed": 20, "cornering": 18, "power_unit": 7, "qualifying": 8, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 5, "speed": 22, "cornering": 20, "power_unit": 8, "qualifying": 9, "pit_stop_time": 0.70, "drs": 0 },
+        { "level": 6, "speed": 24, "cornering": 21, "power_unit": 9, "qualifying": 9, "pit_stop_time": 0.68, "drs": 0 },
+        { "level": 7, "speed": 26, "cornering": 23, "power_unit": 10, "qualifying": 10, "pit_stop_time": 0.66, "drs": 0 },
+        { "level": 8, "speed": 27, "cornering": 24, "power_unit": 10, "qualifying": 10, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 9, "speed": 29, "cornering": 26, "power_unit": 11, "qualifying": 11, "pit_stop_time": 0.62, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Curler",
+      "category": "front_wing",
+      "series": 9,
+      "rarity": "Rare",
+      "sort_order": 29,
+      "levels": [
+        { "level": 1, "speed": 9, "cornering": 8, "power_unit": 24, "qualifying": 10, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 2, "speed": 10, "cornering": 9, "power_unit": 26, "qualifying": 11, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 3, "speed": 11, "cornering": 10, "power_unit": 29, "qualifying": 12, "pit_stop_time": 0.67, "drs": 0 },
+        { "level": 4, "speed": 11, "cornering": 10, "power_unit": 31, "qualifying": 13, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 5, "speed": 12, "cornering": 11, "power_unit": 34, "qualifying": 14, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 6, "speed": 13, "cornering": 12, "power_unit": 36, "qualifying": 15, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 7, "speed": 14, "cornering": 13, "power_unit": 38, "qualifying": 16, "pit_stop_time": 0.56, "drs": 0 },
+        { "level": 8, "speed": 14, "cornering": 13, "power_unit": 41, "qualifying": 17, "pit_stop_time": 0.54, "drs": 0 },
+        { "level": 9, "speed": 15, "cornering": 14, "power_unit": 43, "qualifying": 18, "pit_stop_time": 0.51, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Flex XL",
+      "category": "front_wing",
+      "series": 11,
+      "rarity": "Epic",
+      "sort_order": 30,
+      "levels": [
+        { "level": 1, "speed": 17, "cornering": 42, "power_unit": 15, "qualifying": 16, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 2, "speed": 18, "cornering": 45, "power_unit": 16, "qualifying": 17, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 3, "speed": 19, "cornering": 47, "power_unit": 17, "qualifying": 18, "pit_stop_time": 0.43, "drs": 0 },
+        { "level": 4, "speed": 20, "cornering": 50, "power_unit": 18, "qualifying": 19, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 5, "speed": 22, "cornering": 52, "power_unit": 18, "qualifying": 20, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 6, "speed": 23, "cornering": 55, "power_unit": 19, "qualifying": 21, "pit_stop_time": 0.35, "drs": 0 },
+        { "level": 7, "speed": 24, "cornering": 57, "power_unit": 20, "qualifying": 22, "pit_stop_time": 0.33, "drs": 0 },
+        { "level": 8, "speed": 25, "cornering": 60, "power_unit": 21, "qualifying": 23, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Edgecutter",
+      "category": "front_wing",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 31,
+      "levels": [
+        { "level": 1, "speed": 46, "cornering": 20, "power_unit": 19, "qualifying": 17, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 2, "speed": 48, "cornering": 21, "power_unit": 20, "qualifying": 18, "pit_stop_time": 0.49, "drs": 0 },
+        { "level": 3, "speed": 50, "cornering": 22, "power_unit": 21, "qualifying": 19, "pit_stop_time": 0.47, "drs": 0 },
+        { "level": 4, "speed": 52, "cornering": 23, "power_unit": 22, "qualifying": 20, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 5, "speed": 55, "cornering": 24, "power_unit": 23, "qualifying": 22, "pit_stop_time": 0.43, "drs": 0 },
+        { "level": 6, "speed": 57, "cornering": 26, "power_unit": 25, "qualifying": 23, "pit_stop_time": 0.41, "drs": 0 },
+        { "level": 7, "speed": 59, "cornering": 28, "power_unit": 26, "qualifying": 25, "pit_stop_time": 0.39, "drs": 0 },
+        { "level": 8, "speed": 61, "cornering": 30, "power_unit": 28, "qualifying": 27, "pit_stop_time": 0.37, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Equinox",
+      "category": "suspension",
+      "series": 1,
+      "rarity": "Epic",
+      "sort_order": 32,
+      "levels": [
+        { "level": 1, "speed": 4, "cornering": 2, "power_unit": 9, "qualifying": 3, "pit_stop_time": 0.93, "drs": 0 },
+        { "level": 2, "speed": 5, "cornering": 3, "power_unit": 12, "qualifying": 4, "pit_stop_time": 0.90, "drs": 0 },
+        { "level": 3, "speed": 6, "cornering": 4, "power_unit": 14, "qualifying": 5, "pit_stop_time": 0.86, "drs": 0 },
+        { "level": 4, "speed": 7, "cornering": 5, "power_unit": 17, "qualifying": 6, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 5, "speed": 9, "cornering": 6, "power_unit": 19, "qualifying": 7, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 6, "speed": 10, "cornering": 7, "power_unit": 22, "qualifying": 8, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 7, "speed": 11, "cornering": 8, "power_unit": 24, "qualifying": 9, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 8, "speed": 12, "cornering": 9, "power_unit": 27, "qualifying": 10, "pit_stop_time": 0.69, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Swish",
+      "category": "suspension",
+      "series": 2,
+      "rarity": "Common",
+      "sort_order": 33,
+      "levels": [
+        { "level": 1, "speed": 3, "cornering": 2, "power_unit": 4, "qualifying": 3, "pit_stop_time": 0.90, "drs": 0 },
+        { "level": 2, "speed": 4, "cornering": 3, "power_unit": 5, "qualifying": 4, "pit_stop_time": 0.86, "drs": 0 },
+        { "level": 3, "speed": 5, "cornering": 4, "power_unit": 6, "qualifying": 5, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 4, "speed": 5, "cornering": 4, "power_unit": 7, "qualifying": 5, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 5, "power_unit": 8, "qualifying": 6, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 6, "speed": 7, "cornering": 6, "power_unit": 9, "qualifying": 7, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 7, "speed": 8, "cornering": 7, "power_unit": 10, "qualifying": 8, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 8, "speed": 9, "cornering": 8, "power_unit": 11, "qualifying": 9, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 9, "speed": 9, "cornering": 8, "power_unit": 12, "qualifying": 9, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 10, "speed": 10, "cornering": 9, "power_unit": 13, "qualifying": 10, "pit_stop_time": 0.58, "drs": 0 },
+        { "level": 11, "speed": 11, "cornering": 10, "power_unit": 14, "qualifying": 11, "pit_stop_time": 0.55, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Curver 2.5",
+      "category": "suspension",
+      "series": 3,
+      "rarity": "Common",
+      "sort_order": 34,
+      "levels": [
+        { "level": 1, "speed": 7, "cornering": 4, "power_unit": 2, "qualifying": 7, "pit_stop_time": 0.93, "drs": 0 },
+        { "level": 2, "speed": 8, "cornering": 5, "power_unit": 3, "qualifying": 8, "pit_stop_time": 0.91, "drs": 0 },
+        { "level": 3, "speed": 10, "cornering": 5, "power_unit": 3, "qualifying": 10, "pit_stop_time": 0.89, "drs": 0 },
+        { "level": 4, "speed": 11, "cornering": 6, "power_unit": 4, "qualifying": 11, "pit_stop_time": 0.87, "drs": 0 },
+        { "level": 5, "speed": 13, "cornering": 6, "power_unit": 4, "qualifying": 13, "pit_stop_time": 0.85, "drs": 0 },
+        { "level": 6, "speed": 14, "cornering": 7, "power_unit": 5, "qualifying": 14, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 7, "speed": 15, "cornering": 7, "power_unit": 5, "qualifying": 15, "pit_stop_time": 0.80, "drs": 0 },
+        { "level": 8, "speed": 17, "cornering": 8, "power_unit": 6, "qualifying": 17, "pit_stop_time": 0.78, "drs": 0 },
+        { "level": 9, "speed": 18, "cornering": 8, "power_unit": 6, "qualifying": 18, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 10, "speed": 20, "cornering": 9, "power_unit": 7, "qualifying": 20, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 11, "speed": 21, "cornering": 9, "power_unit": 7, "qualifying": 21, "pit_stop_time": 0.72, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Arc",
+      "category": "suspension",
+      "series": 5,
+      "rarity": "Common",
+      "sort_order": 35,
+      "levels": [
+        { "level": 1, "speed": 4, "cornering": 12, "power_unit": 5, "qualifying": 6, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 2, "speed": 5, "cornering": 14, "power_unit": 6, "qualifying": 7, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 3, "speed": 5, "cornering": 15, "power_unit": 6, "qualifying": 7, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 4, "speed": 6, "cornering": 17, "power_unit": 7, "qualifying": 8, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 18, "power_unit": 7, "qualifying": 9, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 6, "speed": 7, "cornering": 20, "power_unit": 8, "qualifying": 10, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 21, "power_unit": 8, "qualifying": 10, "pit_stop_time": 0.41, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 23, "power_unit": 9, "qualifying": 11, "pit_stop_time": 0.37, "drs": 0 },
+        { "level": 9, "speed": 8, "cornering": 24, "power_unit": 9, "qualifying": 12, "pit_stop_time": 0.32, "drs": 0 },
+        { "level": 10, "speed": 9, "cornering": 26, "power_unit": 10, "qualifying": 12, "pit_stop_time": 0.28, "drs": 0 },
+        { "level": 11, "speed": 9, "cornering": 27, "power_unit": 10, "qualifying": 13, "pit_stop_time": 0.23, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Quantum",
+      "category": "suspension",
+      "series": 7,
+      "rarity": "Rare",
+      "sort_order": 36,
+      "levels": [
+        { "level": 1, "speed": 24, "cornering": 7, "power_unit": 11, "qualifying": 10, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 2, "speed": 26, "cornering": 8, "power_unit": 12, "qualifying": 11, "pit_stop_time": 0.73, "drs": 0 },
+        { "level": 3, "speed": 29, "cornering": 9, "power_unit": 13, "qualifying": 12, "pit_stop_time": 0.70, "drs": 0 },
+        { "level": 4, "speed": 31, "cornering": 10, "power_unit": 14, "qualifying": 13, "pit_stop_time": 0.68, "drs": 0 },
+        { "level": 5, "speed": 33, "cornering": 11, "power_unit": 15, "qualifying": 14, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 6, "speed": 35, "cornering": 11, "power_unit": 15, "qualifying": 14, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 7, "speed": 38, "cornering": 12, "power_unit": 16, "qualifying": 15, "pit_stop_time": 0.60, "drs": 0 },
+        { "level": 8, "speed": 40, "cornering": 13, "power_unit": 17, "qualifying": 16, "pit_stop_time": 0.57, "drs": 0 },
+        { "level": 9, "speed": 42, "cornering": 14, "power_unit": 18, "qualifying": 17, "pit_stop_time": 0.55, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Gyro",
+      "category": "suspension",
+      "series": 9,
+      "rarity": "Rare",
+      "sort_order": 37,
+      "levels": [
+        { "level": 1, "speed": 10, "cornering": 30, "power_unit": 12, "qualifying": 11, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 2, "speed": 11, "cornering": 32, "power_unit": 13, "qualifying": 12, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 3, "speed": 12, "cornering": 35, "power_unit": 14, "qualifying": 13, "pit_stop_time": 0.59, "drs": 0 },
+        { "level": 4, "speed": 12, "cornering": 37, "power_unit": 15, "qualifying": 14, "pit_stop_time": 0.56, "drs": 0 },
+        { "level": 5, "speed": 13, "cornering": 40, "power_unit": 16, "qualifying": 15, "pit_stop_time": 0.53, "drs": 0 },
+        { "level": 6, "speed": 14, "cornering": 42, "power_unit": 16, "qualifying": 15, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 7, "speed": 15, "cornering": 44, "power_unit": 17, "qualifying": 16, "pit_stop_time": 0.47, "drs": 0 },
+        { "level": 8, "speed": 15, "cornering": 47, "power_unit": 18, "qualifying": 17, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 9, "speed": 16, "cornering": 49, "power_unit": 19, "qualifying": 18, "pit_stop_time": 0.41, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Joltcoil",
+      "category": "suspension",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 38,
+      "levels": [
+        { "level": 1, "speed": 21, "cornering": 17, "power_unit": 48, "qualifying": 21, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 2, "speed": 23, "cornering": 18, "power_unit": 50, "qualifying": 23, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 3, "speed": 24, "cornering": 19, "power_unit": 52, "qualifying": 24, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 4, "speed": 25, "cornering": 20, "power_unit": 54, "qualifying": 25, "pit_stop_time": 0.43, "drs": 0 },
+        { "level": 5, "speed": 26, "cornering": 22, "power_unit": 56, "qualifying": 26, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 6, "speed": 27, "cornering": 23, "power_unit": 58, "qualifying": 27, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 7, "speed": 28, "cornering": 24, "power_unit": 60, "qualifying": 28, "pit_stop_time": 0.35, "drs": 0 },
+        { "level": 8, "speed": 29, "cornering": 25, "power_unit": 62, "qualifying": 29, "pit_stop_time": 0.33, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Nexus",
+      "category": "suspension",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 39,
+      "levels": [
+        { "level": 1, "speed": 16, "cornering": 17, "power_unit": 42, "qualifying": 15, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 2, "speed": 17, "cornering": 18, "power_unit": 45, "qualifying": 16, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 3, "speed": 18, "cornering": 19, "power_unit": 47, "qualifying": 17, "pit_stop_time": 0.43, "drs": 0 },
+        { "level": 4, "speed": 19, "cornering": 20, "power_unit": 50, "qualifying": 18, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 5, "speed": 20, "cornering": 21, "power_unit": 52, "qualifying": 19, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 6, "speed": 21, "cornering": 22, "power_unit": 55, "qualifying": 20, "pit_stop_time": 0.35, "drs": 0 },
+        { "level": 7, "speed": 22, "cornering": 23, "power_unit": 57, "qualifying": 21, "pit_stop_time": 0.33, "drs": 0 },
+        { "level": 8, "speed": 23, "cornering": 24, "power_unit": 60, "qualifying": 22, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Fluxspring",
+      "category": "suspension",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 40,
+      "levels": [
+        { "level": 1, "speed": 49, "cornering": 17, "power_unit": 18, "qualifying": 20, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 2, "speed": 51, "cornering": 18, "power_unit": 19, "qualifying": 21, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 3, "speed": 53, "cornering": 19, "power_unit": 20, "qualifying": 22, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 4, "speed": 55, "cornering": 20, "power_unit": 21, "qualifying": 23, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 5, "speed": 57, "cornering": 21, "power_unit": 22, "qualifying": 24, "pit_stop_time": 0.36, "drs": 0 },
+        { "level": 6, "speed": 59, "cornering": 22, "power_unit": 23, "qualifying": 26, "pit_stop_time": 0.34, "drs": 0 },
+        { "level": 7, "speed": 61, "cornering": 23, "power_unit": 24, "qualifying": 28, "pit_stop_time": 0.32, "drs": 0 },
+        { "level": 8, "speed": 63, "cornering": 25, "power_unit": 26, "qualifying": 30, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Teeter Totter",
+      "category": "suspension",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 41,
+      "levels": [
+        { "level": 1, "speed": 21, "cornering": 46, "power_unit": 19, "qualifying": 17, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 2, "speed": 23, "cornering": 48, "power_unit": 20, "qualifying": 18, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 3, "speed": 24, "cornering": 50, "power_unit": 21, "qualifying": 19, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 4, "speed": 25, "cornering": 52, "power_unit": 22, "qualifying": 20, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 5, "speed": 26, "cornering": 55, "power_unit": 23, "qualifying": 22, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 6, "speed": 27, "cornering": 57, "power_unit": 25, "qualifying": 23, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 7, "speed": 28, "cornering": 59, "power_unit": 26, "qualifying": 25, "pit_stop_time": 0.36, "drs": 0 },
+        { "level": 8, "speed": 29, "cornering": 61, "power_unit": 28, "qualifying": 27, "pit_stop_time": 0.34, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Mach I",
+      "category": "engine",
+      "series": 1,
+      "rarity": "Common",
+      "sort_order": 42,
+      "levels": [
+        { "level": 1, "speed": 2, "cornering": 3, "power_unit": 1, "qualifying": 2, "pit_stop_time": 0.97, "drs": 0 },
+        { "level": 2, "speed": 3, "cornering": 4, "power_unit": 2, "qualifying": 3, "pit_stop_time": 0.94, "drs": 0 },
+        { "level": 3, "speed": 4, "cornering": 5, "power_unit": 3, "qualifying": 4, "pit_stop_time": 0.91, "drs": 0 },
+        { "level": 4, "speed": 5, "cornering": 6, "power_unit": 3, "qualifying": 5, "pit_stop_time": 0.88, "drs": 0 },
+        { "level": 5, "speed": 6, "cornering": 7, "power_unit": 4, "qualifying": 6, "pit_stop_time": 0.85, "drs": 0 },
+        { "level": 6, "speed": 7, "cornering": 8, "power_unit": 5, "qualifying": 7, "pit_stop_time": 0.83, "drs": 0 },
+        { "level": 7, "speed": 7, "cornering": 8, "power_unit": 6, "qualifying": 7, "pit_stop_time": 0.80, "drs": 0 },
+        { "level": 8, "speed": 8, "cornering": 9, "power_unit": 7, "qualifying": 8, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 9, "speed": 9, "cornering": 10, "power_unit": 7, "qualifying": 9, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 10, "speed": 10, "cornering": 11, "power_unit": 8, "qualifying": 10, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 11, "speed": 11, "cornering": 12, "power_unit": 9, "qualifying": 11, "pit_stop_time": 0.69, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Spark-E",
+      "category": "engine",
+      "series": 2,
+      "rarity": "Common",
+      "sort_order": 43,
+      "levels": [
+        { "level": 1, "speed": 6, "cornering": 2, "power_unit": 1, "qualifying": 3, "pit_stop_time": 0.90, "drs": 0 },
+        { "level": 2, "speed": 7, "cornering": 3, "power_unit": 2, "qualifying": 4, "pit_stop_time": 0.85, "drs": 0 },
+        { "level": 3, "speed": 8, "cornering": 3, "power_unit": 2, "qualifying": 4, "pit_stop_time": 0.81, "drs": 0 },
+        { "level": 4, "speed": 10, "cornering": 4, "power_unit": 3, "qualifying": 5, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 5, "speed": 11, "cornering": 4, "power_unit": 3, "qualifying": 6, "pit_stop_time": 0.73, "drs": 0 },
+        { "level": 6, "speed": 12, "cornering": 5, "power_unit": 4, "qualifying": 7, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 7, "speed": 13, "cornering": 6, "power_unit": 5, "qualifying": 7, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 8, "speed": 14, "cornering": 6, "power_unit": 5, "qualifying": 8, "pit_stop_time": 0.60, "drs": 0 },
+        { "level": 9, "speed": 16, "cornering": 7, "power_unit": 6, "qualifying": 9, "pit_stop_time": 0.56, "drs": 0 },
+        { "level": 10, "speed": 17, "cornering": 7, "power_unit": 6, "qualifying": 9, "pit_stop_time": 0.52, "drs": 0 },
+        { "level": 11, "speed": 18, "cornering": 8, "power_unit": 7, "qualifying": 10, "pit_stop_time": 0.48, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Mach II",
+      "category": "engine",
+      "series": 4,
+      "rarity": "Rare",
+      "sort_order": 44,
+      "levels": [
+        { "level": 1, "speed": 8, "cornering": 16, "power_unit": 6, "qualifying": 16, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 2, "speed": 9, "cornering": 18, "power_unit": 7, "qualifying": 18, "pit_stop_time": 0.77, "drs": 0 },
+        { "level": 3, "speed": 10, "cornering": 20, "power_unit": 8, "qualifying": 19, "pit_stop_time": 0.75, "drs": 0 },
+        { "level": 4, "speed": 10, "cornering": 21, "power_unit": 8, "qualifying": 21, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 5, "speed": 11, "cornering": 23, "power_unit": 9, "qualifying": 23, "pit_stop_time": 0.70, "drs": 0 },
+        { "level": 6, "speed": 12, "cornering": 25, "power_unit": 10, "qualifying": 24, "pit_stop_time": 0.68, "drs": 0 },
+        { "level": 7, "speed": 13, "cornering": 27, "power_unit": 11, "qualifying": 26, "pit_stop_time": 0.66, "drs": 0 },
+        { "level": 8, "speed": 13, "cornering": 28, "power_unit": 11, "qualifying": 27, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 9, "speed": 14, "cornering": 30, "power_unit": 12, "qualifying": 29, "pit_stop_time": 0.62, "drs": 0 }
+      ]
+    },
+    {
+      "name": "The Reactor",
+      "category": "engine",
+      "series": 6,
+      "rarity": "Common",
+      "sort_order": 45,
+      "levels": [
+        { "level": 1, "speed": 5, "cornering": 4, "power_unit": 12, "qualifying": 6, "pit_stop_time": 0.86, "drs": 0 },
+        { "level": 2, "speed": 6, "cornering": 5, "power_unit": 14, "qualifying": 7, "pit_stop_time": 0.84, "drs": 0 },
+        { "level": 3, "speed": 6, "cornering": 5, "power_unit": 16, "qualifying": 7, "pit_stop_time": 0.81, "drs": 0 },
+        { "level": 4, "speed": 7, "cornering": 6, "power_unit": 18, "qualifying": 8, "pit_stop_time": 0.79, "drs": 0 },
+        { "level": 5, "speed": 7, "cornering": 6, "power_unit": 20, "qualifying": 8, "pit_stop_time": 0.76, "drs": 0 },
+        { "level": 6, "speed": 8, "cornering": 7, "power_unit": 22, "qualifying": 9, "pit_stop_time": 0.74, "drs": 0 },
+        { "level": 7, "speed": 9, "cornering": 7, "power_unit": 23, "qualifying": 10, "pit_stop_time": 0.71, "drs": 0 },
+        { "level": 8, "speed": 9, "cornering": 8, "power_unit": 25, "qualifying": 10, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 9, "speed": 10, "cornering": 8, "power_unit": 27, "qualifying": 11, "pit_stop_time": 0.66, "drs": 0 },
+        { "level": 10, "speed": 10, "cornering": 9, "power_unit": 29, "qualifying": 11, "pit_stop_time": 0.64, "drs": 0 },
+        { "level": 11, "speed": 11, "cornering": 9, "power_unit": 31, "qualifying": 12, "pit_stop_time": 0.62, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Mach III",
+      "category": "engine",
+      "series": 7,
+      "rarity": "Epic",
+      "sort_order": 46,
+      "levels": [
+        { "level": 1, "speed": 14, "cornering": 36, "power_unit": 13, "qualifying": 15, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 2, "speed": 15, "cornering": 39, "power_unit": 14, "qualifying": 16, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 3, "speed": 16, "cornering": 41, "power_unit": 15, "qualifying": 17, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 4, "speed": 17, "cornering": 44, "power_unit": 16, "qualifying": 18, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 5, "speed": 17, "cornering": 46, "power_unit": 16, "qualifying": 18, "pit_stop_time": 0.41, "drs": 0 },
+        { "level": 6, "speed": 18, "cornering": 49, "power_unit": 17, "qualifying": 19, "pit_stop_time": 0.37, "drs": 0 },
+        { "level": 7, "speed": 19, "cornering": 51, "power_unit": 18, "qualifying": 20, "pit_stop_time": 0.34, "drs": 0 },
+        { "level": 8, "speed": 20, "cornering": 54, "power_unit": 19, "qualifying": 21, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Behemoth",
+      "category": "engine",
+      "series": 10,
+      "rarity": "Rare",
+      "sort_order": 47,
+      "levels": [
+        { "level": 1, "speed": 24, "cornering": 8, "power_unit": 10, "qualifying": 9, "pit_stop_time": 0.72, "drs": 0 },
+        { "level": 2, "speed": 26, "cornering": 9, "power_unit": 11, "qualifying": 10, "pit_stop_time": 0.69, "drs": 0 },
+        { "level": 3, "speed": 29, "cornering": 10, "power_unit": 12, "qualifying": 11, "pit_stop_time": 0.65, "drs": 0 },
+        { "level": 4, "speed": 31, "cornering": 10, "power_unit": 12, "qualifying": 11, "pit_stop_time": 0.62, "drs": 0 },
+        { "level": 5, "speed": 34, "cornering": 11, "power_unit": 13, "qualifying": 12, "pit_stop_time": 0.58, "drs": 0 },
+        { "level": 6, "speed": 36, "cornering": 12, "power_unit": 14, "qualifying": 13, "pit_stop_time": 0.55, "drs": 0 },
+        { "level": 7, "speed": 38, "cornering": 13, "power_unit": 15, "qualifying": 14, "pit_stop_time": 0.51, "drs": 0 },
+        { "level": 8, "speed": 41, "cornering": 13, "power_unit": 15, "qualifying": 14, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 9, "speed": 43, "cornering": 14, "power_unit": 16, "qualifying": 15, "pit_stop_time": 0.44, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Chaos Core",
+      "category": "engine",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 48,
+      "levels": [
+        { "level": 1, "speed": 48, "cornering": 19, "power_unit": 19, "qualifying": 21, "pit_stop_time": 0.54, "drs": 0 },
+        { "level": 2, "speed": 50, "cornering": 20, "power_unit": 20, "qualifying": 23, "pit_stop_time": 0.52, "drs": 0 },
+        { "level": 3, "speed": 52, "cornering": 21, "power_unit": 21, "qualifying": 24, "pit_stop_time": 0.50, "drs": 0 },
+        { "level": 4, "speed": 54, "cornering": 22, "power_unit": 22, "qualifying": 25, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 5, "speed": 56, "cornering": 23, "power_unit": 23, "qualifying": 26, "pit_stop_time": 0.46, "drs": 0 },
+        { "level": 6, "speed": 58, "cornering": 25, "power_unit": 25, "qualifying": 27, "pit_stop_time": 0.44, "drs": 0 },
+        { "level": 7, "speed": 60, "cornering": 26, "power_unit": 26, "qualifying": 28, "pit_stop_time": 0.42, "drs": 0 },
+        { "level": 8, "speed": 62, "cornering": 28, "power_unit": 28, "qualifying": 29, "pit_stop_time": 0.40, "drs": 0 }
+      ]
+    },
+    {
+      "name": "Turbo Jet",
+      "category": "engine",
+      "series": 12,
+      "rarity": "Epic",
+      "sort_order": 49,
+      "levels": [
+        { "level": 1, "speed": 16, "cornering": 15, "power_unit": 42, "qualifying": 17, "pit_stop_time": 0.48, "drs": 0 },
+        { "level": 2, "speed": 17, "cornering": 16, "power_unit": 45, "qualifying": 18, "pit_stop_time": 0.45, "drs": 0 },
+        { "level": 3, "speed": 18, "cornering": 17, "power_unit": 47, "qualifying": 19, "pit_stop_time": 0.43, "drs": 0 },
+        { "level": 4, "speed": 19, "cornering": 18, "power_unit": 50, "qualifying": 20, "pit_stop_time": 0.40, "drs": 0 },
+        { "level": 5, "speed": 20, "cornering": 18, "power_unit": 52, "qualifying": 22, "pit_stop_time": 0.38, "drs": 0 },
+        { "level": 6, "speed": 21, "cornering": 19, "power_unit": 55, "qualifying": 23, "pit_stop_time": 0.35, "drs": 0 },
+        { "level": 7, "speed": 22, "cornering": 20, "power_unit": 57, "qualifying": 24, "pit_stop_time": 0.33, "drs": 0 },
+        { "level": 8, "speed": 23, "cornering": 21, "power_unit": 60, "qualifying": 25, "pit_stop_time": 0.30, "drs": 0 }
+      ]
+    }
+  ],
+  "2026": []
+}

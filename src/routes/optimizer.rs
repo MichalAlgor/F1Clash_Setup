@@ -5,7 +5,8 @@ use axum::{Form, Router};
 use serde::Deserialize;
 use crate::AppState;
 
-use crate::data;
+use crate::auth::AuthStatus;
+use crate::data::StatPriorities;
 use crate::drivers_data;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
@@ -19,13 +20,12 @@ pub fn router() -> Router<AppState> {
         .route("/optimizer/save", axum::routing::post(save))
 }
 
-async fn form() -> impl IntoResponse {
-    templates::optimizer::form_page()
+async fn form(auth: AuthStatus) -> impl IntoResponse {
+    templates::optimizer::form_page(&auth)
 }
 
 #[derive(Deserialize)]
 pub struct OptimizerQuery {
-    // Part priorities
     #[serde(default)]
     pub speed: bool,
     #[serde(default)]
@@ -34,7 +34,6 @@ pub struct OptimizerQuery {
     pub power_unit: bool,
     #[serde(default)]
     pub qualifying: bool,
-    // Driver priorities
     #[serde(default)]
     pub overtaking: bool,
     #[serde(default)]
@@ -45,7 +44,6 @@ pub struct OptimizerQuery {
     pub race_start: bool,
     #[serde(default)]
     pub tyre_management: bool,
-    // Series limits
     pub max_part_series: Option<i32>,
     pub max_driver_series: Option<i32>,
 }
@@ -104,9 +102,12 @@ impl DriverPriorities {
 async fn run(
     State(state): State<AppState>,
     axum::extract::Query(query): axum::extract::Query<OptimizerQuery>,
+    auth: AuthStatus,
 ) -> impl IntoResponse {
     let season = state.season().await;
-    let part_priorities = crate::data::StatPriorities {
+    let catalog = state.catalog_for_season().await;
+
+    let part_priorities = StatPriorities {
         speed: query.speed,
         cornering: query.cornering,
         power_unit: query.power_unit,
@@ -120,7 +121,6 @@ async fn run(
         tyre_management: query.tyre_management,
     };
 
-    // === Resolve parts ===
     let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE season = $1 ORDER BY part_name")
         .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
     let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE season = $1")
@@ -133,7 +133,7 @@ async fn run(
     let mut parts_per_cat: Vec<Vec<ResolvedPart>> = Vec::new();
     for cat in categories {
         let cat_parts: Vec<ResolvedPart> = items.iter().filter_map(|item| {
-            let part_def = data::find_part(&item.part_name)?;
+            let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
             if part_def.series > max_part_series { return None; }
             if part_def.category != *cat { return None; }
             let level_stats = part_def.stats_for_level(item.level)?;
@@ -150,7 +150,6 @@ async fn run(
         parts_per_cat.push(cat_parts);
     }
 
-    // === Resolve drivers ===
     let driver_items = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name")
         .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
     let driver_boosts = sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts WHERE season = $1")
@@ -168,8 +167,6 @@ async fn run(
         Some(ResolvedDriver { item: item.clone(), stats: ds })
     }).collect();
 
-    // === Generate driver pairs (including "no drivers") ===
-    // Each pair is (Option<idx>, Option<idx>)
     let mut driver_pairs: Vec<(Option<usize>, Option<usize>)> = vec![(None, None)];
     for i in 0..resolved_drivers.len() {
         driver_pairs.push((Some(i), None));
@@ -178,21 +175,17 @@ async fn run(
         }
     }
 
-    // === Check parts feasibility ===
     if parts_per_cat.iter().any(|c| c.is_empty()) {
         return templates::optimizer::result_page(
             &part_priorities, &driver_priorities, &[], None, None,
-            &Stats::default(), &DriverStats::default(),
+            &Stats::default(), &DriverStats::default(), &auth,
         );
     }
 
-    // === Brute-force ===
     let sizes: Vec<usize> = parts_per_cat.iter().map(|c| c.len()).collect();
     let total_part_combos: usize = sizes.iter().product();
 
-    // Best: (part_indices, driver_pair_idx, score tuple)
     let mut best: Option<(Vec<usize>, usize, (i32, i32, i32, i32))> = None;
-
     let mut part_indices = vec![0usize; categories.len()];
 
     for _ in 0..total_part_combos {
@@ -218,7 +211,6 @@ async fn run(
             }
         }
 
-        // Odometer increment
         let mut carry = true;
         for i in (0..part_indices.len()).rev() {
             if carry {
@@ -228,7 +220,6 @@ async fn run(
         }
     }
 
-    // === Build results ===
     let (part_picks, driver1, driver2, total_parts, total_drivers) = match best {
         Some((pidx, dp_idx, _)) => {
             let picks: Vec<_> = pidx.iter().enumerate().map(|(ci, &pi)| {
@@ -255,11 +246,11 @@ async fn run(
     templates::optimizer::result_page(
         &part_priorities, &driver_priorities,
         &part_picks, driver1.as_ref(), driver2.as_ref(),
-        &total_parts, &total_drivers,
+        &total_parts, &total_drivers, &auth,
     )
 }
 
-fn score_part_combo(stats: &Stats, priorities: &crate::data::StatPriorities) -> (i32, i32) {
+fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32) {
     if !priorities.any_selected() {
         let total = stats.total_performance();
         return (total, total);
@@ -277,7 +268,6 @@ fn score_part_combo(stats: &Stats, priorities: &crate::data::StatPriorities) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data::StatPriorities;
 
     fn ds(overtaking: i32, defending: i32, qualifying: i32, race_start: i32, tyre_management: i32) -> DriverStats {
         DriverStats { overtaking, defending, qualifying, race_start, tyre_management }
@@ -286,8 +276,6 @@ mod tests {
     fn part_stats(speed: i32, cornering: i32, power_unit: i32, qualifying: i32) -> Stats {
         Stats { speed, cornering, power_unit, qualifying, pit_stop_time: 1.0, drs: 0 }
     }
-
-    // --- DriverPriorities::any_selected ---
 
     #[test]
     fn driver_priorities_any_selected_false_when_all_false() {
@@ -303,8 +291,6 @@ mod tests {
         assert!(DriverPriorities { tyre_management: true, ..Default::default() }.any_selected());
     }
 
-    // --- DriverPriorities::labels ---
-
     #[test]
     fn driver_priorities_labels_empty_when_none_selected() {
         assert!(DriverPriorities::default().labels().is_empty());
@@ -319,11 +305,9 @@ mod tests {
         assert_eq!(p.labels(), vec!["Overtaking", "Defending", "Qualifying", "Race Start", "Tyre Mgmt"]);
     }
 
-    // --- DriverPriorities::score ---
-
     #[test]
     fn driver_score_no_priorities_returns_total_twice() {
-        let stats = ds(10, 20, 30, 40, 50); // total = 150
+        let stats = ds(10, 20, 30, 40, 50);
         let p = DriverPriorities::default();
         assert_eq!(p.score(&stats), (150, 150));
     }
@@ -339,27 +323,22 @@ mod tests {
     fn driver_score_multiple_priorities_returns_min_and_sum() {
         let stats = ds(10, 20, 30, 40, 50);
         let p = DriverPriorities { overtaking: true, defending: true, ..Default::default() };
-        // values = [10, 20], min=10, sum=30
         assert_eq!(p.score(&stats), (10, 30));
     }
 
     #[test]
     fn driver_score_prefers_higher_min_first() {
-        // Equal sum, different min — higher min wins
         let high_min = ds(15, 15, 0, 0, 0);
         let low_min  = ds(10, 20, 0, 0, 0);
         let p = DriverPriorities { overtaking: true, defending: true, ..Default::default() };
         let s_high = p.score(&high_min);
         let s_low  = p.score(&low_min);
-        // Both sum=30, but high_min has min=15 vs low_min min=10
         assert!(s_high > s_low);
     }
 
-    // --- score_part_combo ---
-
     #[test]
     fn score_part_combo_no_priorities_returns_total_performance_twice() {
-        let stats = part_stats(10, 20, 30, 40); // total = 100
+        let stats = part_stats(10, 20, 30, 40);
         let p = StatPriorities::default();
         assert_eq!(score_part_combo(&stats, &p), (100, 100));
     }
@@ -375,15 +354,13 @@ mod tests {
     fn score_part_combo_multiple_priorities_returns_min_and_sum() {
         let stats = part_stats(100, 50, 0, 0);
         let p = StatPriorities { speed: true, cornering: true, ..Default::default() };
-        // values = [100, 50], min=50, sum=150
         assert_eq!(score_part_combo(&stats, &p), (50, 150));
     }
 
     #[test]
     fn score_part_combo_all_priorities_matches_total_when_equal_stats() {
-        let stats = part_stats(25, 25, 25, 25); // total = 100
+        let stats = part_stats(25, 25, 25, 25);
         let p = StatPriorities { speed: true, cornering: true, power_unit: true, qualifying: true };
-        // min=25, sum=100
         assert_eq!(score_part_combo(&stats, &p), (25, 100));
     }
 }

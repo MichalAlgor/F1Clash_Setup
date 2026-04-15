@@ -1,12 +1,13 @@
 use maud::{html, Markup};
 
-use crate::data;
-use crate::models::part::PartCategory;
+use crate::auth::AuthStatus;
+use crate::models::part::{OwnedPartDefinition, PartCategory};
 use crate::models::setup::InventoryItem;
 
-pub fn list_page(items: &[InventoryItem]) -> Markup {
+pub fn list_page(items: &[InventoryItem], catalog: &[OwnedPartDefinition], auth: &AuthStatus) -> Markup {
     super::layout::page(
         "Inventory",
+        auth,
         html! {
             hgroup {
                 h1 { "Parts Inventory" }
@@ -20,11 +21,14 @@ pub fn list_page(items: &[InventoryItem]) -> Markup {
                     @let cat_items: Vec<_> = {
                         let mut v: Vec<_> = items.iter()
                             .filter(|item| {
-                                data::find_part(&item.part_name)
+                                catalog.iter()
+                                    .find(|p| p.name == item.part_name)
                                     .is_some_and(|p| p.category == *category)
                             })
                             .collect();
-                        v.sort_by_key(|item| data::catalog_index(&item.part_name));
+                        v.sort_by_key(|item| {
+                            catalog.iter().position(|p| p.name == item.part_name).unwrap_or(usize::MAX)
+                        });
                         v
                     };
 
@@ -49,15 +53,15 @@ pub fn list_page(items: &[InventoryItem]) -> Markup {
                                     }
                                     tbody {
                                         @for item in &cat_items {
-                                            @if let Some(part_def) = data::find_part(&item.part_name) {
+                                            @if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name) {
                                                 @if let Some(stats) = part_def.stats_for_level(item.level) {
                                                     tr {
-                                                        td class=(part_def.rarity.css_class()) { (item.part_name) }
+                                                        td class=(part_def.rarity_css_class()) { (item.part_name) }
                                                         td { (part_def.series) }
                                                         td {
                                                             form method="post" action={"/inventory/" (item.id) "/level"} style="display:inline;margin:0" {
                                                                 select name="level" onchange="this.form.submit()" class="inline-select" {
-                                                                    @for l in part_def.levels {
+                                                                    @for l in &part_def.levels {
                                                                         option value=(l.level) selected[l.level == item.level] {
                                                                             (l.level)
                                                                         }
@@ -94,10 +98,10 @@ pub fn list_page(items: &[InventoryItem]) -> Markup {
     )
 }
 
-/// Bulk edit page: shows every catalog part with a level selector (0 = not owned)
-pub fn bulk_page(current_inventory: &[InventoryItem]) -> Markup {
+pub fn bulk_page(current_inventory: &[InventoryItem], catalog: &[OwnedPartDefinition], auth: &AuthStatus) -> Markup {
     super::layout::page(
         "Manage All Parts",
+        auth,
         html! {
             h1 { "Manage All Parts" }
             p { "Set the level for each part you own. Set to 0 (or leave at \"—\") for parts you don't have." }
@@ -105,7 +109,7 @@ pub fn bulk_page(current_inventory: &[InventoryItem]) -> Markup {
             form method="post" action="/inventory/bulk" {
                 div class="category-grid" {
                 @for category in PartCategory::all() {
-                    @let parts = data::parts_by_category(*category);
+                    @let parts: Vec<_> = catalog.iter().filter(|p| p.category == *category).collect();
                     @if !parts.is_empty() {
                         section {
                         h2 { (category.display_name()) }
@@ -125,12 +129,12 @@ pub fn bulk_page(current_inventory: &[InventoryItem]) -> Markup {
                                             .map(|i| i.level)
                                             .unwrap_or(0);
                                         tr {
-                                            td class=(part_def.rarity.css_class()) { (part_def.name) }
+                                            td class=(part_def.rarity_css_class()) { (part_def.name) }
                                             td { (part_def.series) }
                                             td {
                                                 select name={"part:" (part_def.name)} class="inline-select" {
                                                     option value="0" selected[current_level == 0] { "—" }
-                                                    @for l in part_def.levels {
+                                                    @for l in &part_def.levels {
                                                         option value=(l.level) selected[l.level == current_level] {
                                                             (l.level)
                                                         }

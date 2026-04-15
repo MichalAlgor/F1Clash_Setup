@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod boosts;
 pub mod drivers;
 pub mod inventory;

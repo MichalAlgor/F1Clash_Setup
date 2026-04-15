@@ -5,6 +5,7 @@ use axum::routing::get;
 use axum::{Form, Router};
 use serde::{Deserialize, Serialize};
 
+use crate::auth::AuthStatus;
 use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
 use crate::models::setup::InventoryItem;
@@ -73,11 +74,12 @@ async fn export(State(state): State<AppState>) -> impl IntoResponse {
     )
 }
 
-async fn import_form(State(state): State<AppState>) -> impl IntoResponse {
+async fn import_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
 
     crate::templates::layout::page(
         "Import",
+        &auth,
         maud::html! {
             hgroup {
                 h1 { "Import Inventory" }
@@ -108,22 +110,19 @@ async fn import(State(state): State<AppState>, Form(form): Form<ImportForm>) -> 
         return Redirect::to("/import");
     };
 
-    // Clear current season inventory
     sqlx::query("DELETE FROM inventory WHERE season = $1")
         .bind(&season).execute(&state.pool).await.unwrap();
     sqlx::query("DELETE FROM driver_inventory WHERE season = $1")
         .bind(&season).execute(&state.pool).await.unwrap();
 
-    // Import parts
     for part in &data.parts {
         if part.level < 1 { continue; }
-        if crate::data::find_part(&part.name).is_none() { continue; }
+        if state.find_part(&part.name).await.is_none() { continue; }
         sqlx::query("INSERT INTO inventory (part_name, level, season) VALUES ($1, $2, $3)")
             .bind(&part.name).bind(part.level).bind(&season)
             .execute(&state.pool).await.unwrap();
     }
 
-    // Import drivers
     for driver in &data.drivers {
         if driver.level < 1 { continue; }
         if drivers_data::find_driver_by_db(&driver.name, &driver.rarity).is_none() { continue; }

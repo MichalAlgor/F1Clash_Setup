@@ -1,3 +1,5 @@
+pub mod admin;
+pub mod auth_routes;
 pub mod boosts;
 pub mod drivers;
 pub mod export_import;

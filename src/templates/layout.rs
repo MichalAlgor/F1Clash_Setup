@@ -1,6 +1,8 @@
 use maud::{html, Markup, PreEscaped, DOCTYPE};
 
-pub fn page(title: &str, content: Markup) -> Markup {
+use crate::auth::AuthStatus;
+
+pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
     html! {
         (DOCTYPE)
         html lang="en" data-theme="dark" {
@@ -30,9 +32,27 @@ pub fn page(title: &str, content: Markup) -> Markup {
                             li { a href="/optimizer" { "Optimizer" } }
                             li { a href="/export" { "Export" } }
                             li { a href="/import" { "Import" } }
+                            li { a href="/admin/parts" { "Admin" } }
                             li {
                                 a href="/season" class="season-badge" {
                                     span hx-get="/api/season" hx-trigger="load" hx-swap="innerHTML" { "..." }
+                                }
+                            }
+                            @if auth.enabled {
+                                li class="auth-nav" {
+                                    @if auth.logged_in {
+                                        div class="auth-status" {
+                                            span class="logged-in-text" { "Logged in" }
+                                            form action="/api/logout" method="post" class="auth-form" {
+                                                button type="submit" class="secondary outline" { "Logout" }
+                                            }
+                                        }
+                                    } @else {
+                                        form action="/api/login" method="post" class="auth-form" {
+                                            input type="password" name="password" placeholder="Admin password" required class="auth-input";
+                                            button type="submit" { "Login" }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -242,6 +262,39 @@ button.btn-delete {
 .rarity-prospect-turbo { color: #1abc9c; }
 .rarity-podium { color: #e74c3c; }
 .rarity-podium-legends { color: #ff6b6b; }
+
+/* Auth nav */
+.auth-nav {
+    display: flex;
+    align-items: center;
+}
+.auth-form {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+}
+.auth-form input.auth-input {
+    margin: 0;
+    padding: 0.2rem 0.5rem;
+    width: 140px;
+    font-size: 0.8rem;
+    height: auto;
+}
+.auth-form button {
+    margin: 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+}
+.auth-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.logged-in-text {
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+}
 
 /* Footer */
 footer.container {
