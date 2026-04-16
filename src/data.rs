@@ -26,6 +26,104 @@ impl StatPriorities {
     }
 }
 
+// ── Upgrade calculator ────────────────────────────────────────────────────────
+
+/// Cards required to upgrade from level N to N+1 (index 0 = L1→L2).
+/// Same for all rarities and series.
+const CARD_COSTS: &[i32] = &[4, 10, 20, 50, 100, 200, 400, 1_000, 2_000, 4_000];
+
+/// Coin cost to upgrade from level N to N+1, per series (outer index = series - 1,
+/// inner index 0 = L1→L2).
+const COIN_COSTS_BY_SERIES: &[&[u64]] = &[
+    // Series 1
+    &[2_000, 8_000, 35_000, 90_000, 275_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000],
+    // Series 2
+    &[6_000, 30_000, 95_000, 300_000, 950_000, 1_900_000, 3_750_000, 5_600_000, 7_450_000, 9_300_000],
+    // Series 3
+    &[22_000, 45_000, 135_000, 450_000, 1_350_000, 2_800_000, 5_250_000, 7_700_000, 10_150_000, 12_600_000],
+    // Series 4
+    &[1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000],
+    // Series 5
+    &[4_500_000, 9_000_000, 20_000_000, 42_250_000, 139_250_000, 167_000_000, 195_000_000, 223_000_000],
+    // Series 6
+    &[790_000, 1_600_000, 2_400_000, 3_200_000, 6_800_000, 19_500_000, 36_250_000, 53_000_000, 69_750_000, 86_500_000],
+    // Series 7
+    &[1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000, 75_500_000],
+    // Series 8
+    &[4_500_000, 9_000_000, 20_000_000, 42_250_000, 139_250_000, 167_000_000, 195_000_000, 223_000_000],
+    // Series 9
+    &[9_500_000, 19_000_000, 45_000_000, 105_000_000, 199_000_000, 239_000_000, 278_000_000, 317_000_000],
+    // Series 10
+    &[22_000_000, 43_000_000, 65_000_000, 150_000_000, 284_000_000, 341_000_000, 398_000_000],
+    // Series 11
+    &[54_000_000, 107_000_000, 161_000_000, 215_000_000, 406_000_000, 487_000_000, 568_000_000],
+    // Series 12
+    &[116_000_000, 232_000_000, 348_000_000, 464_000_000, 580_000_000, 696_000_000, 812_000_000],
+];
+
+/// Maximum upgrade level for a given rarity.
+pub fn max_level_for_rarity(rarity: &str) -> i32 {
+    match rarity {
+        "Epic" => 8,
+        "Rare" => 9,
+        _ => 11, // Common
+    }
+}
+
+/// Result of an upgrade calculation.
+pub struct UpgradeInfo {
+    /// Highest level reachable with the cards currently owned.
+    pub reachable_level: i32,
+    /// Total coins needed to reach that level from the current level.
+    pub coins_needed: u64,
+    /// Cards still needed to reach the next level beyond what is owned.
+    pub cards_to_next: i32,
+}
+
+/// Calculate how far a part can be upgraded given cards owned.
+pub fn calculate_upgrade(current_level: i32, cards_owned: i32, series: i32, rarity: &str) -> UpgradeInfo {
+    let max_lvl = max_level_for_rarity(rarity);
+    let coin_table = COIN_COSTS_BY_SERIES
+        .get((series - 1) as usize)
+        .copied()
+        .unwrap_or(&[]);
+
+    let mut cards_remaining = cards_owned;
+    let mut coins_needed = 0u64;
+    let mut reachable_level = current_level;
+    let mut cards_to_next = 0;
+
+    for from_level in current_level..max_lvl {
+        let idx = (from_level - 1) as usize;
+        let card_cost = CARD_COSTS.get(idx).copied().unwrap_or(0);
+        let coin_cost = coin_table.get(idx).copied().unwrap_or(0);
+
+        if cards_remaining >= card_cost {
+            cards_remaining -= card_cost;
+            coins_needed += coin_cost;
+            reachable_level = from_level + 1;
+        } else {
+            cards_to_next = card_cost - cards_remaining;
+            break;
+        }
+    }
+
+    UpgradeInfo { reachable_level, coins_needed, cards_to_next }
+}
+
+/// Format a large coin number as a compact string (e.g. 1_250_000 → "1.3M").
+pub fn format_coins(coins: u64) -> String {
+    if coins >= 1_000_000_000 {
+        format!("{:.1}B", coins as f64 / 1_000_000_000.0)
+    } else if coins >= 1_000_000 {
+        format!("{:.1}M", coins as f64 / 1_000_000.0)
+    } else if coins >= 1_000 {
+        format!("{:.0}K", coins as f64 / 1_000.0)
+    } else {
+        format!("{coins}")
+    }
+}
+
 /// Part rarity — kept here for use in drivers_data context.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Rarity {
@@ -55,6 +153,94 @@ impl Rarity {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // --- Upgrade calculator ---
+
+    #[test]
+    fn max_level_for_rarity_common() {
+        assert_eq!(max_level_for_rarity("Common"), 11);
+    }
+
+    #[test]
+    fn max_level_for_rarity_rare() {
+        assert_eq!(max_level_for_rarity("Rare"), 9);
+    }
+
+    #[test]
+    fn max_level_for_rarity_epic() {
+        assert_eq!(max_level_for_rarity("Epic"), 8);
+    }
+
+    #[test]
+    fn calculate_upgrade_already_at_max() {
+        let info = calculate_upgrade(8, 999, 1, "Epic");
+        assert_eq!(info.reachable_level, 8);
+        assert_eq!(info.coins_needed, 0);
+    }
+
+    #[test]
+    fn calculate_upgrade_no_cards() {
+        let info = calculate_upgrade(1, 0, 1, "Common");
+        assert_eq!(info.reachable_level, 1);
+        assert_eq!(info.coins_needed, 0);
+        assert_eq!(info.cards_to_next, 4); // need 4 cards for L1→L2
+    }
+
+    #[test]
+    fn calculate_upgrade_exact_cards_for_one_level() {
+        // 4 cards = exactly enough for L1→L2, series 1 costs 2_000 coins
+        let info = calculate_upgrade(1, 4, 1, "Common");
+        assert_eq!(info.reachable_level, 2);
+        assert_eq!(info.coins_needed, 2_000);
+    }
+
+    #[test]
+    fn calculate_upgrade_two_levels() {
+        // 4 + 10 = 14 cards → L1→L2→L3, series 1: 2_000 + 8_000 = 10_000 coins
+        let info = calculate_upgrade(1, 14, 1, "Common");
+        assert_eq!(info.reachable_level, 3);
+        assert_eq!(info.coins_needed, 10_000);
+    }
+
+    #[test]
+    fn calculate_upgrade_not_enough_for_next() {
+        // Only 3 cards at L1 — need 4 for L1→L2
+        let info = calculate_upgrade(1, 3, 1, "Common");
+        assert_eq!(info.reachable_level, 1);
+        assert_eq!(info.coins_needed, 0);
+        assert_eq!(info.cards_to_next, 1);
+    }
+
+    #[test]
+    fn calculate_upgrade_series_2_costs() {
+        // 4 cards at L1, series 2 costs 6_000 for L1→L2
+        let info = calculate_upgrade(1, 4, 2, "Common");
+        assert_eq!(info.reachable_level, 2);
+        assert_eq!(info.coins_needed, 6_000);
+    }
+
+    #[test]
+    fn format_coins_small() {
+        assert_eq!(format_coins(500), "500");
+    }
+
+    #[test]
+    fn format_coins_thousands() {
+        assert_eq!(format_coins(2_000), "2K");
+    }
+
+    #[test]
+    fn format_coins_millions() {
+        assert_eq!(format_coins(1_250_000), "1.2M");
+        assert_eq!(format_coins(1_750_000), "1.8M");
+    }
+
+    #[test]
+    fn format_coins_billions() {
+        assert_eq!(format_coins(1_200_000_000), "1.2B");
+    }
+
+    // --- StatPriorities ---
 
     #[test]
     fn stat_priorities_any_selected_false_when_all_false() {

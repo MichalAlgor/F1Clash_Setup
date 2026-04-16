@@ -29,6 +29,10 @@ cargo test           # Run all tests
 
 **Every code change must be verified by running `cargo test` before considering it complete.** All tests must pass. If a change breaks existing tests, fix them before moving on.
 
+## UI Rules
+
+- **Never introduce horizontal scrolling.** Tables must stay within the viewport. Remove columns, shorten headers, or combine cells before allowing any table to overflow horizontally.
+
 SQLx uses compile-time query checking. For CI/Docker builds without a database:
 ```bash
 cargo sqlx prepare                    # Generate offline query data (requires running DB)

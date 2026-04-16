@@ -1,6 +1,7 @@
 use maud::{html, Markup};
 
 use crate::auth::AuthStatus;
+use crate::data;
 use crate::models::part::{OwnedPartDefinition, PartCategory};
 use crate::models::setup::InventoryItem;
 
@@ -37,7 +38,6 @@ pub fn list_page(
                         v
                     };
 
-                    // Determine if this category has an additional stat
                     @let additional_stat_name: Option<String> = catalog.iter()
                         .find(|p| p.category == *category && p.additional_stat_name.is_some())
                         .and_then(|p| p.additional_stat_name.clone());
@@ -56,11 +56,12 @@ pub fn list_page(
                                             th { "COR" }
                                             th { "PWR" }
                                             th { "QUA" }
-                                            th { "PIT (s)" }
-                                            th { "Total" }
+                                            th { "PIT" }
+                                            th { "Tot" }
                                             @if let Some(ref stat_name) = additional_stat_name {
                                                 th { (stat_name) }
                                             }
+                                            th { "Cards" }
                                             th {}
                                         }
                                     }
@@ -106,11 +107,10 @@ pub fn list_page(
                                                                             }
                                                                         }
                                                                     }
-                                                                } @else {
-                                                                    "—"
-                                                                }
+                                                                } @else { "—" }
                                                             }
                                                         }
+                                                        (cards_cell(item.id, item.cards_owned, item.level, Some(part_def)))
                                                         td {
                                                             button.outline.secondary
                                                                 hx-delete={"/inventory/" (item.id)}
@@ -132,6 +132,59 @@ pub fn list_page(
             }
         },
     )
+}
+
+/// The reactive cards + upgrade cell. Returned by both the list page and the
+/// `POST /inventory/{id}/cards` endpoint so htmx can swap it in place.
+pub fn cards_cell(
+    item_id: i32,
+    cards_owned: i32,
+    current_level: i32,
+    part_def: Option<&OwnedPartDefinition>,
+) -> Markup {
+    let upgrade_markup = match part_def {
+        None => html! {},
+        Some(part) => {
+            let max_lvl = data::max_level_for_rarity(&part.rarity);
+            if current_level >= max_lvl {
+                html! { span class="upgrade-tag secondary" { "MAX" } }
+            } else if cards_owned == 0 {
+                html! {}
+            } else {
+                let upgrade = data::calculate_upgrade(current_level, cards_owned, part.series, &part.rarity);
+                if upgrade.reachable_level > current_level {
+                    html! {
+                        span class="upgrade-tag" title={"Coins: " (upgrade.coins_needed)} {
+                            "→ L" (upgrade.reachable_level) " · " (data::format_coins(upgrade.coins_needed))
+                        }
+                    }
+                } else {
+                    html! {
+                        span class="upgrade-tag secondary" title={"Need " (upgrade.cards_to_next) " more cards"} {
+                            "+" (upgrade.cards_to_next)
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    html! {
+        td id={"cards-" (item_id)} {
+            div class="cards-cell" {
+                input type="number" name="cards"
+                    value=(cards_owned)
+                    min="0"
+                    class="cards-input"
+                    hx-post={"/inventory/" (item_id) "/cards"}
+                    hx-trigger="change"
+                    hx-target={"#cards-" (item_id)}
+                    hx-swap="outerHTML"
+                    hx-include="this";
+                (upgrade_markup)
+            }
+        }
+    }
 }
 
 /// Bulk edit page: shows every catalog part with a level selector (0 = not owned)

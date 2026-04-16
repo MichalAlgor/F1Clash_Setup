@@ -18,6 +18,7 @@ pub fn router() -> Router<AppState> {
         .route("/inventory/bulk", get(bulk_form).post(bulk_save))
         .route("/inventory/{id}", delete(destroy))
         .route("/inventory/{id}/level", post(update_level))
+        .route("/inventory/{id}/cards", post(update_cards))
 }
 
 async fn index() -> impl IntoResponse {
@@ -107,6 +108,39 @@ async fn update_level(
         .unwrap();
 
     Redirect::to("/inventory")
+}
+
+#[derive(Deserialize)]
+pub struct CardsForm {
+    pub cards: i32,
+}
+
+/// Returns the updated cards cell fragment (used by htmx to swap in place).
+async fn update_cards(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Form(form): Form<CardsForm>,
+) -> impl IntoResponse {
+    let cards = form.cards.max(0);
+
+    sqlx::query("UPDATE inventory SET cards_owned = $1 WHERE id = $2")
+        .bind(cards)
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+
+    // Fetch updated item to re-render the cell
+    let item = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE id = $1")
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await
+        .unwrap();
+
+    let catalog = state.catalog_for_season().await;
+    let part_def = catalog.iter().find(|p| p.name == item.part_name);
+
+    templates::inventory::cards_cell(id, cards, item.level, part_def)
 }
 
 async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {

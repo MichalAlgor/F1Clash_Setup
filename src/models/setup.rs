@@ -34,6 +34,7 @@ pub struct InventoryItem {
     pub id: i32,
     pub part_name: String,
     pub level: i32,
+    pub cards_owned: i32,
 }
 
 /// A global boost applied to a specific part

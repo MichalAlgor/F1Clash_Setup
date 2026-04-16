@@ -111,7 +111,12 @@ header.container {
     border-bottom: 1px solid var(--pico-muted-border-color);
 }
 header.container nav {
-    padding: 0.5rem 0;
+    padding: 0.25rem 0;
+}
+header.container nav ul li a,
+header.container nav ul li span {
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
 }
 
 /* Tighter page headers */
@@ -206,7 +211,14 @@ input[type="number"].compact {
     text-align: center;
 }
 
-/* Delete button */
+/* Compact action buttons inside table cells */
+table td button {
+    margin: 0;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.8rem;
+    line-height: 1;
+}
+/* Legacy class kept for compatibility */
 button.btn-delete {
     margin: 0;
     padding: 0.2rem 0.55rem;
@@ -288,6 +300,40 @@ select.season-select {
 .rarity-prospect-turbo { color: #1abc9c; }
 .rarity-podium { color: #e74c3c; }
 .rarity-podium-legends { color: #ff6b6b; }
+
+/* Cards input + upgrade tag */
+.cards-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+input.cards-input {
+    width: 52px;
+    height: auto;
+    padding: 0.15rem 0.3rem;
+    margin: 0;
+    line-height: 1.2;
+    font-size: 0.8rem;
+    text-align: center;
+    background: transparent;
+    color: inherit;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    -moz-appearance: textfield;
+}
+input.cards-input::-webkit-outer-spin-button,
+input.cards-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.upgrade-tag {
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+.upgrade-tag.secondary {
+    color: var(--pico-muted-color);
+}
 
 /* Auth nav */
 .auth-nav {
