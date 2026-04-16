@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod catalog;
 pub mod data;
+pub mod optimizer_core;
 pub mod drivers_data;
 mod models;
 mod routes;

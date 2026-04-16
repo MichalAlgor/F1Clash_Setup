@@ -9,20 +9,33 @@ use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
 use crate::drivers_data;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
-use crate::models::part::Stats;
+use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem};
+use crate::optimizer_core::{
+    run_brute_force, DriverPriorities, ResolvedDriver, ResolvedPart,
+};
 use crate::templates;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/optimizer", get(form))
-        .route("/optimizer/run", get(run))
-        .route("/optimizer/save", axum::routing::post(save))
+        .route("/optimizer",         get(presets_form))
+        .route("/optimizer/presets", get(run_presets))
+        .route("/optimizer/custom",  get(custom_form))
+        .route("/optimizer/run",     get(run))
+        .route("/optimizer/save",    axum::routing::post(save))
 }
 
-async fn form(auth: AuthStatus) -> impl IntoResponse {
-    templates::optimizer::form_page(&auth)
+// ── Form handlers ─────────────────────────────────────────────────────────────
+
+async fn presets_form(auth: AuthStatus) -> impl IntoResponse {
+    templates::optimizer::presets_form_page(&auth)
 }
+
+async fn custom_form(auth: AuthStatus) -> impl IntoResponse {
+    templates::optimizer::custom_form_page(&auth)
+}
+
+// ── Query structs ─────────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
 pub struct OptimizerQuery {
@@ -50,6 +63,12 @@ pub struct OptimizerQuery {
     pub max_driver_series: Option<i32>,
 }
 
+#[derive(Deserialize)]
+pub struct PresetsQuery {
+    #[serde(default, deserialize_with = "deserialize_opt_i32")]
+    pub max_part_series: Option<i32>,
+}
+
 fn deserialize_opt_i32<'de, D>(d: D) -> Result<Option<i32>, D::Error>
 where
     D: serde::Deserializer<'de>,
@@ -62,55 +81,191 @@ where
     }
 }
 
-struct ResolvedPart {
-    item: InventoryItem,
-    stats: Stats,
-}
+// ── Internal types ────────────────────────────────────────────────────────────
 
-struct ResolvedDriver {
-    item: DriverInventoryItem,
-    stats: DriverStats,
-}
 
-#[derive(Clone, Default)]
-pub struct DriverPriorities {
-    pub overtaking: bool,
-    pub defending: bool,
-    pub qualifying: bool,
-    pub race_start: bool,
-    pub tyre_management: bool,
-}
+// ── Resolution helpers ────────────────────────────────────────────────────────
 
-impl DriverPriorities {
-    pub fn any_selected(&self) -> bool {
-        self.overtaking || self.defending || self.qualifying || self.race_start || self.tyre_management
+async fn resolve_parts(
+    state: &AppState,
+    season: &str,
+    max_part_series: i32,
+) -> (Vec<Vec<ResolvedPart>>, Vec<PartCategory>) {
+    #[cfg(debug_assertions)]
+    let t = std::time::Instant::now();
+
+    let catalog = state.catalog_for_season().await;
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] catalog_for_season:    {:>8.2?}", t.elapsed());
+
+    #[cfg(debug_assertions)]
+    let t1 = std::time::Instant::now();
+    let items = sqlx::query_as::<_, InventoryItem>(
+        "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
+    )
+    .bind(season)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] query inventory:        {:>8.2?}  ({} items)", t1.elapsed(), items.len());
+
+    #[cfg(debug_assertions)]
+    let t1 = std::time::Instant::now();
+    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE season = $1")
+        .bind(season)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default();
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] query boosts:           {:>8.2?}  ({} boosts)", t1.elapsed(), boosts.len());
+
+    #[cfg(debug_assertions)]
+    let t1 = std::time::Instant::now();
+    let categories = state.categories_for_season().await;
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] categories_for_season: {:>8.2?}  ({} cats)", t1.elapsed(), categories.len());
+
+    #[cfg(debug_assertions)]
+    let t1 = std::time::Instant::now();
+    let parts_per_cat = categories.iter().map(|cat| {
+        items.iter().filter_map(|item| {
+            let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
+            if part_def.series > max_part_series { return None; }
+            if part_def.category != *cat { return None; }
+            let level_stats = part_def.stats_for_level(item.level)?;
+            let mut s = Stats {
+                speed: level_stats.speed, cornering: level_stats.cornering,
+                power_unit: level_stats.power_unit, qualifying: level_stats.qualifying,
+                pit_stop_time: level_stats.pit_stop_time,
+                additional_stat_value: level_stats.additional_stat_value,
+            };
+            if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
+                s = s.boosted(b.percentage);
+            }
+            Some(ResolvedPart { item: item.clone(), stats: s })
+        }).collect()
+    }).collect::<Vec<Vec<ResolvedPart>>>();
+    #[cfg(debug_assertions)]
+    {
+        let counts: Vec<usize> = parts_per_cat.iter().map(|c| c.len()).collect();
+        eprintln!("[optimizer] resolve parts:          {:>8.2?}  combos: {}", t1.elapsed(), counts.iter().product::<usize>());
     }
 
-    pub fn labels(&self) -> Vec<&'static str> {
-        let mut out = Vec::new();
-        if self.overtaking { out.push("Overtaking"); }
-        if self.defending { out.push("Defending"); }
-        if self.qualifying { out.push("Qualifying"); }
-        if self.race_start { out.push("Race Start"); }
-        if self.tyre_management { out.push("Tyre Mgmt"); }
-        out
-    }
+    (parts_per_cat, categories)
+}
 
-    fn score(&self, stats: &DriverStats) -> (i32, i32) {
-        if !self.any_selected() {
-            let total = stats.total();
-            return (total, total);
+async fn resolve_drivers(
+    state: &AppState,
+    season: &str,
+    max_driver_series: i32,
+) -> Vec<ResolvedDriver> {
+    #[cfg(debug_assertions)]
+    let t1 = std::time::Instant::now();
+    let driver_items = sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
+    )
+    .bind(season)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] query driver_inventory: {:>8.2?}  ({} drivers)", t1.elapsed(), driver_items.len());
+
+    #[cfg(debug_assertions)]
+    let t1 = std::time::Instant::now();
+    let driver_boosts = sqlx::query_as::<_, DriverBoost>(
+        "SELECT * FROM driver_boosts WHERE season = $1",
+    )
+    .bind(season)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] query driver_boosts:    {:>8.2?}  ({} boosts)", t1.elapsed(), driver_boosts.len());
+
+    driver_items.iter().filter_map(|item| {
+        let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity)?;
+        let driver_series = def.series.parse::<i32>().unwrap_or(i32::MAX);
+        if driver_series > max_driver_series { return None; }
+        let ls = def.stats_for_level(item.level)?;
+        let mut ds = ls.to_stats();
+        if let Some(b) = driver_boosts.iter().find(|b| {
+            b.driver_name == item.driver_name && b.rarity == item.rarity
+        }) {
+            ds = ds.boosted(b.percentage);
         }
-        let mut values = Vec::new();
-        if self.overtaking { values.push(stats.overtaking); }
-        if self.defending { values.push(stats.defending); }
-        if self.qualifying { values.push(stats.qualifying); }
-        if self.race_start { values.push(stats.race_start); }
-        if self.tyre_management { values.push(stats.tyre_management); }
-        let min = *values.iter().min().unwrap();
-        let sum: i32 = values.iter().sum();
-        (min, sum)
+        Some(ResolvedDriver { item: item.clone(), stats: ds })
+    }).collect()
+}
+
+fn build_driver_pairs(resolved_drivers: &[ResolvedDriver]) -> Vec<(Option<usize>, Option<usize>)> {
+    let mut pairs = vec![(None, None)];
+    for i in 0..resolved_drivers.len() {
+        pairs.push((Some(i), None));
+        for j in (i + 1)..resolved_drivers.len() {
+            pairs.push((Some(i), Some(j)));
+        }
     }
+    pairs
+}
+
+// ── Route handlers ────────────────────────────────────────────────────────────
+
+async fn run_presets(
+    State(state): State<AppState>,
+    axum::extract::Query(query): axum::extract::Query<PresetsQuery>,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    #[cfg(debug_assertions)]
+    let t_total = std::time::Instant::now();
+    let season = state.season().await;
+    let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] === run_presets start (series ≤{max_part_series}) ===");
+
+    #[cfg(debug_assertions)]
+    let t = std::time::Instant::now();
+    let (parts_per_cat, categories) = resolve_parts(&state, &season, max_part_series).await;
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] resolve_parts total:    {:>8.2?}", t.elapsed());
+
+    // Presets optimise parts only — no drivers.
+    let driver_pairs: Vec<(Option<usize>, Option<usize>)> = vec![(None, None)];
+    let resolved_drivers: Vec<ResolvedDriver> = Vec::new();
+    let driver_priorities = DriverPriorities::default();
+
+    let preset_defs: [(&str, StatPriorities); 6] = [
+        ("Speed",                  StatPriorities { speed: true, ..Default::default() }),
+        ("Speed + Qualifying",     StatPriorities { speed: true, qualifying: true, ..Default::default() }),
+        ("Cornering",              StatPriorities { cornering: true, ..Default::default() }),
+        ("Cornering + Qualifying", StatPriorities { cornering: true, qualifying: true, ..Default::default() }),
+        ("Power Unit",             StatPriorities { power_unit: true, ..Default::default() }),
+        ("Power Unit + Qualifying",StatPriorities { power_unit: true, qualifying: true, ..Default::default() }),
+    ];
+
+    #[cfg(debug_assertions)]
+    let t_all = std::time::Instant::now();
+    let presets: Vec<templates::optimizer::PresetResult> = preset_defs
+        .into_iter()
+        .map(|(label, prio)| {
+            #[cfg(debug_assertions)]
+            let t = std::time::Instant::now();
+            let result = run_brute_force(
+                &parts_per_cat, &categories,
+                &driver_pairs, &resolved_drivers,
+                &prio, &driver_priorities,
+            );
+            #[cfg(debug_assertions)]
+            eprintln!("[optimizer] brute_force [{label:<26}]: {:>8.2?}", t.elapsed());
+            templates::optimizer::PresetResult { label, result }
+        })
+        .collect();
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] all 6 brute_force:      {:>8.2?}", t_all.elapsed());
+    #[cfg(debug_assertions)]
+    eprintln!("[optimizer] === run_presets TOTAL:  {:>8.2?} ===", t_total.elapsed());
+    templates::optimizer::presets_result_page(&presets, &auth)
 }
 
 async fn run(
@@ -119,7 +274,8 @@ async fn run(
     auth: AuthStatus,
 ) -> impl IntoResponse {
     let season = state.season().await;
-    let catalog = state.catalog_for_season().await;
+    let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
+    let max_driver_series = query.max_driver_series.unwrap_or(i32::MAX);
 
     let part_priorities = StatPriorities {
         speed: query.speed,
@@ -135,155 +291,33 @@ async fn run(
         tyre_management: query.tyre_management,
     };
 
-    let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE season = $1 ORDER BY part_name")
-        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
-    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE season = $1")
-        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
+    let (parts_per_cat, categories) = resolve_parts(&state, &season, max_part_series).await;
+    let resolved_drivers = resolve_drivers(&state, &season, max_driver_series).await;
+    let driver_pairs = build_driver_pairs(&resolved_drivers);
 
-    let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
-    let max_driver_series = query.max_driver_series.unwrap_or(i32::MAX);
-
-    let season_categories = state.categories_for_season().await;
-    let categories = season_categories.as_slice();
-    let mut parts_per_cat: Vec<Vec<ResolvedPart>> = Vec::new();
-    for cat in categories {
-        let cat_parts: Vec<ResolvedPart> = items.iter().filter_map(|item| {
-            let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
-            if part_def.series > max_part_series { return None; }
-            if part_def.category != *cat { return None; }
-            let level_stats = part_def.stats_for_level(item.level)?;
-            let mut s = Stats {
-                speed: level_stats.speed, cornering: level_stats.cornering,
-                power_unit: level_stats.power_unit, qualifying: level_stats.qualifying,
-                pit_stop_time: level_stats.pit_stop_time,
-                additional_stat_value: level_stats.additional_stat_value,
-            };
-            if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
-                s = s.boosted(b.percentage);
-            }
-            Some(ResolvedPart { item: item.clone(), stats: s })
-        }).collect();
-        parts_per_cat.push(cat_parts);
-    }
-
-    let driver_items = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name")
-        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
-    let driver_boosts = sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts WHERE season = $1")
-        .bind(&season).fetch_all(&state.pool).await.unwrap_or_default();
-
-    let resolved_drivers: Vec<ResolvedDriver> = driver_items.iter().filter_map(|item| {
-        let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity)?;
-        let driver_series = def.series.parse::<i32>().unwrap_or(i32::MAX);
-        if driver_series > max_driver_series { return None; }
-        let ls = def.stats_for_level(item.level)?;
-        let mut ds = ls.to_stats();
-        if let Some(b) = driver_boosts.iter().find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity) {
-            ds = ds.boosted(b.percentage);
-        }
-        Some(ResolvedDriver { item: item.clone(), stats: ds })
-    }).collect();
-
-    let mut driver_pairs: Vec<(Option<usize>, Option<usize>)> = vec![(None, None)];
-    for i in 0..resolved_drivers.len() {
-        driver_pairs.push((Some(i), None));
-        for j in (i+1)..resolved_drivers.len() {
-            driver_pairs.push((Some(i), Some(j)));
-        }
-    }
-
-    if parts_per_cat.iter().any(|c| c.is_empty()) {
-        return templates::optimizer::result_page(
-            &part_priorities, &driver_priorities, &[], None, None,
-            &Stats::default(), &DriverStats::default(), &auth,
-        );
-    }
-
-    let sizes: Vec<usize> = parts_per_cat.iter().map(|c| c.len()).collect();
-    let total_part_combos: usize = sizes.iter().product();
-
-    let mut best: Option<(Vec<usize>, usize, (i32, i32, i32, i32))> = None;
-    let mut part_indices = vec![0usize; categories.len()];
-
-    for _ in 0..total_part_combos {
-        let mut part_stats = Stats::default();
-        for (cat_idx, &pi) in part_indices.iter().enumerate() {
-            part_stats = part_stats.add(&parts_per_cat[cat_idx][pi].stats);
-        }
-        let (p_min, p_sum) = score_part_combo(&part_stats, &part_priorities);
-
-        for (dp_idx, (d1, d2)) in driver_pairs.iter().enumerate() {
-            let mut ds = DriverStats::default();
-            if let Some(i) = d1 { ds = ds.add(&resolved_drivers[*i].stats); }
-            if let Some(i) = d2 { ds = ds.add(&resolved_drivers[*i].stats); }
-            let (d_min, d_sum) = driver_priorities.score(&ds);
-
-            let score = (p_min, p_sum, d_min, d_sum);
-            let is_better = match &best {
-                None => true,
-                Some((_, _, best_score)) => score > *best_score,
-            };
-            if is_better {
-                best = Some((part_indices.clone(), dp_idx, score));
-            }
-        }
-
-        let mut carry = true;
-        for i in (0..part_indices.len()).rev() {
-            if carry {
-                part_indices[i] += 1;
-                if part_indices[i] >= sizes[i] { part_indices[i] = 0; } else { carry = false; }
-            }
-        }
-    }
-
-    let (part_picks, driver1, driver2, total_parts, total_drivers) = match best {
-        Some((pidx, dp_idx, _)) => {
-            let picks: Vec<_> = pidx.iter().enumerate().map(|(ci, &pi)| {
-                let rp = &parts_per_cat[ci][pi];
-                (categories[ci], rp.item.clone(), rp.stats.clone())
-            }).collect();
-            let (d1_idx, d2_idx) = driver_pairs[dp_idx];
-            let d1 = d1_idx.map(|i| &resolved_drivers[i]);
-            let d2 = d2_idx.map(|i| &resolved_drivers[i]);
-            let ts = picks.iter().fold(Stats::default(), |a, (_, _, s)| a.add(s));
-            let mut ds = DriverStats::default();
-            if let Some(d) = d1 { ds = ds.add(&d.stats); }
-            if let Some(d) = d2 { ds = ds.add(&d.stats); }
-            (
-                picks,
-                d1.map(|d| (d.item.clone(), d.stats.clone())),
-                d2.map(|d| (d.item.clone(), d.stats.clone())),
-                ts, ds,
-            )
-        }
-        None => (Vec::new(), None, None, Stats::default(), DriverStats::default()),
-    };
-
-    templates::optimizer::result_page(
+    match run_brute_force(
+        &parts_per_cat, &categories,
+        &driver_pairs, &resolved_drivers,
         &part_priorities, &driver_priorities,
-        &part_picks, driver1.as_ref(), driver2.as_ref(),
-        &total_parts, &total_drivers, &auth,
-    )
+    ) {
+        Some(r) => templates::optimizer::result_page(
+            &part_priorities, &driver_priorities,
+            &r.part_picks, r.driver1.as_ref(), r.driver2.as_ref(),
+            &r.total_parts, &r.total_drivers, &auth,
+        ),
+        None => templates::optimizer::result_page(
+            &part_priorities, &driver_priorities,
+            &[], None, None, &Stats::default(), &DriverStats::default(), &auth,
+        ),
+    }
 }
 
-fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32) {
-    if !priorities.any_selected() {
-        let total = stats.total_performance();
-        return (total, total);
-    }
-    let mut values = Vec::new();
-    if priorities.speed { values.push(stats.speed); }
-    if priorities.cornering { values.push(stats.cornering); }
-    if priorities.power_unit { values.push(stats.power_unit); }
-    if priorities.qualifying { values.push(stats.qualifying); }
-    let min = *values.iter().min().unwrap();
-    let sum: i32 = values.iter().sum();
-    (min, sum)
-}
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::optimizer_core::score_part_combo;
 
     fn ds(overtaking: i32, defending: i32, qualifying: i32, race_start: i32, tyre_management: i32) -> DriverStats {
         DriverStats { overtaking, defending, qualifying, race_start, tyre_management }
@@ -380,6 +414,8 @@ mod tests {
         assert_eq!(score_part_combo(&stats, &p), (25, 100));
     }
 }
+
+// ── Save ──────────────────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
 pub struct SaveForm {

@@ -104,6 +104,7 @@ main.container, header.container, footer.container {
 }
 
 header.container {
+    height: 20;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -333,6 +334,47 @@ input.cards-input::-webkit-inner-spin-button {
 }
 .upgrade-tag.secondary {
     color: var(--pico-muted-color);
+}
+
+/* Optimizer tabs */
+.optimizer-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--pico-muted-border-color);
+    margin-bottom: 1rem;
+}
+.optimizer-tab {
+    padding: 0.4rem 1.2rem;
+    text-decoration: none;
+    color: var(--pico-muted-color);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+.optimizer-tab.active {
+    color: var(--pico-color);
+    border-bottom-color: var(--pico-primary);
+    font-weight: 600;
+}
+
+/* Preset result cards */
+.preset-group {
+    margin-bottom: 1.5rem;
+}
+.preset-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+@media (max-width: 900px) {
+    .preset-pair { grid-template-columns: 1fr; }
+}
+.preset-card {
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 0.75rem;
+}
+.preset-card table {
+    font-size: 0.75rem;
 }
 
 /* Auth nav */
