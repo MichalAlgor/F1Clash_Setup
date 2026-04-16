@@ -68,11 +68,11 @@ pub fn form_page(auth: &AuthStatus) -> Markup {
                     div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" {
                         label {
                             "Max part series (1–12)"
-                            input type="number" name="max_part_series" min="1" max="12" placeholder="any";
+                            input type="number" name="max_part_series" min="1" max="12" value="12";
                         }
                         label {
                             "Max driver series (1–12)"
-                            input type="number" name="max_driver_series" min="1" max="12" placeholder="any";
+                            input type="number" name="max_driver_series" min="1" max="12" value="12";
                         }
                     }
                 }

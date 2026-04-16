@@ -44,8 +44,22 @@ pub struct OptimizerQuery {
     pub race_start: bool,
     #[serde(default)]
     pub tyre_management: bool,
+    #[serde(default, deserialize_with = "deserialize_opt_i32")]
     pub max_part_series: Option<i32>,
+    #[serde(default, deserialize_with = "deserialize_opt_i32")]
     pub max_driver_series: Option<i32>,
+}
+
+fn deserialize_opt_i32<'de, D>(d: D) -> Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(d)?;
+    if s.trim().is_empty() {
+        Ok(None)
+    } else {
+        s.trim().parse::<i32>().map(Some).map_err(serde::de::Error::custom)
+    }
 }
 
 struct ResolvedPart {

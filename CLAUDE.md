@@ -22,7 +22,12 @@ cargo check          # Type-check without building
 cargo build          # Build debug binary
 cargo run            # Run dev server (needs DATABASE_URL in .env)
 cargo build --release # Build release binary
+cargo test           # Run all tests
 ```
+
+## Verification Rule
+
+**Every code change must be verified by running `cargo test` before considering it complete.** All tests must pass. If a change breaks existing tests, fix them before moving on.
 
 SQLx uses compile-time query checking. For CI/Docker builds without a database:
 ```bash
