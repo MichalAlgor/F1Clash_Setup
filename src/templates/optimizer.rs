@@ -202,9 +202,9 @@ fn preset_card(preset: &PresetResult) -> Markup {
                                 }
                             }
                             tbody {
-                                @for (cat, item, stats) in &r.part_picks {
+                                @for (cat, item, stats, rarity_class) in &r.part_picks {
                                     tr {
-                                        td { small { (cat.display_name()) } " " (item.part_name.clone()) }
+                                        td { small class="secondary" { (cat.display_name()) } " " span class=(*rarity_class) { (item.part_name.clone()) } }
                                         td { (item.level) }
                                         td { (stats.speed) }
                                         td { (stats.cornering) }
@@ -247,7 +247,7 @@ fn preset_card(preset: &PresetResult) -> Markup {
                             }
                             button type="submit" style="white-space:nowrap" { "Save" }
                         }
-                        @for (cat, item, _) in &r.part_picks {
+                        @for (cat, item, _, _) in &r.part_picks {
                             input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
                         }
                     }
@@ -262,7 +262,7 @@ fn preset_card(preset: &PresetResult) -> Markup {
 pub fn result_page(
     part_priorities: &StatPriorities,
     driver_priorities: &DriverPriorities,
-    part_picks: &[(PartCategory, InventoryItem, Stats)],
+    part_picks: &[(PartCategory, InventoryItem, Stats, &'static str)],
     driver1: Option<&(DriverInventoryItem, DriverStats)>,
     driver2: Option<&(DriverInventoryItem, DriverStats)>,
     total_parts: &Stats,
@@ -324,10 +324,10 @@ pub fn result_page(
                             }
                         }
                         tbody {
-                            @for (cat, item, stats) in part_picks {
+                            @for (cat, item, stats, rarity_class) in part_picks {
                                 tr {
                                     td { (cat.display_name()) }
-                                    td { strong { (item.part_name.clone()) } }
+                                    td { strong class=(*rarity_class) { (item.part_name.clone()) } }
                                     td { (item.level) }
                                     td { (stats.speed) }
                                     td { (stats.cornering) }
@@ -417,7 +417,7 @@ pub fn result_page(
                     input type="text" id="name" name="name" required
                         value=(format!("Optimized ({all_labels})"));
 
-                    @for (cat, item, _) in part_picks {
+                    @for (cat, item, _, _) in part_picks {
                         input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
                     }
                     @if let Some((item, _)) = driver1 {

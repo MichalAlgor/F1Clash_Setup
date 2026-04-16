@@ -5,7 +5,7 @@ use f1clash_setup::models::driver::{DriverInventoryItem, DriverStats};
 use f1clash_setup::models::part::{PartCategory, Stats};
 use f1clash_setup::models::setup::InventoryItem;
 use f1clash_setup::optimizer_core::{
-    DriverPriorities, OptimizeResult, ResolvedDriver, ResolvedPart, run_brute_force,
+    DriverPriorities, ResolvedDriver, ResolvedPart, run_brute_force,
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -26,6 +26,7 @@ fn make_part(id: i32, speed: i32, cornering: i32, power_unit: i32, qualifying: i
             pit_stop_time: 0.30,
             additional_stat_value: 0,
         },
+        rarity_css_class: "rarity-epic",
     }
 }
 

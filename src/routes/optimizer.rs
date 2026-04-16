@@ -143,7 +143,7 @@ async fn resolve_parts(
             if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
                 s = s.boosted(b.percentage);
             }
-            Some(ResolvedPart { item: item.clone(), stats: s })
+            Some(ResolvedPart { item: item.clone(), stats: s, rarity_css_class: part_def.rarity_css_class() })
         }).collect()
     }).collect::<Vec<Vec<ResolvedPart>>>();
     #[cfg(debug_assertions)]

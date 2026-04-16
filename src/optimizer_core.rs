@@ -8,6 +8,7 @@ use crate::models::setup::InventoryItem;
 pub struct ResolvedPart {
     pub item: InventoryItem,
     pub stats: Stats,
+    pub rarity_css_class: &'static str,
 }
 
 pub struct ResolvedDriver {
@@ -16,7 +17,7 @@ pub struct ResolvedDriver {
 }
 
 pub struct OptimizeResult {
-    pub part_picks: Vec<(PartCategory, InventoryItem, Stats)>,
+    pub part_picks: Vec<(PartCategory, InventoryItem, Stats, &'static str)>,
     pub driver1: Option<(DriverInventoryItem, DriverStats)>,
     pub driver2: Option<(DriverInventoryItem, DriverStats)>,
     pub total_parts: Stats,
@@ -84,12 +85,12 @@ pub fn run_brute_force(
     // Build result
     let picks: Vec<_> = best_pidx.iter().enumerate().map(|(ci, &pi)| {
         let rp = &parts_per_cat[ci][pi];
-        (categories[ci], rp.item.clone(), rp.stats.clone())
+        (categories[ci], rp.item.clone(), rp.stats.clone(), rp.rarity_css_class)
     }).collect();
     let (d1_idx, d2_idx) = driver_pairs[best_dp_idx];
     let d1 = d1_idx.map(|i| &resolved_drivers[i]);
     let d2 = d2_idx.map(|i| &resolved_drivers[i]);
-    let ts = picks.iter().fold(Stats::default(), |a, (_, _, s)| a.add(s));
+    let ts = picks.iter().fold(Stats::default(), |a, (_, _, s, _)| a.add(s));
     let mut ds = DriverStats::default();
     if let Some(d) = d1 { ds = ds.add(&d.stats); }
     if let Some(d) = d2 { ds = ds.add(&d.stats); }
