@@ -2,10 +2,14 @@ use maud::{html, Markup};
 
 use crate::auth::AuthStatus;
 use crate::data;
-use crate::drivers_data::{self, DriverCategory, DriverDefinition, DriverRarity};
-use crate::models::driver::DriverInventoryItem;
+use crate::drivers_data::{DriverCategory, DriverRarity};
+use crate::models::driver::{OwnedDriverDefinition, DriverInventoryItem};
 
-pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
+pub fn list_page(
+    items: &[DriverInventoryItem],
+    catalog: &[OwnedDriverDefinition],
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Drivers",
         auth,
@@ -22,13 +26,15 @@ pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
                     @let cat_items: Vec<_> = {
                         let mut v: Vec<_> = items.iter()
                             .filter(|item| {
-                                drivers_data::find_driver_by_db(&item.driver_name, &item.rarity)
-                                    .is_some_and(|d| d.rarity.category() == *category)
+                                catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity)
+                                    .and_then(|d| DriverRarity::from_db(&d.rarity))
+                                    .is_some_and(|r| r.category() == *category)
                             })
                             .collect();
                         v.sort_by_key(|item| {
-                            let r = DriverRarity::from_db(&item.rarity).unwrap_or(DriverRarity::Common);
-                            drivers_data::driver_catalog_index(&item.driver_name, &r)
+                            catalog.iter()
+                                .find(|d| d.name == item.driver_name && d.rarity == item.rarity)
+                                .map_or(i32::MAX, |d| d.sort_order)
                         });
                         v
                     };
@@ -56,16 +62,17 @@ pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
                                     }
                                     tbody {
                                         @for item in &cat_items {
-                                            @if let Some(driver_def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
+                                            @if let Some(driver_def) = catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity) {
                                                 @if let Some(stats) = driver_def.stats_for_level(item.level) {
+                                                    @let rarity_css = DriverRarity::from_db(&driver_def.rarity).map_or("", |r| r.css_class());
                                                     tr {
-                                                        td class=(driver_def.rarity.css_class()) { (item.driver_name) }
-                                                        td { (driver_def.rarity.label()) }
+                                                        td class=(rarity_css) { (item.driver_name) }
+                                                        td { (driver_def.rarity) }
                                                         td { (driver_def.series) }
                                                         td {
                                                             form method="post" action={"/drivers/" (item.id) "/level"} style="display:inline;margin:0" {
                                                                 select name="level" onchange="this.form.submit()" class="inline-select" {
-                                                                    @for l in driver_def.levels {
+                                                                    @for l in &driver_def.levels {
                                                                         option value=(l.level) selected[l.level == item.level] {
                                                                             (l.level)
                                                                         }
@@ -103,7 +110,11 @@ pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
     )
 }
 
-pub fn bulk_page(current_inventory: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
+pub fn bulk_page(
+    current_inventory: &[DriverInventoryItem],
+    catalog: &[OwnedDriverDefinition],
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Manage All Drivers",
         auth,
@@ -114,7 +125,10 @@ pub fn bulk_page(current_inventory: &[DriverInventoryItem], auth: &AuthStatus) -
             form method="post" action="/drivers/bulk" {
                 div class="category-grid" {
                     @for category in DriverCategory::all() {
-                        @let drivers = drivers_data::drivers_by_category(*category);
+                        @let drivers: Vec<_> = catalog.iter()
+                            .filter(|d| DriverRarity::from_db(&d.rarity)
+                                .is_some_and(|r| r.category() == *category))
+                            .collect();
                         @if !drivers.is_empty() {
                             section {
                                 h2 { (category.display_name()) }
@@ -131,17 +145,18 @@ pub fn bulk_page(current_inventory: &[DriverInventoryItem], auth: &AuthStatus) -
                                         tbody {
                                             @for driver_def in &drivers {
                                                 @let current_level = current_inventory.iter()
-                                                    .find(|i| i.driver_name == driver_def.name && i.rarity == driver_def.rarity.db_key())
+                                                    .find(|i| i.driver_name == driver_def.name && i.rarity == driver_def.rarity)
                                                     .map(|i| i.level)
                                                     .unwrap_or(0);
+                                                @let rarity_css = DriverRarity::from_db(&driver_def.rarity).map_or("", |r| r.css_class());
                                                 tr {
-                                                    td class=(driver_def.rarity.css_class()) { (driver_def.name) }
-                                                    td { (driver_def.rarity.label()) }
+                                                    td class=(rarity_css) { (driver_def.name) }
+                                                    td { (driver_def.rarity) }
                                                     td { (driver_def.series) }
                                                     td {
-                                                        select name={"driver:" (driver_def.name) ":" (driver_def.rarity.db_key())} class="inline-select" {
+                                                        select name={"driver:" (driver_def.name) ":" (driver_def.rarity)} class="inline-select" {
                                                             option value="0" selected[current_level == 0] { "—" }
-                                                            @for l in driver_def.levels {
+                                                            @for l in &driver_def.levels {
                                                                 option value=(l.level) selected[l.level == current_level] {
                                                                     (l.level)
                                                                 }
@@ -169,7 +184,7 @@ pub fn driver_cards_cell(
     item_id: i32,
     cards_owned: i32,
     current_level: i32,
-    def: Option<&DriverDefinition>,
+    def: Option<&OwnedDriverDefinition>,
 ) -> Markup {
     let upgrade_markup = match def {
         None => html! {},

@@ -26,6 +26,7 @@ async fn season_selector(State(state): State<AppState>) -> impl IntoResponse {
         "SELECT DISTINCT s FROM (
             SELECT season AS s FROM inventory
             UNION SELECT season AS s FROM driver_inventory
+            UNION SELECT season AS s FROM driver_catalog
             UNION SELECT season AS s FROM setups
             UNION SELECT value AS s FROM settings WHERE key = 'active_season'
             UNION SELECT season AS s FROM season_categories

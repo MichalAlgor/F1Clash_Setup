@@ -6,7 +6,6 @@ use axum::{Form, Router};
 use serde::{Deserialize, Serialize};
 
 use crate::auth::AuthStatus;
-use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
 use crate::models::setup::InventoryItem;
 use crate::AppState;
@@ -125,7 +124,7 @@ async fn import(State(state): State<AppState>, Form(form): Form<ImportForm>) -> 
 
     for driver in &data.drivers {
         if driver.level < 1 { continue; }
-        if drivers_data::find_driver_by_db(&driver.name, &driver.rarity).is_none() { continue; }
+        if state.find_driver_def(&driver.name, &driver.rarity).await.is_none() { continue; }
         sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level, season) VALUES ($1, $2, $3, $4)")
             .bind(&driver.name).bind(&driver.rarity).bind(driver.level).bind(&season)
             .execute(&state.pool).await.unwrap();

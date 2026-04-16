@@ -2,7 +2,7 @@ use maud::{html, Markup};
 
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
-use crate::drivers_data;
+use crate::drivers_data::DriverRarity;
 use crate::models::driver::{DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::InventoryItem;
@@ -374,18 +374,17 @@ pub fn result_page(
                             tbody {
                                 @for driver_opt in &[driver1, driver2] {
                                     @if let Some((item, stats)) = driver_opt {
-                                        @if let Some(def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
-                                            tr {
-                                                td class=(def.rarity.css_class()) { strong { (item.driver_name.clone()) } }
-                                                td { (def.rarity.label()) }
-                                                td { (item.level) }
-                                                td { (stats.overtaking) }
-                                                td { (stats.defending) }
-                                                td { (stats.qualifying) }
-                                                td { (stats.race_start) }
-                                                td { (stats.tyre_management) }
-                                                td { (stats.total()) }
-                                            }
+                                        @let d_rarity = DriverRarity::from_db(&item.rarity);
+                                        tr {
+                                            td class=[d_rarity.map(|r| r.css_class())] { strong { (item.driver_name.clone()) } }
+                                            td { (item.rarity) }
+                                            td { (item.level) }
+                                            td { (stats.overtaking) }
+                                            td { (stats.defending) }
+                                            td { (stats.qualifying) }
+                                            td { (stats.race_start) }
+                                            td { (stats.tyre_management) }
+                                            td { (stats.total()) }
                                         }
                                     }
                                 }
