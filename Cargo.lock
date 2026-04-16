@@ -438,7 +438,7 @@ dependencies = [
 
 [[package]]
 name = "f1clash_setup"
-version = "0.2.0"
+version = "0.2.5"
 dependencies = [
  "axum",
  "criterion",

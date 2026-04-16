@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.5] — 2026-04-16
+
+### Added
+- **Battery part category** — new part type for the 2026 season with Overtake Mode secondary stat (Impact, Duration, Recharge Rate sub-stats)
+- **Generic additional stat system** — replaces the hardcoded DRS column; any part category can declare its own secondary stat without schema changes; DRS data migrated automatically
+- **Season-aware part categories** — each season declares which part slots are active (e.g. 2025 has Rear Wing; 2026 has Battery); optimizer, setup builder, and inventory adapt automatically
+- **Season Settings admin page** (`/admin/seasons`) — configure which categories are active per season; create new seasons; season creation removed from the public season switcher
+- **Season selector in nav** — inline dropdown replaces the separate season page; switching seasons reloads the current page
+- **Card upgrade calculator** — enter how many cards you own for a part or driver; shows the highest reachable level and coin cost to get there, updated reactively via htmx without a page reload
+- **Optimizer Presets tab** — runs 6 pre-defined optimizations (Speed, Cornering, Power Unit — each paired with Qualifying) and shows all results at once in a 3-group, 2-column layout; parts-only, no drivers
+- **Criterion benchmarks** — `benches/optimizer.rs` provides a regression baseline for the brute-force optimizer using a realistic series-12 dataset
+
+### Changed
+- **Optimizer performance** — separated part and driver scoring; part combo and driver pair are now found independently, reducing evaluations from O(combos × pairs) to O(combos) + O(pairs); ~79× fewer iterations on a full series-12 inventory
+- **Optimizer Custom tab** — existing custom optimizer moved to `/optimizer/custom`; `/optimizer` now shows the Presets tab by default
+- **Inventory table** — more compact layout matching the driver inventory style; Series column removed; Cards and upgrade info merged into one reactive column
+- **Session-based admin auth** — replaced HTTP Basic Auth with a password form embedded in the nav header; login sets a session cookie; admin link hidden when not logged in
+- **Docker** — `rust:latest` base image; `static/` directory handled gracefully when empty; `docker-compose.yml` picks up `ADMIN_PASSWORD` from `.env` via `env_file`
+- **Nav header** — sticky, slimmer height; season switcher is an inline dropdown; Admin link shown only when logged in (or when auth is disabled)
+
+### Fixed
+- Optimizer series limit inputs default to 12 so an empty field no longer causes a parse error
+- `parts.json` category values deserialize correctly from snake_case (`"brakes"`, `"rear_wing"`, etc.)
+
+---
+
 ## [0.2.0] — 2026-04-15
 
 ### Added

@@ -10,8 +10,6 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "F1 Clash Setup — " (title) }
-                link rel="icon" type="image/webp" href="/static/logo.webp";
-                meta property="og:image" content="/static/logo.webp";
                 link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css";
                 script src="https://unpkg.com/htmx.org@2.0.4" {}
                 style { (PreEscaped(CUSTOM_CSS)) }
@@ -22,8 +20,7 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                         ul {
                             li {
                                 a href="/" class="brand" {
-                                    img src="/static/logo.webp" alt="F1 Clash" class="nav-logo";
-                                    strong { "Setup" }
+                                    strong { "F1 Clash Setup" }
                                 }
                             }
                         }
@@ -86,33 +83,25 @@ main.container, header.container, footer.container {
 }
 
 .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     text-decoration: none;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     letter-spacing: -0.02em;
-}
-.nav-logo {
-    height: 1.6rem;
-    width: 1.6rem;
-    object-fit: contain;
-    background: #fff;
-    border-radius: 50%;
-    padding: 0.15rem;
-    display: block;
 }
 
 header.container {
-    height: 20;
     position: sticky;
     top: 0;
     z-index: 100;
     background: var(--pico-background-color);
     border-bottom: 1px solid var(--pico-muted-border-color);
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 header.container nav {
-    padding: 0.25rem 0;
+    padding: 0.2rem 0;
+}
+header.container nav ul {
+    margin-bottom: 0;
 }
 header.container nav ul li a,
 header.container nav ul li span {
