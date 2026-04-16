@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use sqlx::PgPool;
 
+use crate::drivers_data;
+use crate::models::driver::{OwnedDriverDefinition, OwnedDriverLevelStats};
 use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory};
 
 /// Shape of one part entry in parts.json
@@ -202,6 +204,220 @@ pub async fn load_catalog(pool: &PgPool) -> Vec<OwnedPartDefinition> {
         })
         .collect()
 }
+
+// ── Driver catalog ───────────────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+struct SeedDriver {
+    name: String,
+    rarity: String,
+    series: String,
+    sort_order: i32,
+    levels: Vec<SeedDriverLevel>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SeedDriverLevel {
+    level: i32,
+    overtaking: i32,
+    defending: i32,
+    qualifying: i32,
+    race_start: i32,
+    tyre_management: i32,
+    #[serde(default)]
+    cards_required: i32,
+    #[serde(default)]
+    coins_cost: i64,
+    #[serde(default)]
+    legacy_points: i32,
+}
+
+/// Read drivers.json and upsert all drivers+levels into the DB.
+/// Falls back to seeding from built-in static data (season "2025") when
+/// drivers.json is absent and the table is empty.
+pub async fn seed_drivers_catalog(pool: &PgPool) {
+    if let Ok(json) = std::fs::read_to_string("drivers.json") {
+        let seasons: HashMap<String, Vec<SeedDriver>> = match serde_json::from_str(&json) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed to parse drivers.json: {e}");
+                return;
+            }
+        };
+        for (season, drivers) in &seasons {
+            seed_driver_season(pool, season, drivers).await;
+        }
+        tracing::info!("Driver catalog seeded from drivers.json");
+        return;
+    }
+
+    // Fall back to static data when the table is empty
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM driver_catalog")
+        .fetch_one(pool)
+        .await
+        .unwrap_or(0);
+
+    if count == 0 {
+        tracing::info!("drivers.json not found and DB empty — seeding from built-in static data for season 2025");
+        let static_drivers: Vec<SeedDriver> = drivers_data::driver_catalog()
+            .iter()
+            .enumerate()
+            .map(|(i, d)| SeedDriver {
+                name: d.name.to_string(),
+                rarity: d.rarity.db_key().to_string(),
+                series: d.series.to_string(),
+                sort_order: i as i32,
+                levels: d.levels.iter().map(|l| SeedDriverLevel {
+                    level: l.level,
+                    overtaking: l.overtaking,
+                    defending: l.defending,
+                    qualifying: l.qualifying,
+                    race_start: l.race_start,
+                    tyre_management: l.tyre_management,
+                    cards_required: l.cards_required,
+                    coins_cost: l.coins_cost,
+                    legacy_points: l.legacy_points,
+                }).collect(),
+            })
+            .collect();
+        seed_driver_season(pool, "2025", &static_drivers).await;
+        tracing::info!("Driver catalog seeded from static data");
+    } else {
+        tracing::info!("drivers.json not found — keeping existing driver catalog in DB");
+    }
+}
+
+async fn seed_driver_season(pool: &PgPool, season: &str, drivers: &[SeedDriver]) {
+    for driver in drivers {
+        let driver_id: i32 = sqlx::query_scalar(
+            r#"INSERT INTO driver_catalog (name, season, rarity, series, sort_order)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (name, rarity, season) DO UPDATE
+                 SET series     = EXCLUDED.series,
+                     sort_order = EXCLUDED.sort_order
+               RETURNING id"#,
+        )
+        .bind(&driver.name)
+        .bind(season)
+        .bind(&driver.rarity)
+        .bind(&driver.series)
+        .bind(driver.sort_order)
+        .fetch_one(pool)
+        .await
+        .unwrap_or_else(|e| panic!("Failed to upsert driver '{}': {e}", driver.name));
+
+        for lvl in &driver.levels {
+            sqlx::query(
+                r#"INSERT INTO driver_level_stats
+                   (driver_id, level, overtaking, defending, qualifying, race_start, tyre_management,
+                    cards_required, coins_cost, legacy_points)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                   ON CONFLICT (driver_id, level) DO UPDATE
+                     SET overtaking      = EXCLUDED.overtaking,
+                         defending       = EXCLUDED.defending,
+                         qualifying      = EXCLUDED.qualifying,
+                         race_start      = EXCLUDED.race_start,
+                         tyre_management = EXCLUDED.tyre_management,
+                         cards_required  = EXCLUDED.cards_required,
+                         coins_cost      = EXCLUDED.coins_cost,
+                         legacy_points   = EXCLUDED.legacy_points"#,
+            )
+            .bind(driver_id)
+            .bind(lvl.level)
+            .bind(lvl.overtaking)
+            .bind(lvl.defending)
+            .bind(lvl.qualifying)
+            .bind(lvl.race_start)
+            .bind(lvl.tyre_management)
+            .bind(lvl.cards_required)
+            .bind(lvl.coins_cost)
+            .bind(lvl.legacy_points)
+            .execute(pool)
+            .await
+            .unwrap_or_else(|e| {
+                panic!("Failed to upsert level {} for driver '{}': {e}", lvl.level, driver.name)
+            });
+        }
+    }
+}
+
+/// Load the full driver catalog (all seasons) from the DB into memory.
+pub async fn load_drivers_catalog(pool: &PgPool) -> Vec<OwnedDriverDefinition> {
+    #[derive(sqlx::FromRow)]
+    struct DriverRow {
+        id: i32,
+        name: String,
+        season: String,
+        rarity: String,
+        series: String,
+        sort_order: i32,
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct DriverLevelRow {
+        driver_id: i32,
+        level: i32,
+        overtaking: i32,
+        defending: i32,
+        qualifying: i32,
+        race_start: i32,
+        tyre_management: i32,
+        cards_required: i32,
+        coins_cost: i64,
+        legacy_points: i32,
+    }
+
+    let driver_rows = sqlx::query_as::<_, DriverRow>(
+        "SELECT id, name, season, rarity, series, sort_order
+         FROM driver_catalog
+         ORDER BY season, sort_order",
+    )
+    .fetch_all(pool)
+    .await
+    .expect("Failed to load driver catalog");
+
+    let level_rows = sqlx::query_as::<_, DriverLevelRow>(
+        "SELECT driver_id, level, overtaking, defending, qualifying, race_start, tyre_management,
+                cards_required, coins_cost, legacy_points
+         FROM driver_level_stats
+         ORDER BY driver_id, level",
+    )
+    .fetch_all(pool)
+    .await
+    .expect("Failed to load driver level stats");
+
+    driver_rows
+        .into_iter()
+        .map(|d| {
+            let levels = level_rows
+                .iter()
+                .filter(|l| l.driver_id == d.id)
+                .map(|l| OwnedDriverLevelStats {
+                    level: l.level,
+                    overtaking: l.overtaking,
+                    defending: l.defending,
+                    qualifying: l.qualifying,
+                    race_start: l.race_start,
+                    tyre_management: l.tyre_management,
+                    cards_required: l.cards_required,
+                    coins_cost: l.coins_cost,
+                    legacy_points: l.legacy_points,
+                })
+                .collect();
+            OwnedDriverDefinition {
+                id: d.id,
+                name: d.name,
+                season: d.season,
+                rarity: d.rarity,
+                series: d.series,
+                sort_order: d.sort_order,
+                levels,
+            }
+        })
+        .collect()
+}
+
+// ── Season categories ─────────────────────────────────────────────────────────
 
 /// Load all season→category mappings from the DB.
 pub async fn load_season_categories(pool: &PgPool) -> HashMap<String, Vec<PartCategory>> {

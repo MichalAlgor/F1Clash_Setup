@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use crate::auth::AuthStatus;
 use crate::catalog;
+use crate::models::driver::OwnedDriverLevelStats;
 use crate::models::part::OwnedLevelStats;
 use crate::templates;
 use crate::AppState;
@@ -19,6 +20,11 @@ pub fn router() -> Router<AppState> {
         .route("/admin/parts/new", get(new_part_form))
         .route("/admin/parts/{id}/edit", get(edit_part_form))
         .route("/admin/parts/{id}", delete(delete_part).post(update_part))
+        .route("/admin/drivers", get(list_drivers).post(create_driver))
+        .route("/admin/drivers/export", get(export_drivers))
+        .route("/admin/drivers/new", get(new_driver_form))
+        .route("/admin/drivers/{id}/edit", get(edit_driver_form))
+        .route("/admin/drivers/{id}", delete(delete_driver).post(update_driver))
         .route("/admin/seasons", get(list_seasons).post(save_season_categories))
 }
 
@@ -207,6 +213,166 @@ async fn export_parts(State(state): State<AppState>, auth: AuthStatus) -> impl I
         .into_response()
 }
 
+// ── Driver catalog admin ─────────────────────────────────────────────────────
+
+async fn list_drivers(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+    let season = state.season().await;
+    let catalog = state.drivers_catalog_for_season().await;
+    templates::admin::drivers_list_page(&catalog, &season, &auth).into_response()
+}
+
+async fn new_driver_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+    let season = state.season().await;
+    templates::admin::driver_form_page(None, &season, &auth).into_response()
+}
+
+async fn edit_driver_form(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+    let season = state.season().await;
+    let catalog = state.drivers_catalog.read().await;
+    let driver = catalog.iter().find(|d| d.id == id).cloned();
+    drop(catalog);
+    match driver {
+        Some(d) => templates::admin::driver_form_page(Some(&d), &season, &auth).into_response(),
+        None => Redirect::to("/admin/drivers").into_response(),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct DriverForm {
+    pub name: String,
+    pub rarity: String,
+    pub series: String,
+    pub levels_json: String,
+}
+
+async fn create_driver(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    Form(form): Form<DriverForm>,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+    let season = state.season().await;
+
+    let levels: Vec<OwnedDriverLevelStats> = match serde_json::from_str(&form.levels_json) {
+        Ok(v) => v,
+        Err(_) => return Redirect::to("/admin/drivers/new").into_response(),
+    };
+
+    let sort_order: i32 = sqlx::query_scalar(
+        "SELECT COALESCE(MAX(sort_order) + 1, 0) FROM driver_catalog WHERE season = $1",
+    )
+    .bind(&season)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
+
+    let driver_id: i32 = sqlx::query_scalar(
+        "INSERT INTO driver_catalog (name, season, rarity, series, sort_order)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id",
+    )
+    .bind(&form.name)
+    .bind(&season)
+    .bind(&form.rarity)
+    .bind(&form.series)
+    .bind(sort_order)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap();
+
+    insert_driver_levels(&state, driver_id, &levels).await;
+    reload_drivers_catalog(&state).await;
+    Redirect::to("/admin/drivers").into_response()
+}
+
+async fn update_driver(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    auth: AuthStatus,
+    Form(form): Form<DriverForm>,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r; }
+
+    let levels: Vec<OwnedDriverLevelStats> = match serde_json::from_str(&form.levels_json) {
+        Ok(v) => v,
+        Err(_) => return Redirect::to("/admin/drivers").into_response(),
+    };
+
+    sqlx::query(
+        "UPDATE driver_catalog SET name=$1, rarity=$2, series=$3 WHERE id=$4",
+    )
+    .bind(&form.name)
+    .bind(&form.rarity)
+    .bind(&form.series)
+    .bind(id)
+    .execute(&state.pool)
+    .await
+    .unwrap();
+
+    sqlx::query("DELETE FROM driver_level_stats WHERE driver_id = $1")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+
+    insert_driver_levels(&state, id, &levels).await;
+    reload_drivers_catalog(&state).await;
+    Redirect::to("/admin/drivers").into_response()
+}
+
+async fn delete_driver(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if auth.enabled && !auth.logged_in {
+        return maud::html! {}.into_response();
+    }
+
+    sqlx::query("DELETE FROM driver_catalog WHERE id = $1")
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+
+    reload_drivers_catalog(&state).await;
+    maud::html! {}.into_response()
+}
+
+async fn export_drivers(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) { return r.into_response(); }
+
+    let all = state.drivers_catalog.read().await.clone();
+
+    let mut by_season: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
+    for driver in &all {
+        by_season.entry(driver.season.clone()).or_default().push(serde_json::json!({
+            "name": driver.name,
+            "rarity": driver.rarity,
+            "series": driver.series,
+            "sort_order": driver.sort_order,
+            "levels": driver.levels,
+        }));
+    }
+
+    let json = serde_json::to_string_pretty(&by_season).unwrap_or_default();
+    (
+        [
+            (header::CONTENT_TYPE, "application/json".to_string()),
+            (header::CONTENT_DISPOSITION, "attachment; filename=\"drivers.json\"".to_string()),
+        ],
+        json,
+    )
+        .into_response()
+}
+
 // ── Season categories ────────────────────────────────────────────────────────
 
 async fn list_seasons(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
@@ -294,4 +460,33 @@ async fn insert_levels(state: &AppState, part_id: i32, levels: &[OwnedLevelStats
 async fn reload_catalog(state: &AppState) {
     let new_catalog = catalog::load_catalog(&state.pool).await;
     *state.catalog.write().await = new_catalog;
+}
+
+async fn insert_driver_levels(state: &AppState, driver_id: i32, levels: &[OwnedDriverLevelStats]) {
+    for lvl in levels {
+        sqlx::query(
+            "INSERT INTO driver_level_stats
+             (driver_id, level, overtaking, defending, qualifying, race_start, tyre_management,
+              cards_required, coins_cost, legacy_points)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        )
+        .bind(driver_id)
+        .bind(lvl.level)
+        .bind(lvl.overtaking)
+        .bind(lvl.defending)
+        .bind(lvl.qualifying)
+        .bind(lvl.race_start)
+        .bind(lvl.tyre_management)
+        .bind(lvl.cards_required)
+        .bind(lvl.coins_cost)
+        .bind(lvl.legacy_points)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+    }
+}
+
+async fn reload_drivers_catalog(state: &AppState) {
+    let new_catalog = catalog::load_drivers_catalog(&state.pool).await;
+    *state.drivers_catalog.write().await = new_catalog;
 }

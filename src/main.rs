@@ -15,6 +15,7 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 
+use crate::models::driver::OwnedDriverDefinition;
 use crate::models::part::{OwnedPartDefinition, PartCategory};
 
 #[derive(Clone)]
@@ -24,6 +25,8 @@ pub struct AppState {
     pub catalog: Arc<RwLock<Vec<OwnedPartDefinition>>>,
     /// Which part categories are active per season.
     pub season_categories: Arc<RwLock<HashMap<String, Vec<PartCategory>>>>,
+    /// Driver definitions for all seasons.
+    pub drivers_catalog: Arc<RwLock<Vec<OwnedDriverDefinition>>>,
     /// Plain-text password for verification on login (None = no auth).
     pub admin_password: Option<String>,
     /// Opaque token stored in the session cookie (derived from password).
@@ -80,6 +83,29 @@ impl AppState {
             .cloned()
             .unwrap_or_default()
     }
+
+    /// All driver definitions for the active season, in sort_order.
+    pub async fn drivers_catalog_for_season(&self) -> Vec<OwnedDriverDefinition> {
+        let season = self.season().await;
+        self.drivers_catalog
+            .read()
+            .await
+            .iter()
+            .filter(|d| d.season == season)
+            .cloned()
+            .collect()
+    }
+
+    /// Find a driver definition by name+rarity within the active season.
+    pub async fn find_driver_def(&self, name: &str, rarity: &str) -> Option<OwnedDriverDefinition> {
+        let season = self.season().await;
+        self.drivers_catalog
+            .read()
+            .await
+            .iter()
+            .find(|d| d.name == name && d.rarity == rarity && d.season == season)
+            .cloned()
+    }
 }
 
 /// Minimal base64 encoder — used to derive the session token from ADMIN_PASSWORD.
@@ -119,6 +145,9 @@ async fn main() {
     // Seed catalog from parts.json (upsert — never deletes)
     catalog::seed_catalog(&pool).await;
 
+    // Seed driver catalog from drivers.json (falls back to static data when absent)
+    catalog::seed_drivers_catalog(&pool).await;
+
     // Load active season from settings
     let season: String = sqlx::query_scalar("SELECT value FROM settings WHERE key = 'active_season'")
         .fetch_one(&pool)
@@ -130,6 +159,9 @@ async fn main() {
 
     // Load season → category mappings
     let season_cats = catalog::load_season_categories(&pool).await;
+
+    // Load driver catalog (all seasons) into memory
+    let drivers = catalog::load_drivers_catalog(&pool).await;
 
     // Auth setup
     let admin_password = std::env::var("ADMIN_PASSWORD").ok();
@@ -146,6 +178,7 @@ async fn main() {
         active_season: Arc::new(RwLock::new(season)),
         catalog: Arc::new(RwLock::new(parts)),
         season_categories: Arc::new(RwLock::new(season_cats)),
+        drivers_catalog: Arc::new(RwLock::new(drivers)),
         admin_password,
         session_token,
     };

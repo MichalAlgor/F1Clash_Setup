@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use maud::{html, Markup};
 
 use crate::auth::AuthStatus;
+use crate::drivers_data::DriverRarity;
+use crate::models::driver::OwnedDriverDefinition;
 use crate::models::part::{PartCategory, OwnedPartDefinition};
 
 pub fn parts_list_page(catalog: &[OwnedPartDefinition], active_season: &str, auth: &AuthStatus) -> Markup {
@@ -19,6 +21,7 @@ pub fn parts_list_page(catalog: &[OwnedPartDefinition], active_season: &str, aut
                 a href="/admin/parts/new" role="button" { "+ Add Part" }
                 a href="/admin/parts/export" role="button" class="outline" { "Export parts.json" }
                 a href="/admin/seasons" role="button" class="outline" { "Season Settings" }
+                a href="/admin/drivers" role="button" class="outline" { "Driver Catalog" }
             }
 
             @if catalog.is_empty() {
@@ -157,6 +160,146 @@ pub fn part_form_page(part: Option<&OwnedPartDefinition>, active_season: &str, a
                 div style="display:flex;gap:1rem" {
                     button type="submit" { "Save" }
                     a href="/admin/parts" role="button" class="outline secondary" { "Cancel" }
+                }
+            }
+        },
+    )
+}
+
+// ── Driver catalog admin templates ───────────────────────────────────────────
+
+const DRIVER_RARITIES: &[&str] = &[
+    "Common",
+    "Rare",
+    "Epic",
+    "Legendary",
+    "Prospect Standard",
+    "Prospect Turbocharged",
+    "Podium Stars",
+    "Podium Stars Legends",
+];
+
+pub fn drivers_list_page(catalog: &[OwnedDriverDefinition], active_season: &str, auth: &AuthStatus) -> Markup {
+    super::layout::page(
+        "Admin — Drivers",
+        auth,
+        html! {
+            hgroup {
+                h1 { "Admin: Driver Catalog" }
+                p { "Season: " strong { (active_season) } }
+            }
+
+            div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem" {
+                a href="/admin/drivers/new" role="button" { "+ Add Driver" }
+                a href="/admin/drivers/export" role="button" class="outline" { "Export drivers.json" }
+                a href="/admin/parts" role="button" class="outline" { "Parts Catalog" }
+            }
+
+            @if catalog.is_empty() {
+                p { "No drivers for this season yet." }
+            } @else {
+                figure {
+                    table {
+                        thead {
+                            tr {
+                                th { "Name" }
+                                th { "Rarity" }
+                                th { "Series" }
+                                th { "Levels" }
+                                th {}
+                            }
+                        }
+                        tbody {
+                            @for driver in catalog {
+                                @let rarity_css = DriverRarity::from_db(&driver.rarity).map_or("", |r| r.css_class());
+                                tr {
+                                    td class=(rarity_css) { (driver.name) }
+                                    td { (driver.rarity) }
+                                    td { (driver.series) }
+                                    td { (driver.levels.len()) }
+                                    td style="white-space:nowrap" {
+                                        a href={"/admin/drivers/" (driver.id) "/edit"} role="button" class="outline" style="padding:0.2rem 0.5rem;margin-right:0.3rem" { "Edit" }
+                                        button
+                                            hx-delete={"/admin/drivers/" (driver.id)}
+                                            hx-confirm={"Delete \"" (driver.name) " (" (driver.rarity) ")\"?"}
+                                            hx-target="closest tr"
+                                            hx-swap="outerHTML"
+                                            class="outline secondary"
+                                            style="padding:0.2rem 0.5rem"
+                                        { "×" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+pub fn driver_form_page(driver: Option<&OwnedDriverDefinition>, active_season: &str, auth: &AuthStatus) -> Markup {
+    let title = if driver.is_some() { "Edit Driver" } else { "New Driver" };
+    let action = match driver {
+        Some(d) => format!("/admin/drivers/{}", d.id),
+        None => "/admin/drivers".to_string(),
+    };
+
+    let levels_json = match driver {
+        Some(d) => serde_json::to_string_pretty(&d.levels).unwrap_or_default(),
+        None => serde_json::to_string_pretty(&serde_json::json!([
+            {
+                "level": 1,
+                "overtaking": 0, "defending": 0, "qualifying": 0,
+                "race_start": 0, "tyre_management": 0,
+                "cards_required": 0, "coins_cost": 0, "legacy_points": 0
+            }
+        ])).unwrap_or_default(),
+    };
+
+    super::layout::page(
+        title,
+        auth,
+        html! {
+            hgroup {
+                h1 { (title) }
+                p { "Season: " strong { (active_season) } }
+            }
+
+            form method="post" action=(action) {
+                label for="name" { "Name" }
+                input type="text" id="name" name="name" required
+                    value=[driver.map(|d| d.name.as_str())];
+
+                label for="rarity" { "Rarity" }
+                select id="rarity" name="rarity" required {
+                    @for r in DRIVER_RARITIES {
+                        option value=(r) selected[driver.is_some_and(|d| d.rarity == *r)] {
+                            (r)
+                        }
+                    }
+                }
+
+                label for="series" { "Series" }
+                input type="text" id="series" name="series" required
+                    placeholder="e.g. 1, 2, 3"
+                    value=[driver.map(|d| d.series.as_str())];
+
+                label for="levels_json" {
+                    "Level Stats (JSON array)"
+                    small {
+                        " — fields: level, overtaking, defending, qualifying, race_start, tyre_management"
+                        ", cards_required, coins_cost, legacy_points"
+                    }
+                }
+                textarea id="levels_json" name="levels_json" rows="15" required
+                    style="font-family:monospace;font-size:0.85em" {
+                    (levels_json)
+                }
+
+                div style="display:flex;gap:1rem" {
+                    button type="submit" { "Save" }
+                    a href="/admin/drivers" role="button" class="outline secondary" { "Cancel" }
                 }
             }
         },

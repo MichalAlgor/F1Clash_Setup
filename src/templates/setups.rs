@@ -1,8 +1,8 @@
 use maud::{html, Markup};
 
 use crate::auth::AuthStatus;
-use crate::drivers_data;
-use crate::models::driver::DriverInventoryItem;
+use crate::drivers_data::DriverRarity;
+use crate::models::driver::{DriverInventoryItem, OwnedDriverDefinition};
 use crate::models::part::{OwnedLevelStats, PartCategory};
 use crate::models::setup::{InventoryItem, SetupWithStats};
 
@@ -70,6 +70,7 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
 pub fn form_page(
     inventory_by_category: &[(PartCategory, Vec<(InventoryItem, OwnedLevelStats)>)],
     driver_items: &[DriverInventoryItem],
+    drivers_catalog: &[OwnedDriverDefinition],
     setup: Option<&crate::models::setup::Setup>,
     auth: &AuthStatus,
 ) -> Markup {
@@ -111,10 +112,11 @@ pub fn form_page(
                     select id=(*slot) name=(*slot) {
                         option value="" { "No driver" }
                         @for item in driver_items {
-                            @if let Some(driver_def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
+                            @if let Some(driver_def) = drivers_catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity) {
                                 @if let Some(stats) = driver_def.stats_for_level(item.level) {
+                                    @let rarity_label = DriverRarity::from_db(&driver_def.rarity).map_or(driver_def.rarity.as_str(), |r| r.label());
                                     option value=(item.id) {
-                                        (item.driver_name) " (" (driver_def.rarity.label()) ") Lvl " (item.level)
+                                        (item.driver_name) " (" (rarity_label) ") Lvl " (item.level)
                                         " — " (stats.total()) " total"
                                     }
                                 }

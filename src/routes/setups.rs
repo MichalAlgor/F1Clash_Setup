@@ -7,8 +7,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::auth::AuthStatus;
-use crate::drivers_data;
-use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
+use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats, OwnedDriverDefinition};
 use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem, Setup, SetupWithStats};
 use crate::templates;
@@ -25,6 +24,7 @@ pub fn router() -> Router<AppState> {
 async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let catalog = state.catalog_for_season().await;
+    let drivers_catalog = state.drivers_catalog_for_season().await;
     let setups = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE season = $1 ORDER BY name")
         .bind(&season)
         .fetch_all(&state.pool)
@@ -33,7 +33,7 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
 
     let mut with_stats = Vec::new();
     for setup in setups {
-        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog).await;
+        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog).await;
         with_stats.push(SetupWithStats { setup, stats, driver_stats });
     }
 
@@ -43,10 +43,11 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
 async fn new(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
     let season = state.season().await;
     let catalog = state.catalog_for_season().await;
+    let drivers_catalog = state.drivers_catalog_for_season().await;
     let categories = state.categories_for_season().await;
     let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog, &categories).await;
     let driver_items = load_driver_inventory(&state.pool, &season).await;
-    templates::setups::form_page(&inventory_by_category, &driver_items, None, &auth)
+    templates::setups::form_page(&inventory_by_category, &driver_items, &drivers_catalog, None, &auth)
 }
 
 #[derive(Deserialize)]
@@ -96,13 +97,14 @@ async fn create(State(state): State<AppState>, Form(form): Form<SetupForm>) -> i
 
 async fn show(State(state): State<AppState>, Path(id): Path<i32>, auth: AuthStatus) -> impl IntoResponse {
     let catalog = state.catalog_for_season().await;
+    let drivers_catalog = state.drivers_catalog_for_season().await;
     let setup = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1")
         .bind(id)
         .fetch_one(&state.pool)
         .await
         .unwrap();
 
-    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog).await;
+    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog).await;
 
     // Find the label for this season's special stat (e.g. "DRS", "Overtake Mode")
     let additional_stat_label = catalog.iter()
@@ -198,9 +200,10 @@ async fn compute_all_stats(
     pool: &PgPool,
     setup: &Setup,
     catalog: &[OwnedPartDefinition],
+    drivers_catalog: &[OwnedDriverDefinition],
 ) -> (Stats, DriverStats) {
     let part_stats = compute_part_stats(pool, setup, catalog).await;
-    let driver_stats = compute_driver_stats(pool, setup).await;
+    let driver_stats = compute_driver_stats(pool, setup, drivers_catalog).await;
     (part_stats, driver_stats)
 }
 
@@ -240,7 +243,11 @@ async fn compute_part_stats(
     stats
 }
 
-async fn compute_driver_stats(pool: &PgPool, setup: &Setup) -> DriverStats {
+async fn compute_driver_stats(
+    pool: &PgPool,
+    setup: &Setup,
+    drivers_catalog: &[OwnedDriverDefinition],
+) -> DriverStats {
     let driver_ids: Vec<i32> = [setup.driver1_id, setup.driver2_id]
         .iter().filter_map(|id| *id).collect();
     if driver_ids.is_empty() { return DriverStats::default(); }
@@ -252,7 +259,7 @@ async fn compute_driver_stats(pool: &PgPool, setup: &Setup) -> DriverStats {
 
     let mut stats = DriverStats::default();
     for item in &items {
-        if let Some(def) = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity) {
+        if let Some(def) = drivers_catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity) {
             if let Some(ls) = def.stats_for_level(item.level) {
                 let mut ds = ls.to_stats();
                 if let Some(b) = boosts.iter().find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity) {

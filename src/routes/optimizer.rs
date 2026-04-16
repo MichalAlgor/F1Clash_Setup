@@ -7,7 +7,6 @@ use crate::AppState;
 
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
-use crate::drivers_data;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem};
@@ -184,8 +183,10 @@ async fn resolve_drivers(
     #[cfg(debug_assertions)]
     eprintln!("[optimizer] query driver_boosts:    {:>8.2?}  ({} boosts)", t1.elapsed(), driver_boosts.len());
 
+    let drivers_catalog = state.drivers_catalog_for_season().await;
+
     driver_items.iter().filter_map(|item| {
-        let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity)?;
+        let def = drivers_catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity)?;
         let driver_series = def.series.parse::<i32>().unwrap_or(i32::MAX);
         if driver_series > max_driver_series { return None; }
         let ls = def.stats_for_level(item.level)?;

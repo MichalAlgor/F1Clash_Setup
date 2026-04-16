@@ -5,7 +5,6 @@ use axum::Form;
 use axum::Router;
 
 use crate::auth::AuthStatus;
-use crate::drivers_data;
 use crate::models::driver::DriverBoost;
 use crate::models::setup::Boost;
 use crate::templates;
@@ -35,7 +34,8 @@ async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
     .await
     .unwrap_or_default();
 
-    templates::boosts::page(&part_boosts, &driver_boosts, &catalog, &auth)
+    let drivers_catalog = state.drivers_catalog_for_season().await;
+    templates::boosts::page(&part_boosts, &driver_boosts, &catalog, &drivers_catalog, &auth)
 }
 
 async fn save(
@@ -72,7 +72,7 @@ async fn save(
                 .unwrap();
         } else if let Some(rest) = key.strip_prefix("driver:") {
             let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
-            if drivers_data::find_driver_by_db(name, rarity_str).is_none() { continue; }
+            if state.find_driver_def(name, rarity_str).await.is_none() { continue; }
             sqlx::query("INSERT INTO driver_boosts (driver_name, rarity, percentage, season) VALUES ($1, $2, $3, $4)")
                 .bind(name)
                 .bind(rarity_str)

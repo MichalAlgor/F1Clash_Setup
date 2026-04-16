@@ -1,8 +1,8 @@
 use maud::{html, Markup, PreEscaped};
 
 use crate::auth::AuthStatus;
-use crate::drivers_data::{self, DriverCategory};
-use crate::models::driver::DriverBoost;
+use crate::drivers_data::{DriverCategory, DriverRarity};
+use crate::models::driver::{DriverBoost, OwnedDriverDefinition};
 use crate::models::part::{OwnedPartDefinition, PartCategory};
 use crate::models::setup::Boost;
 
@@ -10,6 +10,7 @@ pub fn page(
     part_boosts: &[Boost],
     driver_boosts: &[DriverBoost],
     catalog: &[OwnedPartDefinition],
+    drivers_catalog: &[OwnedDriverDefinition],
     auth: &AuthStatus,
 ) -> Markup {
     let boosted_part_names: Vec<&str> = part_boosts.iter().map(|b| b.part_name.as_str()).collect();
@@ -51,19 +52,18 @@ pub fn page(
                         }
                     }
                     @for boost in driver_boosts {
-                        @if let Some(driver_def) = drivers_data::find_driver_by_db(&boost.driver_name, &boost.rarity) {
-                            div class="boost-entry" data-key={"d:" (boost.driver_name) ":" (boost.rarity)} data-type="driver" {
-                                span class={"boost-name " (driver_def.rarity.css_class())} { (boost.driver_name) }
-                                span class="boost-cat" { (driver_def.rarity.label()) }
-                                input type="number"
-                                    name={"driver:" (boost.driver_name) ":" (boost.rarity)}
-                                    min="1" max="100" step="1"
-                                    value=(boost.percentage)
-                                    class="compact";
-                                span { "%" }
-                                button type="button" class="btn-delete outline"
-                                    onclick={"toggleDriverBoost('" (boost.driver_name) "', '" (boost.rarity) "', false)"} { "×" }
-                            }
+                        @let rarity_css = DriverRarity::from_db(&boost.rarity).map_or("", |r| r.css_class());
+                        div class="boost-entry" data-key={"d:" (boost.driver_name) ":" (boost.rarity)} data-type="driver" {
+                            span class={"boost-name " (rarity_css)} { (boost.driver_name) }
+                            span class="boost-cat" { (boost.rarity) }
+                            input type="number"
+                                name={"driver:" (boost.driver_name) ":" (boost.rarity)}
+                                min="1" max="100" step="1"
+                                value=(boost.percentage)
+                                class="compact";
+                            span { "%" }
+                            button type="button" class="btn-delete outline"
+                                onclick={"toggleDriverBoost('" (boost.driver_name) "', '" (boost.rarity) "', false)"} { "×" }
                         }
                     }
                 }
@@ -123,7 +123,10 @@ pub fn page(
                 div id="drivers-tab" class="tab-content" {
                     div class="category-grid" {
                         @for category in DriverCategory::all() {
-                            @let drivers = drivers_data::drivers_by_category(*category);
+                            @let drivers: Vec<_> = drivers_catalog.iter()
+                                .filter(|d| DriverRarity::from_db(&d.rarity)
+                                    .is_some_and(|r| r.category() == *category))
+                                .collect();
                             @if !drivers.is_empty() {
                                 section {
                                     h2 { (category.display_name()) }
@@ -140,20 +143,21 @@ pub fn page(
                                             tbody {
                                                 @for driver_def in &drivers {
                                                     @let is_boosted = boosted_driver_keys.iter()
-                                                        .any(|(n, r)| n == driver_def.name && r == driver_def.rarity.db_key());
+                                                        .any(|(n, r)| n == &driver_def.name && r == &driver_def.rarity);
+                                                    @let d_rarity_css = DriverRarity::from_db(&driver_def.rarity).map_or("", |r| r.css_class());
                                                     tr {
                                                         td {
                                                             input type="checkbox"
                                                                 class="driver-boost-check"
                                                                 data-name=(driver_def.name)
-                                                                data-rarity=(driver_def.rarity.db_key())
-                                                                data-css=(driver_def.rarity.css_class())
-                                                                data-label=(driver_def.rarity.label())
+                                                                data-rarity=(driver_def.rarity)
+                                                                data-css=(d_rarity_css)
+                                                                data-label=(driver_def.rarity)
                                                                 checked[is_boosted]
-                                                                onchange={"toggleDriverBoost('" (driver_def.name) "', '" (driver_def.rarity.db_key()) "', this.checked, '" (driver_def.rarity.css_class()) "', '" (driver_def.rarity.label()) "')"};
+                                                                onchange={"toggleDriverBoost('" (driver_def.name) "', '" (driver_def.rarity) "', this.checked, '" (d_rarity_css) "', '" (driver_def.rarity) "')"};
                                                         }
-                                                        td class=(driver_def.rarity.css_class()) { (driver_def.name) }
-                                                        td { (driver_def.rarity.label()) }
+                                                        td class=(d_rarity_css) { (driver_def.name) }
+                                                        td { (driver_def.rarity) }
                                                         td { (driver_def.series) }
                                                     }
                                                 }

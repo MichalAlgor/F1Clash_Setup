@@ -7,7 +7,6 @@ use serde::Deserialize;
 
 use crate::auth::AuthStatus;
 use crate::AppState;
-use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
 use crate::templates;
 use crate::templates::drivers::driver_cards_cell;
@@ -31,7 +30,8 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
     .await
     .unwrap_or_default();
 
-    templates::drivers::list_page(&items, &auth)
+    let catalog = state.drivers_catalog_for_season().await;
+    templates::drivers::list_page(&items, &catalog, &auth)
 }
 
 async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
@@ -44,7 +44,8 @@ async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl Into
     .await
     .unwrap_or_default();
 
-    templates::drivers::bulk_page(&items, &auth)
+    let catalog = state.drivers_catalog_for_season().await;
+    templates::drivers::bulk_page(&items, &catalog, &auth)
 }
 
 async fn bulk_save(
@@ -68,7 +69,7 @@ async fn bulk_save(
         let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
         let level: i32 = value.parse().unwrap_or(0);
         if level < 1 { continue; }
-        if drivers_data::find_driver_by_db(name, rarity_str).is_none() { continue; }
+        if state.find_driver_def(name, rarity_str).await.is_none() { continue; }
 
         sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level, season) VALUES ($1, $2, $3, $4)")
             .bind(name)
@@ -128,8 +129,8 @@ async fn update_cards(
         .await
         .unwrap();
 
-    let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity);
-    driver_cards_cell(id, cards, item.level, def)
+    let def = state.find_driver_def(&item.driver_name, &item.rarity).await;
+    driver_cards_cell(id, cards, item.level, def.as_ref())
 }
 
 async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {

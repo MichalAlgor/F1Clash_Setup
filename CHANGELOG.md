@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0] — 2026-04-16
+
+### Added
+- **Season-scoped driver catalog** — drivers are now stored in PostgreSQL (`driver_catalog` + `driver_level_stats` tables), scoped per season, mirroring the parts catalog architecture
+- **`drivers.json` seed file support** — place a `drivers.json` in the project root to auto-populate the driver catalog on startup (upserted, never deletes); if absent and the table is empty, the built-in static data is seeded for season "2025" automatically
+- **Driver catalog admin UI** (`/admin/drivers`) — add, edit, and delete driver definitions directly from the browser; accessible via the Parts admin page
+- **Driver catalog export** — download the full driver catalog (all seasons) as `drivers.json` from `/admin/drivers/export`
+- **Multi-season driver support** — each season has its own independent set of drivers; new drivers can be added for future seasons without code changes
+
+### Changed
+- All routes and templates that previously looked up driver definitions from hardcoded static data (`drivers_data`) now use the DB-backed catalog; this affects drivers, setups, boosts, optimizer, and export/import
+- Season selector now includes seasons defined in the driver catalog
+
+---
+
 ## [0.2.5] — 2026-04-16
 
 ### Added
