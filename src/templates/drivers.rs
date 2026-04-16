@@ -1,7 +1,8 @@
 use maud::{html, Markup};
 
 use crate::auth::AuthStatus;
-use crate::drivers_data::{self, DriverCategory, DriverRarity};
+use crate::data;
+use crate::drivers_data::{self, DriverCategory, DriverDefinition, DriverRarity};
 use crate::models::driver::DriverInventoryItem;
 
 pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
@@ -49,6 +50,7 @@ pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
                                             th { "RST" }
                                             th { "TYR" }
                                             th { "Total" }
+                                            th { "Cards" }
                                             th {}
                                         }
                                     }
@@ -77,6 +79,7 @@ pub fn list_page(items: &[DriverInventoryItem], auth: &AuthStatus) -> Markup {
                                                         td { (stats.race_start) }
                                                         td { (stats.tyre_management) }
                                                         td { strong { (stats.total()) } }
+                                                        (driver_cards_cell(item.id, item.cards_owned, item.level, Some(driver_def)))
                                                         td {
                                                             button.outline.secondary
                                                                 hx-delete={"/drivers/" (item.id)}
@@ -159,4 +162,53 @@ pub fn bulk_page(current_inventory: &[DriverInventoryItem], auth: &AuthStatus) -
             }
         },
     )
+}
+
+/// Reactive cards + upgrade cell for the driver inventory list.
+pub fn driver_cards_cell(
+    item_id: i32,
+    cards_owned: i32,
+    current_level: i32,
+    def: Option<&DriverDefinition>,
+) -> Markup {
+    let upgrade_markup = match def {
+        None => html! {},
+        Some(d) => {
+            let max_lvl = d.max_level();
+            if current_level >= max_lvl {
+                html! { span class="upgrade-tag secondary" { "MAX" } }
+            } else if cards_owned == 0 {
+                html! {}
+            } else {
+                let (reachable, cards_to_next) =
+                    data::calculate_upgrade_cards_only(current_level, cards_owned, max_lvl);
+                if reachable > current_level {
+                    html! { span class="upgrade-tag" { "→ L" (reachable) } }
+                } else {
+                    html! {
+                        span class="upgrade-tag secondary" title={"Need " (cards_to_next) " more cards"} {
+                            "+" (cards_to_next)
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    html! {
+        td id={"dcards-" (item_id)} {
+            div class="cards-cell" {
+                input type="number" name="cards"
+                    value=(cards_owned)
+                    min="0"
+                    class="cards-input"
+                    hx-post={"/drivers/" (item_id) "/cards"}
+                    hx-trigger="change"
+                    hx-target={"#dcards-" (item_id)}
+                    hx-swap="outerHTML"
+                    hx-include="this";
+                (upgrade_markup)
+            }
+        }
+    }
 }

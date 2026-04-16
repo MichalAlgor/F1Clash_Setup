@@ -45,6 +45,7 @@ pub struct DriverInventoryItem {
     pub driver_name: String,
     pub rarity: String,
     pub level: i32,
+    pub cards_owned: i32,
 }
 
 #[cfg(test)]

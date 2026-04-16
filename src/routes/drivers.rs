@@ -10,6 +10,7 @@ use crate::AppState;
 use crate::drivers_data;
 use crate::models::driver::DriverInventoryItem;
 use crate::templates;
+use crate::templates::drivers::driver_cards_cell;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -17,6 +18,7 @@ pub fn router() -> Router<AppState> {
         .route("/drivers/bulk", get(bulk_form).post(bulk_save))
         .route("/drivers/{id}", delete(destroy))
         .route("/drivers/{id}/level", post(update_level))
+        .route("/drivers/{id}/cards", post(update_cards))
 }
 
 async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
@@ -99,6 +101,35 @@ async fn update_level(
         .unwrap();
 
     Redirect::to("/drivers")
+}
+
+#[derive(Deserialize)]
+pub struct CardsForm {
+    pub cards: i32,
+}
+
+async fn update_cards(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Form(form): Form<CardsForm>,
+) -> impl IntoResponse {
+    let cards = form.cards.max(0);
+
+    sqlx::query("UPDATE driver_inventory SET cards_owned = $1 WHERE id = $2")
+        .bind(cards)
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
+
+    let item = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE id = $1")
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await
+        .unwrap();
+
+    let def = drivers_data::find_driver_by_db(&item.driver_name, &item.rarity);
+    driver_cards_cell(id, cards, item.level, def)
 }
 
 async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {

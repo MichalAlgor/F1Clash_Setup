@@ -111,6 +111,25 @@ pub fn calculate_upgrade(current_level: i32, cards_owned: i32, series: i32, rari
     UpgradeInfo { reachable_level, coins_needed, cards_to_next }
 }
 
+/// How many cards are needed to reach a target level from the current level.
+/// Returns (reachable_level, cards_to_next) — no coin data required.
+pub fn calculate_upgrade_cards_only(current_level: i32, cards_owned: i32, max_level: i32) -> (i32, i32) {
+    let mut cards_remaining = cards_owned;
+    let mut reachable = current_level;
+
+    for from_level in current_level..max_level {
+        let idx = (from_level - 1) as usize;
+        let card_cost = CARD_COSTS.get(idx).copied().unwrap_or(0);
+        if cards_remaining >= card_cost {
+            cards_remaining -= card_cost;
+            reachable = from_level + 1;
+        } else {
+            return (reachable, card_cost - cards_remaining);
+        }
+    }
+    (reachable, 0)
+}
+
 /// Format a large coin number as a compact string (e.g. 1_250_000 → "1.3M").
 pub fn format_coins(coins: u64) -> String {
     if coins >= 1_000_000_000 {
