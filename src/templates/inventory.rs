@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 use crate::auth::AuthStatus;
 use crate::data;
@@ -151,7 +151,8 @@ pub fn cards_cell(
             } else if cards_owned == 0 {
                 html! {}
             } else {
-                let upgrade = data::calculate_upgrade(current_level, cards_owned, part.series, &part.rarity);
+                let upgrade =
+                    data::calculate_upgrade(current_level, cards_owned, part.series, &part.rarity);
                 if upgrade.reachable_level > current_level {
                     html! {
                         span class="upgrade-tag" title={"Coins: " (upgrade.coins_needed)} {

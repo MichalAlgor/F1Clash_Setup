@@ -5,12 +5,12 @@ use axum::routing::get;
 use axum::{Form, Router};
 use serde::{Deserialize, Serialize};
 
+use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::get_session_season;
-use crate::session::UserSession;
 use crate::models::driver::DriverInventoryItem;
 use crate::models::setup::InventoryItem;
-use crate::AppState;
+use crate::session::UserSession;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -64,8 +64,21 @@ async fn export(
 
     let export = ExportData {
         season: season.clone(),
-        parts: parts.iter().map(|p| PartEntry { name: p.part_name.clone(), level: p.level }).collect(),
-        drivers: drivers.iter().map(|d| DriverEntry { name: d.driver_name.clone(), rarity: d.rarity.clone(), level: d.level }).collect(),
+        parts: parts
+            .iter()
+            .map(|p| PartEntry {
+                name: p.part_name.clone(),
+                level: p.level,
+            })
+            .collect(),
+        drivers: drivers
+            .iter()
+            .map(|d| DriverEntry {
+                name: d.driver_name.clone(),
+                rarity: d.rarity.clone(),
+                level: d.level,
+            })
+            .collect(),
     };
 
     let json = serde_json::to_string_pretty(&export).unwrap();
@@ -74,7 +87,10 @@ async fn export(
     (
         [
             (header::CONTENT_TYPE, "application/json".to_string()),
-            (header::CONTENT_DISPOSITION, format!("attachment; filename=\"{filename}\"")),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{filename}\""),
+            ),
         ],
         json,
     )
@@ -137,38 +153,72 @@ async fn import(
             OR gearbox_id     IN (SELECT id FROM inventory WHERE session_id=$1) \
             OR battery_id     IN (SELECT id FROM inventory WHERE session_id=$1)",
     )
-    .bind(&session_id).execute(&state.pool).await.unwrap();
+    .bind(&session_id)
+    .execute(&state.pool)
+    .await
+    .unwrap();
 
     sqlx::query(
         "UPDATE setups SET driver1_id=NULL WHERE driver1_id IN \
          (SELECT id FROM driver_inventory WHERE session_id=$1)",
     )
-    .bind(&session_id).execute(&state.pool).await.unwrap();
+    .bind(&session_id)
+    .execute(&state.pool)
+    .await
+    .unwrap();
 
     sqlx::query(
         "UPDATE setups SET driver2_id=NULL WHERE driver2_id IN \
          (SELECT id FROM driver_inventory WHERE session_id=$1)",
     )
-    .bind(&session_id).execute(&state.pool).await.unwrap();
+    .bind(&session_id)
+    .execute(&state.pool)
+    .await
+    .unwrap();
 
     sqlx::query("DELETE FROM inventory WHERE season = $1 AND session_id = $2")
-        .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+        .bind(&season)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
     sqlx::query("DELETE FROM driver_inventory WHERE season = $1 AND session_id = $2")
-        .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+        .bind(&season)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
 
     for part in &data.parts {
-        if part.level < 1 { continue; }
-        if state.find_part(&part.name, &season).await.is_none() { continue; }
+        if part.level < 1 {
+            continue;
+        }
+        if state.find_part(&part.name, &season).await.is_none() {
+            continue;
+        }
         sqlx::query(
             "INSERT INTO inventory (part_name, level, season, session_id) VALUES ($1, $2, $3, $4)",
         )
-        .bind(&part.name).bind(part.level).bind(&season).bind(&session_id)
-        .execute(&state.pool).await.unwrap();
+        .bind(&part.name)
+        .bind(part.level)
+        .bind(&season)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
     }
 
     for driver in &data.drivers {
-        if driver.level < 1 { continue; }
-        if state.find_driver_def(&driver.name, &driver.rarity, &season).await.is_none() { continue; }
+        if driver.level < 1 {
+            continue;
+        }
+        if state
+            .find_driver_def(&driver.name, &driver.rarity, &season)
+            .await
+            .is_none()
+        {
+            continue;
+        }
         sqlx::query(
             "INSERT INTO driver_inventory (driver_name, rarity, level, season, session_id) VALUES ($1, $2, $3, $4, $5)",
         )

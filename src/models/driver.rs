@@ -84,7 +84,8 @@ impl DriverStats {
             defending: self.defending + (self.defending as f64 * mult).round() as i32,
             qualifying: self.qualifying + (self.qualifying as f64 * mult).round() as i32,
             race_start: self.race_start + (self.race_start as f64 * mult).round() as i32,
-            tyre_management: self.tyre_management + (self.tyre_management as f64 * mult).round() as i32,
+            tyre_management: self.tyre_management
+                + (self.tyre_management as f64 * mult).round() as i32,
         }
     }
 }
@@ -103,8 +104,20 @@ pub struct DriverInventoryItem {
 mod tests {
     use super::*;
 
-    fn ds(overtaking: i32, defending: i32, qualifying: i32, race_start: i32, tyre_management: i32) -> DriverStats {
-        DriverStats { overtaking, defending, qualifying, race_start, tyre_management }
+    fn ds(
+        overtaking: i32,
+        defending: i32,
+        qualifying: i32,
+        race_start: i32,
+        tyre_management: i32,
+    ) -> DriverStats {
+        DriverStats {
+            overtaking,
+            defending,
+            qualifying,
+            race_start,
+            tyre_management,
+        }
     }
 
     #[test]

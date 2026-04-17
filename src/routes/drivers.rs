@@ -5,11 +5,11 @@ use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
+use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::get_session_season;
-use crate::session::UserSession;
-use crate::AppState;
 use crate::models::driver::DriverInventoryItem;
+use crate::session::UserSession;
 use crate::templates;
 use crate::templates::drivers::driver_cards_cell;
 
@@ -71,13 +71,21 @@ async fn bulk_save(
         "UPDATE setups SET driver1_id = NULL WHERE driver1_id IN \
          (SELECT id FROM driver_inventory WHERE season = $1 AND session_id = $2)",
     )
-    .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+    .bind(&season)
+    .bind(&session_id)
+    .execute(&state.pool)
+    .await
+    .unwrap();
 
     sqlx::query(
         "UPDATE setups SET driver2_id = NULL WHERE driver2_id IN \
          (SELECT id FROM driver_inventory WHERE season = $1 AND session_id = $2)",
     )
-    .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+    .bind(&season)
+    .bind(&session_id)
+    .execute(&state.pool)
+    .await
+    .unwrap();
 
     sqlx::query("DELETE FROM driver_inventory WHERE season = $1 AND session_id = $2")
         .bind(&season)
@@ -87,11 +95,23 @@ async fn bulk_save(
         .unwrap();
 
     for (key, value) in &form {
-        let Some(rest) = key.strip_prefix("driver:") else { continue };
-        let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
+        let Some(rest) = key.strip_prefix("driver:") else {
+            continue;
+        };
+        let Some((name, rarity_str)) = rest.rsplit_once(':') else {
+            continue;
+        };
         let level: i32 = value.parse().unwrap_or(0);
-        if level < 1 { continue; }
-        if state.find_driver_def(name, rarity_str, &season).await.is_none() { continue; }
+        if level < 1 {
+            continue;
+        }
+        if state
+            .find_driver_def(name, rarity_str, &season)
+            .await
+            .is_none()
+        {
+            continue;
+        }
 
         sqlx::query(
             "INSERT INTO driver_inventory (driver_name, rarity, level, season, session_id) \
@@ -163,7 +183,9 @@ async fn update_cards(
     .unwrap();
 
     let season = get_session_season(&state.pool, &session_id).await;
-    let def = state.find_driver_def(&item.driver_name, &item.rarity, &season).await;
+    let def = state
+        .find_driver_def(&item.driver_name, &item.rarity, &season)
+        .await;
     driver_cards_cell(id, cards, item.level, def.as_ref())
 }
 
@@ -173,9 +195,17 @@ async fn destroy(
     Path(id): Path<i32>,
 ) -> impl IntoResponse {
     sqlx::query("UPDATE setups SET driver1_id = NULL WHERE driver1_id = $1 AND session_id = $2")
-        .bind(id).bind(&session_id).execute(&state.pool).await.unwrap();
+        .bind(id)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
     sqlx::query("UPDATE setups SET driver2_id = NULL WHERE driver2_id = $1 AND session_id = $2")
-        .bind(id).bind(&session_id).execute(&state.pool).await.unwrap();
+        .bind(id)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
     sqlx::query("DELETE FROM driver_inventory WHERE id = $1 AND session_id = $2")
         .bind(id)
         .bind(&session_id)

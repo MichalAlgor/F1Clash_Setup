@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::drivers_data;
 use crate::models::driver::{OwnedDriverDefinition, OwnedDriverLevelStats};
 use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory};
 
@@ -137,7 +136,10 @@ pub async fn seed_catalog(pool: &PgPool) {
                 .execute(pool)
                 .await
                 .unwrap_or_else(|e| {
-                    panic!("Failed to upsert level {} for '{}': {e}", lvl.level, part.name)
+                    panic!(
+                        "Failed to upsert level {} for '{}': {e}",
+                        lvl.level, part.name
+                    )
                 });
             }
         }
@@ -251,40 +253,7 @@ pub async fn seed_drivers_catalog(pool: &PgPool) {
         return;
     }
 
-    // Fall back to static data when the table is empty
-    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM driver_catalog")
-        .fetch_one(pool)
-        .await
-        .unwrap_or(0);
-
-    if count == 0 {
-        tracing::info!("drivers.json not found and DB empty — seeding from built-in static data for season 2025");
-        let static_drivers: Vec<SeedDriver> = drivers_data::driver_catalog()
-            .iter()
-            .enumerate()
-            .map(|(i, d)| SeedDriver {
-                name: d.name.to_string(),
-                rarity: d.rarity.db_key().to_string(),
-                series: d.series.to_string(),
-                sort_order: i as i32,
-                levels: d.levels.iter().map(|l| SeedDriverLevel {
-                    level: l.level,
-                    overtaking: l.overtaking,
-                    defending: l.defending,
-                    qualifying: l.qualifying,
-                    race_start: l.race_start,
-                    tyre_management: l.tyre_management,
-                    cards_required: l.cards_required,
-                    coins_cost: l.coins_cost,
-                    legacy_points: l.legacy_points,
-                }).collect(),
-            })
-            .collect();
-        seed_driver_season(pool, "2025", &static_drivers).await;
-        tracing::info!("Driver catalog seeded from static data");
-    } else {
-        tracing::info!("drivers.json not found — keeping existing driver catalog in DB");
-    }
+    tracing::warn!("drivers.json not found — driver catalog not updated");
 }
 
 async fn seed_driver_season(pool: &PgPool, season: &str, drivers: &[SeedDriver]) {
@@ -427,12 +396,11 @@ pub async fn load_season_categories(pool: &PgPool) -> HashMap<String, Vec<PartCa
         category: PartCategory,
     }
 
-    let rows = sqlx::query_as::<_, Row>(
-        "SELECT season, category FROM season_categories ORDER BY season",
-    )
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let rows =
+        sqlx::query_as::<_, Row>("SELECT season, category FROM season_categories ORDER BY season")
+            .fetch_all(pool)
+            .await
+            .unwrap_or_default();
 
     let mut map: HashMap<String, Vec<PartCategory>> = HashMap::new();
     for row in rows {

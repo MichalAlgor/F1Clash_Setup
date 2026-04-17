@@ -1,9 +1,9 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 use crate::auth::AuthStatus;
 use crate::data;
 use crate::drivers_data::{DriverCategory, DriverRarity};
-use crate::models::driver::{OwnedDriverDefinition, DriverInventoryItem};
+use crate::models::driver::{DriverInventoryItem, OwnedDriverDefinition};
 
 pub fn list_page(
     items: &[DriverInventoryItem],

@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
@@ -273,9 +273,17 @@ pub fn result_page(
     let driver_labels = driver_priorities.labels().join(", ");
     let all_labels = {
         let mut v = Vec::new();
-        if !part_labels.is_empty() { v.push(part_labels.clone()); }
-        if !driver_labels.is_empty() { v.push(driver_labels.clone()); }
-        if v.is_empty() { "Total".to_string() } else { v.join(", ") }
+        if !part_labels.is_empty() {
+            v.push(part_labels.clone());
+        }
+        if !driver_labels.is_empty() {
+            v.push(driver_labels.clone());
+        }
+        if v.is_empty() {
+            "Total".to_string()
+        } else {
+            v.join(", ")
+        }
     };
 
     super::layout::page(

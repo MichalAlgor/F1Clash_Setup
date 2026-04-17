@@ -1,18 +1,18 @@
 pub mod auth;
 pub mod catalog;
 pub mod data;
-pub mod optimizer_core;
 pub mod drivers_data;
-pub mod session;
 mod models;
+pub mod optimizer_core;
 mod routes;
+pub mod session;
 mod templates;
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use axum::Router;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 
@@ -56,7 +56,11 @@ impl AppState {
     }
 
     /// Parts for the given season filtered by category.
-    pub async fn parts_by_category(&self, category: PartCategory, season: &str) -> Vec<OwnedPartDefinition> {
+    pub async fn parts_by_category(
+        &self,
+        category: PartCategory,
+        season: &str,
+    ) -> Vec<OwnedPartDefinition> {
         self.catalog
             .read()
             .await
@@ -88,7 +92,12 @@ impl AppState {
     }
 
     /// Find a driver definition by name+rarity within the given season.
-    pub async fn find_driver_def(&self, name: &str, rarity: &str, season: &str) -> Option<OwnedDriverDefinition> {
+    pub async fn find_driver_def(
+        &self,
+        name: &str,
+        rarity: &str,
+        season: &str,
+    ) -> Option<OwnedDriverDefinition> {
         self.drivers_catalog
             .read()
             .await
@@ -111,28 +120,42 @@ pub async fn get_session_season(pool: &PgPool, session_id: &str) -> String {
     .await
     .ok();
 
-    sqlx::query_scalar(
-        "SELECT value FROM settings WHERE key = 'active_season' AND session_id = $1",
-    )
-    .bind(session_id)
-    .fetch_one(pool)
-    .await
-    .unwrap_or_else(|_| "2025".to_string())
+    sqlx::query_scalar("SELECT value FROM settings WHERE key = 'active_season' AND session_id = $1")
+        .bind(session_id)
+        .fetch_one(pool)
+        .await
+        .unwrap_or_else(|_| "2025".to_string())
 }
 
 /// Minimal base64 encoder — used to derive the session token from ADMIN_PASSWORD.
 fn base64_encode(input: &[u8]) -> String {
     const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity((input.len() + 2) / 3 * 4);
+    let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
     let mut i = 0;
     while i < input.len() {
         let b0 = input[i] as u32;
-        let b1 = if i + 1 < input.len() { input[i + 1] as u32 } else { 0 };
-        let b2 = if i + 2 < input.len() { input[i + 2] as u32 } else { 0 };
+        let b1 = if i + 1 < input.len() {
+            input[i + 1] as u32
+        } else {
+            0
+        };
+        let b2 = if i + 2 < input.len() {
+            input[i + 2] as u32
+        } else {
+            0
+        };
         out.push(CHARS[((b0 >> 2) & 0x3F) as usize] as char);
         out.push(CHARS[(((b0 << 4) | (b1 >> 4)) & 0x3F) as usize] as char);
-        out.push(if i + 1 < input.len() { CHARS[(((b1 << 2) | (b2 >> 6)) & 0x3F) as usize] as char } else { '=' });
-        out.push(if i + 2 < input.len() { CHARS[(b2 & 0x3F) as usize] as char } else { '=' });
+        out.push(if i + 1 < input.len() {
+            CHARS[(((b1 << 2) | (b2 >> 6)) & 0x3F) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if i + 2 < input.len() {
+            CHARS[(b2 & 0x3F) as usize] as char
+        } else {
+            '='
+        });
         i += 3;
     }
     out
@@ -152,7 +175,10 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
-    sqlx::migrate!().run(&pool).await.expect("Failed to run migrations");
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("Failed to run migrations");
 
     // Seed catalog from parts.json (upsert — never deletes)
     catalog::seed_catalog(&pool).await;

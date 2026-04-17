@@ -5,10 +5,10 @@ use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
+use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::get_session_season;
 use crate::session::UserSession;
-use crate::AppState;
 
 use crate::models::setup::InventoryItem;
 use crate::templates;
@@ -99,10 +99,16 @@ async fn bulk_save(
         .unwrap();
 
     for (key, value) in &form {
-        let Some(part_name) = key.strip_prefix("part:") else { continue };
+        let Some(part_name) = key.strip_prefix("part:") else {
+            continue;
+        };
         let level: i32 = value.parse().unwrap_or(0);
-        if level < 1 { continue; }
-        if state.find_part(part_name, &season).await.is_none() { continue; }
+        if level < 1 {
+            continue;
+        }
+        if state.find_part(part_name, &season).await.is_none() {
+            continue;
+        }
 
         sqlx::query(
             "INSERT INTO inventory (part_name, level, season, session_id) VALUES ($1, $2, $3, $4)",

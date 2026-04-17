@@ -57,7 +57,7 @@ pub fn run_brute_force(
             part_stats = part_stats.add(&parts_per_cat[cat_idx][pi].stats);
         }
         let score = score_part_combo(&part_stats, part_priorities);
-        let is_better = best_part.as_ref().map_or(true, |(_, s)| score > *s);
+        let is_better = best_part.as_ref().is_none_or(|(_, s)| score > *s);
         if is_better {
             best_part = Some((part_indices.clone(), score));
         }
@@ -67,7 +67,11 @@ pub fn run_brute_force(
         for i in (0..part_indices.len()).rev() {
             if carry {
                 part_indices[i] += 1;
-                if part_indices[i] >= sizes[i] { part_indices[i] = 0; } else { carry = false; }
+                if part_indices[i] >= sizes[i] {
+                    part_indices[i] = 0;
+                } else {
+                    carry = false;
+                }
             }
         }
     }
@@ -75,25 +79,49 @@ pub fn run_brute_force(
     let (best_pidx, _) = best_part?;
 
     // Step 2: find the best driver pair (independent of part choice)
-    let best_dp_idx = driver_pairs.iter().enumerate().max_by_key(|(_, (d1, d2))| {
-        let mut ds = DriverStats::default();
-        if let Some(i) = d1 { ds = ds.add(&resolved_drivers[*i].stats); }
-        if let Some(i) = d2 { ds = ds.add(&resolved_drivers[*i].stats); }
-        driver_priorities.score(&ds)
-    }).map(|(idx, _)| idx).unwrap_or(0);
+    let best_dp_idx = driver_pairs
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, (d1, d2))| {
+            let mut ds = DriverStats::default();
+            if let Some(i) = d1 {
+                ds = ds.add(&resolved_drivers[*i].stats);
+            }
+            if let Some(i) = d2 {
+                ds = ds.add(&resolved_drivers[*i].stats);
+            }
+            driver_priorities.score(&ds)
+        })
+        .map(|(idx, _)| idx)
+        .unwrap_or(0);
 
     // Build result
-    let picks: Vec<_> = best_pidx.iter().enumerate().map(|(ci, &pi)| {
-        let rp = &parts_per_cat[ci][pi];
-        (categories[ci], rp.item.clone(), rp.stats.clone(), rp.rarity_css_class)
-    }).collect();
+    let picks: Vec<_> = best_pidx
+        .iter()
+        .enumerate()
+        .map(|(ci, &pi)| {
+            let rp = &parts_per_cat[ci][pi];
+            (
+                categories[ci],
+                rp.item.clone(),
+                rp.stats.clone(),
+                rp.rarity_css_class,
+            )
+        })
+        .collect();
     let (d1_idx, d2_idx) = driver_pairs[best_dp_idx];
     let d1 = d1_idx.map(|i| &resolved_drivers[i]);
     let d2 = d2_idx.map(|i| &resolved_drivers[i]);
-    let ts = picks.iter().fold(Stats::default(), |a, (_, _, s, _)| a.add(s));
+    let ts = picks
+        .iter()
+        .fold(Stats::default(), |a, (_, _, s, _)| a.add(s));
     let mut ds = DriverStats::default();
-    if let Some(d) = d1 { ds = ds.add(&d.stats); }
-    if let Some(d) = d2 { ds = ds.add(&d.stats); }
+    if let Some(d) = d1 {
+        ds = ds.add(&d.stats);
+    }
+    if let Some(d) = d2 {
+        ds = ds.add(&d.stats);
+    }
 
     Some(OptimizeResult {
         part_picks: picks,
@@ -110,10 +138,18 @@ pub fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32
         return (total, total);
     }
     let mut values = Vec::new();
-    if priorities.speed { values.push(stats.speed); }
-    if priorities.cornering { values.push(stats.cornering); }
-    if priorities.power_unit { values.push(stats.power_unit); }
-    if priorities.qualifying { values.push(stats.qualifying); }
+    if priorities.speed {
+        values.push(stats.speed);
+    }
+    if priorities.cornering {
+        values.push(stats.cornering);
+    }
+    if priorities.power_unit {
+        values.push(stats.power_unit);
+    }
+    if priorities.qualifying {
+        values.push(stats.qualifying);
+    }
     let min = *values.iter().min().unwrap();
     let sum: i32 = values.iter().sum();
     (min, sum)
@@ -132,16 +168,30 @@ pub struct DriverPriorities {
 
 impl DriverPriorities {
     pub fn any_selected(&self) -> bool {
-        self.overtaking || self.defending || self.qualifying || self.race_start || self.tyre_management
+        self.overtaking
+            || self.defending
+            || self.qualifying
+            || self.race_start
+            || self.tyre_management
     }
 
     pub fn labels(&self) -> Vec<&'static str> {
         let mut out = Vec::new();
-        if self.overtaking { out.push("Overtaking"); }
-        if self.defending { out.push("Defending"); }
-        if self.qualifying { out.push("Qualifying"); }
-        if self.race_start { out.push("Race Start"); }
-        if self.tyre_management { out.push("Tyre Mgmt"); }
+        if self.overtaking {
+            out.push("Overtaking");
+        }
+        if self.defending {
+            out.push("Defending");
+        }
+        if self.qualifying {
+            out.push("Qualifying");
+        }
+        if self.race_start {
+            out.push("Race Start");
+        }
+        if self.tyre_management {
+            out.push("Tyre Mgmt");
+        }
         out
     }
 
@@ -151,11 +201,21 @@ impl DriverPriorities {
             return (total, total);
         }
         let mut values = Vec::new();
-        if self.overtaking { values.push(stats.overtaking); }
-        if self.defending { values.push(stats.defending); }
-        if self.qualifying { values.push(stats.qualifying); }
-        if self.race_start { values.push(stats.race_start); }
-        if self.tyre_management { values.push(stats.tyre_management); }
+        if self.overtaking {
+            values.push(stats.overtaking);
+        }
+        if self.defending {
+            values.push(stats.defending);
+        }
+        if self.qualifying {
+            values.push(stats.qualifying);
+        }
+        if self.race_start {
+            values.push(stats.race_start);
+        }
+        if self.tyre_management {
+            values.push(stats.tyre_management);
+        }
         let min = *values.iter().min().unwrap();
         let sum: i32 = values.iter().sum();
         (min, sum)

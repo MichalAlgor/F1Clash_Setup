@@ -18,10 +18,18 @@ impl StatPriorities {
 
     pub fn labels(&self) -> Vec<&'static str> {
         let mut out = Vec::new();
-        if self.speed { out.push("Speed"); }
-        if self.cornering { out.push("Cornering"); }
-        if self.power_unit { out.push("Power Unit"); }
-        if self.qualifying { out.push("Qualifying"); }
+        if self.speed {
+            out.push("Speed");
+        }
+        if self.cornering {
+            out.push("Cornering");
+        }
+        if self.power_unit {
+            out.push("Power Unit");
+        }
+        if self.qualifying {
+            out.push("Qualifying");
+        }
         out
     }
 }
@@ -36,29 +44,95 @@ const CARD_COSTS: &[i32] = &[4, 10, 20, 50, 100, 200, 400, 1_000, 2_000, 4_000];
 /// inner index 0 = L1→L2).
 const COIN_COSTS_BY_SERIES: &[&[u64]] = &[
     // Series 1
-    &[2_000, 8_000, 35_000, 90_000, 275_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000],
+    &[
+        2_000, 8_000, 35_000, 90_000, 275_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000,
+    ],
     // Series 2
-    &[6_000, 30_000, 95_000, 300_000, 950_000, 1_900_000, 3_750_000, 5_600_000, 7_450_000, 9_300_000],
+    &[
+        6_000, 30_000, 95_000, 300_000, 950_000, 1_900_000, 3_750_000, 5_600_000, 7_450_000,
+        9_300_000,
+    ],
     // Series 3
-    &[22_000, 45_000, 135_000, 450_000, 1_350_000, 2_800_000, 5_250_000, 7_700_000, 10_150_000, 12_600_000],
+    &[
+        22_000, 45_000, 135_000, 450_000, 1_350_000, 2_800_000, 5_250_000, 7_700_000, 10_150_000,
+        12_600_000,
+    ],
     // Series 4
-    &[1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000],
+    &[
+        1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000,
+    ],
     // Series 5
-    &[4_500_000, 9_000_000, 20_000_000, 42_250_000, 139_250_000, 167_000_000, 195_000_000, 223_000_000],
+    &[
+        4_500_000,
+        9_000_000,
+        20_000_000,
+        42_250_000,
+        139_250_000,
+        167_000_000,
+        195_000_000,
+        223_000_000,
+    ],
     // Series 6
-    &[790_000, 1_600_000, 2_400_000, 3_200_000, 6_800_000, 19_500_000, 36_250_000, 53_000_000, 69_750_000, 86_500_000],
+    &[
+        790_000, 1_600_000, 2_400_000, 3_200_000, 6_800_000, 19_500_000, 36_250_000, 53_000_000,
+        69_750_000, 86_500_000,
+    ],
     // Series 7
-    &[1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000, 75_500_000],
+    &[
+        1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000, 75_500_000,
+    ],
     // Series 8
-    &[4_500_000, 9_000_000, 20_000_000, 42_250_000, 139_250_000, 167_000_000, 195_000_000, 223_000_000],
+    &[
+        4_500_000,
+        9_000_000,
+        20_000_000,
+        42_250_000,
+        139_250_000,
+        167_000_000,
+        195_000_000,
+        223_000_000,
+    ],
     // Series 9
-    &[9_500_000, 19_000_000, 45_000_000, 105_000_000, 199_000_000, 239_000_000, 278_000_000, 317_000_000],
+    &[
+        9_500_000,
+        19_000_000,
+        45_000_000,
+        105_000_000,
+        199_000_000,
+        239_000_000,
+        278_000_000,
+        317_000_000,
+    ],
     // Series 10
-    &[22_000_000, 43_000_000, 65_000_000, 150_000_000, 284_000_000, 341_000_000, 398_000_000],
+    &[
+        22_000_000,
+        43_000_000,
+        65_000_000,
+        150_000_000,
+        284_000_000,
+        341_000_000,
+        398_000_000,
+    ],
     // Series 11
-    &[54_000_000, 107_000_000, 161_000_000, 215_000_000, 406_000_000, 487_000_000, 568_000_000],
+    &[
+        54_000_000,
+        107_000_000,
+        161_000_000,
+        215_000_000,
+        406_000_000,
+        487_000_000,
+        568_000_000,
+    ],
     // Series 12
-    &[116_000_000, 232_000_000, 348_000_000, 464_000_000, 580_000_000, 696_000_000, 812_000_000],
+    &[
+        116_000_000,
+        232_000_000,
+        348_000_000,
+        464_000_000,
+        580_000_000,
+        696_000_000,
+        812_000_000,
+    ],
 ];
 
 /// Maximum upgrade level for a given rarity.
@@ -81,7 +155,12 @@ pub struct UpgradeInfo {
 }
 
 /// Calculate how far a part can be upgraded given cards owned.
-pub fn calculate_upgrade(current_level: i32, cards_owned: i32, series: i32, rarity: &str) -> UpgradeInfo {
+pub fn calculate_upgrade(
+    current_level: i32,
+    cards_owned: i32,
+    series: i32,
+    rarity: &str,
+) -> UpgradeInfo {
     let max_lvl = max_level_for_rarity(rarity);
     let coin_table = COIN_COSTS_BY_SERIES
         .get((series - 1) as usize)
@@ -108,12 +187,20 @@ pub fn calculate_upgrade(current_level: i32, cards_owned: i32, series: i32, rari
         }
     }
 
-    UpgradeInfo { reachable_level, coins_needed, cards_to_next }
+    UpgradeInfo {
+        reachable_level,
+        coins_needed,
+        cards_to_next,
+    }
 }
 
 /// How many cards are needed to reach a target level from the current level.
 /// Returns (reachable_level, cards_to_next) — no coin data required.
-pub fn calculate_upgrade_cards_only(current_level: i32, cards_owned: i32, max_level: i32) -> (i32, i32) {
+pub fn calculate_upgrade_cards_only(
+    current_level: i32,
+    cards_owned: i32,
+    max_level: i32,
+) -> (i32, i32) {
     let mut cards_remaining = cards_owned;
     let mut reachable = current_level;
 
@@ -268,10 +355,34 @@ mod tests {
 
     #[test]
     fn stat_priorities_any_selected_true_when_one_set() {
-        assert!(StatPriorities { speed: true, ..Default::default() }.any_selected());
-        assert!(StatPriorities { cornering: true, ..Default::default() }.any_selected());
-        assert!(StatPriorities { power_unit: true, ..Default::default() }.any_selected());
-        assert!(StatPriorities { qualifying: true, ..Default::default() }.any_selected());
+        assert!(
+            StatPriorities {
+                speed: true,
+                ..Default::default()
+            }
+            .any_selected()
+        );
+        assert!(
+            StatPriorities {
+                cornering: true,
+                ..Default::default()
+            }
+            .any_selected()
+        );
+        assert!(
+            StatPriorities {
+                power_unit: true,
+                ..Default::default()
+            }
+            .any_selected()
+        );
+        assert!(
+            StatPriorities {
+                qualifying: true,
+                ..Default::default()
+            }
+            .any_selected()
+        );
     }
 
     #[test]
@@ -281,13 +392,24 @@ mod tests {
 
     #[test]
     fn stat_priorities_labels_correct_order() {
-        let p = StatPriorities { speed: true, cornering: true, power_unit: true, qualifying: true };
-        assert_eq!(p.labels(), vec!["Speed", "Cornering", "Power Unit", "Qualifying"]);
+        let p = StatPriorities {
+            speed: true,
+            cornering: true,
+            power_unit: true,
+            qualifying: true,
+        };
+        assert_eq!(
+            p.labels(),
+            vec!["Speed", "Cornering", "Power Unit", "Qualifying"]
+        );
     }
 
     #[test]
     fn stat_priorities_labels_single() {
-        let p = StatPriorities { qualifying: true, ..Default::default() };
+        let p = StatPriorities {
+            qualifying: true,
+            ..Default::default()
+        };
         assert_eq!(p.labels(), vec!["Qualifying"]);
     }
 }

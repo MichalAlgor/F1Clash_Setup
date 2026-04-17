@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use f1clash_setup::data::StatPriorities;
 use f1clash_setup::models::driver::{DriverInventoryItem, DriverStats};
@@ -10,7 +10,13 @@ use f1clash_setup::optimizer_core::{
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-fn make_part(id: i32, speed: i32, cornering: i32, power_unit: i32, qualifying: i32) -> ResolvedPart {
+fn make_part(
+    id: i32,
+    speed: i32,
+    cornering: i32,
+    power_unit: i32,
+    qualifying: i32,
+) -> ResolvedPart {
     ResolvedPart {
         item: InventoryItem {
             id,
@@ -50,9 +56,7 @@ fn make_driver(id: i32, total: i32) -> ResolvedDriver {
     }
 }
 
-fn build_driver_pairs(
-    drivers: &[ResolvedDriver],
-) -> Vec<(Option<usize>, Option<usize>)> {
+fn build_driver_pairs(drivers: &[ResolvedDriver]) -> Vec<(Option<usize>, Option<usize>)> {
     let mut pairs = vec![(None, None)];
     for i in 0..drivers.len() {
         pairs.push((Some(i), None));
@@ -88,10 +92,10 @@ fn build_series12_data() -> (
     let parts_per_cat: Vec<Vec<ResolvedPart>> = vec![
         // Engine
         vec![
-            make_part(1,  48, 19, 19, 21),
-            make_part(2,  50, 20, 20, 23),
-            make_part(3,  16, 15, 42, 17),
-            make_part(4,  18, 17, 47, 19),
+            make_part(1, 48, 19, 19, 21),
+            make_part(2, 50, 20, 20, 23),
+            make_part(3, 16, 15, 42, 17),
+            make_part(4, 18, 17, 47, 19),
         ],
         // FrontWing
         vec![
@@ -150,12 +154,51 @@ fn bench_presets(c: &mut Criterion) {
     let driver_priorities = DriverPriorities::default();
 
     let preset_priorities = [
-        ("speed",           StatPriorities { speed: true,       ..Default::default() }),
-        ("speed+qual",      StatPriorities { speed: true, qualifying: true, ..Default::default() }),
-        ("cornering",       StatPriorities { cornering: true,   ..Default::default() }),
-        ("cornering+qual",  StatPriorities { cornering: true, qualifying: true, ..Default::default() }),
-        ("power_unit",      StatPriorities { power_unit: true,  ..Default::default() }),
-        ("power_unit+qual", StatPriorities { power_unit: true, qualifying: true, ..Default::default() }),
+        (
+            "speed",
+            StatPriorities {
+                speed: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "speed+qual",
+            StatPriorities {
+                speed: true,
+                qualifying: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "cornering",
+            StatPriorities {
+                cornering: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "cornering+qual",
+            StatPriorities {
+                cornering: true,
+                qualifying: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "power_unit",
+            StatPriorities {
+                power_unit: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "power_unit+qual",
+            StatPriorities {
+                power_unit: true,
+                qualifying: true,
+                ..Default::default()
+            },
+        ),
     ];
 
     let mut group = c.benchmark_group("optimizer_presets");
@@ -184,12 +227,33 @@ fn bench_all_presets_combined(c: &mut Criterion) {
     let driver_priorities = DriverPriorities::default();
 
     let priorities: Vec<StatPriorities> = vec![
-        StatPriorities { speed: true,                         ..Default::default() },
-        StatPriorities { speed: true, qualifying: true,       ..Default::default() },
-        StatPriorities { cornering: true,                     ..Default::default() },
-        StatPriorities { cornering: true, qualifying: true,   ..Default::default() },
-        StatPriorities { power_unit: true,                    ..Default::default() },
-        StatPriorities { power_unit: true, qualifying: true,  ..Default::default() },
+        StatPriorities {
+            speed: true,
+            ..Default::default()
+        },
+        StatPriorities {
+            speed: true,
+            qualifying: true,
+            ..Default::default()
+        },
+        StatPriorities {
+            cornering: true,
+            ..Default::default()
+        },
+        StatPriorities {
+            cornering: true,
+            qualifying: true,
+            ..Default::default()
+        },
+        StatPriorities {
+            power_unit: true,
+            ..Default::default()
+        },
+        StatPriorities {
+            power_unit: true,
+            qualifying: true,
+            ..Default::default()
+        },
     ];
 
     c.bench_function("optimizer_all_6_presets", |b| {

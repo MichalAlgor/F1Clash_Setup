@@ -1,13 +1,17 @@
 use std::collections::HashMap;
 
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 use crate::auth::AuthStatus;
 use crate::drivers_data::DriverRarity;
 use crate::models::driver::OwnedDriverDefinition;
-use crate::models::part::{PartCategory, OwnedPartDefinition};
+use crate::models::part::{OwnedPartDefinition, PartCategory};
 
-pub fn parts_list_page(catalog: &[OwnedPartDefinition], active_season: &str, auth: &AuthStatus) -> Markup {
+pub fn parts_list_page(
+    catalog: &[OwnedPartDefinition],
+    active_season: &str,
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Admin — Parts",
         auth,
@@ -84,8 +88,16 @@ pub fn parts_list_page(catalog: &[OwnedPartDefinition], active_season: &str, aut
     )
 }
 
-pub fn part_form_page(part: Option<&OwnedPartDefinition>, active_season: &str, auth: &AuthStatus) -> Markup {
-    let title = if part.is_some() { "Edit Part" } else { "New Part" };
+pub fn part_form_page(
+    part: Option<&OwnedPartDefinition>,
+    active_season: &str,
+    auth: &AuthStatus,
+) -> Markup {
+    let title = if part.is_some() {
+        "Edit Part"
+    } else {
+        "New Part"
+    };
     let action = match part {
         Some(p) => format!("/admin/parts/{}", p.id),
         None => "/admin/parts".to_string(),
@@ -98,7 +110,8 @@ pub fn part_form_page(part: Option<&OwnedPartDefinition>, active_season: &str, a
                 "level": 1, "speed": 0, "cornering": 0, "power_unit": 0, "qualifying": 0,
                 "pit_stop_time": 1.0, "additional_stat_value": 0, "additional_stat_details": {}
             }
-        ])).unwrap_or_default(),
+        ]))
+        .unwrap_or_default(),
     };
 
     super::layout::page(
@@ -179,7 +192,11 @@ const DRIVER_RARITIES: &[&str] = &[
     "Podium Stars Legends",
 ];
 
-pub fn drivers_list_page(catalog: &[OwnedDriverDefinition], active_season: &str, auth: &AuthStatus) -> Markup {
+pub fn drivers_list_page(
+    catalog: &[OwnedDriverDefinition],
+    active_season: &str,
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Admin — Drivers",
         auth,
@@ -238,8 +255,16 @@ pub fn drivers_list_page(catalog: &[OwnedDriverDefinition], active_season: &str,
     )
 }
 
-pub fn driver_form_page(driver: Option<&OwnedDriverDefinition>, active_season: &str, auth: &AuthStatus) -> Markup {
-    let title = if driver.is_some() { "Edit Driver" } else { "New Driver" };
+pub fn driver_form_page(
+    driver: Option<&OwnedDriverDefinition>,
+    active_season: &str,
+    auth: &AuthStatus,
+) -> Markup {
+    let title = if driver.is_some() {
+        "Edit Driver"
+    } else {
+        "New Driver"
+    };
     let action = match driver {
         Some(d) => format!("/admin/drivers/{}", d.id),
         None => "/admin/drivers".to_string(),
@@ -254,7 +279,8 @@ pub fn driver_form_page(driver: Option<&OwnedDriverDefinition>, active_season: &
                 "race_start": 0, "tyre_management": 0,
                 "cards_required": 0, "coins_cost": 0, "legacy_points": 0
             }
-        ])).unwrap_or_default(),
+        ]))
+        .unwrap_or_default(),
     };
 
     super::layout::page(

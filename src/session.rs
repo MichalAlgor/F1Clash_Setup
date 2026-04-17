@@ -1,10 +1,10 @@
 use axum::extract::FromRequestParts;
+use axum::extract::Request;
 use axum::http::header;
 use axum::http::request::Parts;
 use axum::middleware::Next;
-use axum::extract::Request;
 use axum::response::Response;
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 use std::convert::Infallible;
 
 use crate::auth::get_cookie;
@@ -45,8 +45,7 @@ impl<S: Send + Sync> FromRequestParts<S> for UserSession {
 pub async fn session_middleware(mut req: Request, next: Next) -> Response {
     let raw_token = get_cookie(req.headers(), "user_session");
     let is_new = raw_token.is_none();
-    let raw_token = raw_token
-        .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+    let raw_token = raw_token.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
 
     let session_id = hash_token(&raw_token);
     req.extensions_mut().insert(UserSession(session_id));
@@ -54,9 +53,8 @@ pub async fn session_middleware(mut req: Request, next: Next) -> Response {
     let mut response = next.run(req).await;
 
     if is_new {
-        let cookie = format!(
-            "user_session={raw_token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=31536000"
-        );
+        let cookie =
+            format!("user_session={raw_token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=31536000");
         response
             .headers_mut()
             .append(header::SET_COOKIE, cookie.parse().unwrap());

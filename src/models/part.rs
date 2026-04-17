@@ -119,10 +119,18 @@ pub struct OwnedLevelStats {
 impl OwnedLevelStats {
     pub fn priority_score(&self, priorities: &StatPriorities) -> i32 {
         let mut score = 0;
-        if priorities.speed { score += self.speed; }
-        if priorities.cornering { score += self.cornering; }
-        if priorities.power_unit { score += self.power_unit; }
-        if priorities.qualifying { score += self.qualifying; }
+        if priorities.speed {
+            score += self.speed;
+        }
+        if priorities.cornering {
+            score += self.cornering;
+        }
+        if priorities.power_unit {
+            score += self.power_unit;
+        }
+        if priorities.qualifying {
+            score += self.qualifying;
+        }
         score
     }
 
@@ -168,22 +176,54 @@ impl OwnedPartDefinition {
 mod tests {
     use super::*;
 
-    fn stats(speed: i32, cornering: i32, power_unit: i32, qualifying: i32, pit_stop_time: f64, additional_stat_value: i32) -> Stats {
-        Stats { speed, cornering, power_unit, qualifying, pit_stop_time, additional_stat_value }
+    fn stats(
+        speed: i32,
+        cornering: i32,
+        power_unit: i32,
+        qualifying: i32,
+        pit_stop_time: f64,
+        additional_stat_value: i32,
+    ) -> Stats {
+        Stats {
+            speed,
+            cornering,
+            power_unit,
+            qualifying,
+            pit_stop_time,
+            additional_stat_value,
+        }
     }
 
-    fn level_stats(level: i32, speed: i32, cornering: i32, power_unit: i32, qualifying: i32) -> OwnedLevelStats {
+    fn level_stats(
+        level: i32,
+        speed: i32,
+        cornering: i32,
+        power_unit: i32,
+        qualifying: i32,
+    ) -> OwnedLevelStats {
         OwnedLevelStats {
-            level, speed, cornering, power_unit, qualifying,
-            pit_stop_time: 1.0, additional_stat_value: 0,
+            level,
+            speed,
+            cornering,
+            power_unit,
+            qualifying,
+            pit_stop_time: 1.0,
+            additional_stat_value: 0,
             additional_stat_details: HashMap::new(),
         }
     }
 
-    fn part_def(levels: Vec<OwnedLevelStats>, additional_stat_name: Option<&str>, rarity: &str) -> OwnedPartDefinition {
+    fn part_def(
+        levels: Vec<OwnedLevelStats>,
+        additional_stat_name: Option<&str>,
+        rarity: &str,
+    ) -> OwnedPartDefinition {
         OwnedPartDefinition {
-            id: 1, name: "Test".to_string(), season: "2025".to_string(),
-            category: PartCategory::Engine, series: 1,
+            id: 1,
+            name: "Test".to_string(),
+            season: "2025".to_string(),
+            category: PartCategory::Engine,
+            series: 1,
             rarity: rarity.to_string(),
             sort_order: 0,
             additional_stat_name: additional_stat_name.map(|s| s.to_string()),
@@ -279,14 +319,23 @@ mod tests {
     #[test]
     fn owned_level_stats_priority_score_all_priorities() {
         let ls = level_stats(1, 10, 20, 30, 40);
-        let p = StatPriorities { speed: true, cornering: true, power_unit: true, qualifying: true };
+        let p = StatPriorities {
+            speed: true,
+            cornering: true,
+            power_unit: true,
+            qualifying: true,
+        };
         assert_eq!(ls.priority_score(&p), ls.total_performance());
     }
 
     #[test]
     fn owned_level_stats_priority_score_partial() {
         let ls = level_stats(1, 10, 20, 30, 40);
-        let p = StatPriorities { speed: true, qualifying: true, ..Default::default() };
+        let p = StatPriorities {
+            speed: true,
+            qualifying: true,
+            ..Default::default()
+        };
         assert_eq!(ls.priority_score(&p), 50); // 10 + 40
     }
 
@@ -294,7 +343,11 @@ mod tests {
 
     #[test]
     fn stats_for_level_found() {
-        let part = part_def(vec![level_stats(1, 5, 5, 5, 5), level_stats(2, 10, 10, 10, 10)], None, "Common");
+        let part = part_def(
+            vec![level_stats(1, 5, 5, 5, 5), level_stats(2, 10, 10, 10, 10)],
+            None,
+            "Common",
+        );
         assert!(part.stats_for_level(1).is_some());
         assert_eq!(part.stats_for_level(1).unwrap().level, 1);
         assert_eq!(part.stats_for_level(2).unwrap().speed, 10);
@@ -309,8 +362,13 @@ mod tests {
     #[test]
     fn max_level_returns_last() {
         let part = part_def(
-            vec![level_stats(1, 0, 0, 0, 0), level_stats(5, 0, 0, 0, 0), level_stats(8, 0, 0, 0, 0)],
-            None, "Rare",
+            vec![
+                level_stats(1, 0, 0, 0, 0),
+                level_stats(5, 0, 0, 0, 0),
+                level_stats(8, 0, 0, 0, 0),
+            ],
+            None,
+            "Rare",
         );
         assert_eq!(part.max_level(), 8);
     }
@@ -323,22 +381,34 @@ mod tests {
 
     #[test]
     fn rarity_css_class_common() {
-        assert_eq!(part_def(vec![], None, "Common").rarity_css_class(), "rarity-common");
+        assert_eq!(
+            part_def(vec![], None, "Common").rarity_css_class(),
+            "rarity-common"
+        );
     }
 
     #[test]
     fn rarity_css_class_rare() {
-        assert_eq!(part_def(vec![], None, "Rare").rarity_css_class(), "rarity-rare");
+        assert_eq!(
+            part_def(vec![], None, "Rare").rarity_css_class(),
+            "rarity-rare"
+        );
     }
 
     #[test]
     fn rarity_css_class_epic() {
-        assert_eq!(part_def(vec![], None, "Epic").rarity_css_class(), "rarity-epic");
+        assert_eq!(
+            part_def(vec![], None, "Epic").rarity_css_class(),
+            "rarity-epic"
+        );
     }
 
     #[test]
     fn rarity_css_class_unknown_falls_back_to_common() {
-        assert_eq!(part_def(vec![], None, "Legendary").rarity_css_class(), "rarity-common");
+        assert_eq!(
+            part_def(vec![], None, "Legendary").rarity_css_class(),
+            "rarity-common"
+        );
     }
 
     #[test]

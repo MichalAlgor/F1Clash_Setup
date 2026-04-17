@@ -1,6 +1,6 @@
 use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
 use axum::http::header;
+use axum::http::request::Parts;
 use std::convert::Infallible;
 
 use crate::AppState;
@@ -21,7 +21,10 @@ impl FromRequestParts<AppState> for AuthStatus {
     ) -> Result<Self, Self::Rejection> {
         let enabled = state.session_token.is_some();
         if !enabled {
-            return Ok(AuthStatus { enabled: false, logged_in: false });
+            return Ok(AuthStatus {
+                enabled: false,
+                logged_in: false,
+            });
         }
         let expected = state.session_token.as_deref().unwrap_or("");
         let logged_in = get_cookie(&parts.headers, "admin_session")
