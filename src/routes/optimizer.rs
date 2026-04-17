@@ -224,6 +224,7 @@ async fn resolve_parts(
                 cat_parts.len()
             );
             let cat_parts = prune_category(cat_parts);
+            #[cfg(debug_assertions)]
             eprintln!(
                 "[optimizer] resolved parts after prune: {:>8.2?}  ({} cat_parts)",
                 t1.elapsed(),
