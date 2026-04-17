@@ -31,15 +31,18 @@ async fn list(
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
-    let setups = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE season = $1 ORDER BY name")
-        .bind(&season)
-        .fetch_all(&state.pool)
-        .await
-        .unwrap_or_default();
+    let setups = sqlx::query_as::<_, Setup>(
+        "SELECT * FROM setups WHERE season = $1 AND session_id = $2 ORDER BY name",
+    )
+    .bind(&season)
+    .bind(&session_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
 
     let mut with_stats = Vec::new();
     for setup in setups {
-        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog).await;
+        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
         with_stats.push(SetupWithStats { setup, stats, driver_stats });
     }
 
@@ -55,8 +58,8 @@ async fn new(
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
     let categories = state.categories_for_season(&season).await;
-    let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog, &categories).await;
-    let driver_items = load_driver_inventory(&state.pool, &season).await;
+    let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog, &categories, &session_id).await;
+    let driver_items = load_driver_inventory(&state.pool, &season, &session_id).await;
     templates::setups::form_page(&inventory_by_category, &driver_items, &drivers_catalog, None, &auth)
 }
 
@@ -88,8 +91,9 @@ async fn create(
 ) -> impl IntoResponse {
     let season = get_session_season(&state.pool, &session_id).await;
     sqlx::query(
-        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+        "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, \
+         brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season, session_id) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -102,6 +106,7 @@ async fn create(
     .bind(form.driver1_id)
     .bind(form.driver2_id)
     .bind(&season)
+    .bind(&session_id)
     .execute(&state.pool)
     .await
     .unwrap();
@@ -118,13 +123,16 @@ async fn show(
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
-    let setup = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1")
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await
-        .unwrap();
+    let setup = sqlx::query_as::<_, Setup>(
+        "SELECT * FROM setups WHERE id = $1 AND session_id = $2",
+    )
+    .bind(id)
+    .bind(&session_id)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap();
 
-    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog).await;
+    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
 
     let additional_stat_label = catalog.iter()
         .find_map(|p| p.additional_stat_name.clone());
@@ -180,12 +188,15 @@ async fn show(
 
 async fn update(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     Form(form): Form<SetupForm>,
 ) -> impl IntoResponse {
     sqlx::query(
-        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, suspension_id=$5, brakes_id=$6, gearbox_id=$7, battery_id=$8, driver1_id=$9, driver2_id=$10
-         WHERE id=$11",
+        "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, \
+         suspension_id=$5, brakes_id=$6, gearbox_id=$7, battery_id=$8, \
+         driver1_id=$9, driver2_id=$10 \
+         WHERE id=$11 AND session_id=$12",
     )
     .bind(&form.name)
     .bind(form.engine_id)
@@ -198,6 +209,7 @@ async fn update(
     .bind(form.driver1_id)
     .bind(form.driver2_id)
     .bind(id)
+    .bind(&session_id)
     .execute(&state.pool)
     .await
     .unwrap();
@@ -205,9 +217,14 @@ async fn update(
     Redirect::to("/setups")
 }
 
-async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
-    sqlx::query("DELETE FROM setups WHERE id = $1")
+async fn destroy(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    sqlx::query("DELETE FROM setups WHERE id = $1 AND session_id = $2")
         .bind(id)
+        .bind(&session_id)
         .execute(&state.pool)
         .await
         .unwrap();
@@ -220,9 +237,10 @@ async fn compute_all_stats(
     setup: &Setup,
     catalog: &[OwnedPartDefinition],
     drivers_catalog: &[OwnedDriverDefinition],
+    session_id: &str,
 ) -> (Stats, DriverStats) {
-    let part_stats = compute_part_stats(pool, setup, catalog).await;
-    let driver_stats = compute_driver_stats(pool, setup, drivers_catalog).await;
+    let part_stats = compute_part_stats(pool, setup, catalog, session_id).await;
+    let driver_stats = compute_driver_stats(pool, setup, drivers_catalog, session_id).await;
     (part_stats, driver_stats)
 }
 
@@ -230,6 +248,7 @@ async fn compute_part_stats(
     pool: &PgPool,
     setup: &Setup,
     catalog: &[OwnedPartDefinition],
+    session_id: &str,
 ) -> Stats {
     let mut part_ids: Vec<i32> = vec![
         setup.engine_id, setup.front_wing_id, setup.rear_wing_id,
@@ -237,10 +256,22 @@ async fn compute_part_stats(
     ];
     if let Some(id) = setup.battery_id { part_ids.push(id); }
 
-    let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE id = ANY($1)")
-        .bind(&part_ids[..]).fetch_all(pool).await.unwrap_or_default();
-    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts")
-        .fetch_all(pool).await.unwrap_or_default();
+    let items = sqlx::query_as::<_, InventoryItem>(
+        "SELECT * FROM inventory WHERE id = ANY($1) AND session_id = $2",
+    )
+    .bind(&part_ids[..])
+    .bind(session_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    let boosts = sqlx::query_as::<_, Boost>(
+        "SELECT * FROM boosts WHERE session_id = $1",
+    )
+    .bind(session_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
 
     let mut stats = Stats::default();
     for item in &items {
@@ -266,15 +297,28 @@ async fn compute_driver_stats(
     pool: &PgPool,
     setup: &Setup,
     drivers_catalog: &[OwnedDriverDefinition],
+    session_id: &str,
 ) -> DriverStats {
     let driver_ids: Vec<i32> = [setup.driver1_id, setup.driver2_id]
         .iter().filter_map(|id| *id).collect();
     if driver_ids.is_empty() { return DriverStats::default(); }
 
-    let items = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE id = ANY($1)")
-        .bind(&driver_ids[..]).fetch_all(pool).await.unwrap_or_default();
-    let boosts = sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts")
-        .fetch_all(pool).await.unwrap_or_default();
+    let items = sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory WHERE id = ANY($1) AND session_id = $2",
+    )
+    .bind(&driver_ids[..])
+    .bind(session_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    let boosts = sqlx::query_as::<_, DriverBoost>(
+        "SELECT * FROM driver_boosts WHERE session_id = $1",
+    )
+    .bind(session_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
 
     let mut stats = DriverStats::default();
     for item in &items {
@@ -296,9 +340,16 @@ pub async fn load_inventory_by_category(
     season: &str,
     catalog: &[OwnedPartDefinition],
     categories: &[PartCategory],
+    session_id: &str,
 ) -> Vec<(PartCategory, Vec<(InventoryItem, OwnedLevelStats)>)> {
-    let items = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE season = $1 ORDER BY part_name")
-        .bind(season).fetch_all(pool).await.unwrap_or_default();
+    let items = sqlx::query_as::<_, InventoryItem>(
+        "SELECT * FROM inventory WHERE season = $1 AND session_id = $2 ORDER BY part_name",
+    )
+    .bind(season)
+    .bind(session_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
 
     categories.iter().map(|cat| {
         let cat_items: Vec<_> = items.iter().filter_map(|item| {
@@ -311,7 +362,13 @@ pub async fn load_inventory_by_category(
     }).collect()
 }
 
-pub async fn load_driver_inventory(pool: &PgPool, season: &str) -> Vec<DriverInventoryItem> {
-    sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name")
-        .bind(season).fetch_all(pool).await.unwrap_or_default()
+pub async fn load_driver_inventory(pool: &PgPool, season: &str, session_id: &str) -> Vec<DriverInventoryItem> {
+    sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory WHERE season = $1 AND session_id = $2 ORDER BY driver_name",
+    )
+    .bind(season)
+    .bind(session_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default()
 }
