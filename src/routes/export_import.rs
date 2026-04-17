@@ -6,6 +6,8 @@ use axum::{Form, Router};
 use serde::{Deserialize, Serialize};
 
 use crate::auth::AuthStatus;
+use crate::get_session_season;
+use crate::session::UserSession;
 use crate::models::driver::DriverInventoryItem;
 use crate::models::setup::InventoryItem;
 use crate::AppState;
@@ -36,8 +38,11 @@ pub struct DriverEntry {
     pub level: i32,
 }
 
-async fn export(State(state): State<AppState>) -> impl IntoResponse {
-    let season = state.season().await;
+async fn export(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
 
     let parts = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
@@ -73,8 +78,12 @@ async fn export(State(state): State<AppState>) -> impl IntoResponse {
     )
 }
 
-async fn import_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    let season = state.season().await;
+async fn import_form(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
 
     crate::templates::layout::page(
         "Import",
@@ -102,8 +111,12 @@ pub struct ImportForm {
     pub json_data: String,
 }
 
-async fn import(State(state): State<AppState>, Form(form): Form<ImportForm>) -> impl IntoResponse {
-    let season = state.season().await;
+async fn import(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Form(form): Form<ImportForm>,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
 
     let Ok(data) = serde_json::from_str::<ExportData>(&form.json_data) else {
         return Redirect::to("/import");
@@ -116,7 +129,7 @@ async fn import(State(state): State<AppState>, Form(form): Form<ImportForm>) -> 
 
     for part in &data.parts {
         if part.level < 1 { continue; }
-        if state.find_part(&part.name).await.is_none() { continue; }
+        if state.find_part(&part.name, &season).await.is_none() { continue; }
         sqlx::query("INSERT INTO inventory (part_name, level, season) VALUES ($1, $2, $3)")
             .bind(&part.name).bind(part.level).bind(&season)
             .execute(&state.pool).await.unwrap();
@@ -124,7 +137,7 @@ async fn import(State(state): State<AppState>, Form(form): Form<ImportForm>) -> 
 
     for driver in &data.drivers {
         if driver.level < 1 { continue; }
-        if state.find_driver_def(&driver.name, &driver.rarity).await.is_none() { continue; }
+        if state.find_driver_def(&driver.name, &driver.rarity, &season).await.is_none() { continue; }
         sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level, season) VALUES ($1, $2, $3, $4)")
             .bind(&driver.name).bind(&driver.rarity).bind(driver.level).bind(&season)
             .execute(&state.pool).await.unwrap();

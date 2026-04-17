@@ -22,7 +22,6 @@ use crate::models::part::{OwnedPartDefinition, PartCategory};
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
-    pub active_season: Arc<RwLock<String>>,
     pub catalog: Arc<RwLock<Vec<OwnedPartDefinition>>>,
     /// Which part categories are active per season.
     pub season_categories: Arc<RwLock<HashMap<String, Vec<PartCategory>>>>,
@@ -35,13 +34,8 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn season(&self) -> String {
-        self.active_season.read().await.clone()
-    }
-
-    /// All parts for the active season, in sort_order.
-    pub async fn catalog_for_season(&self) -> Vec<OwnedPartDefinition> {
-        let season = self.season().await;
+    /// All parts for the given season, in sort_order.
+    pub async fn catalog_for_season(&self, season: &str) -> Vec<OwnedPartDefinition> {
         self.catalog
             .read()
             .await
@@ -51,9 +45,8 @@ impl AppState {
             .collect()
     }
 
-    /// Find a part by name within the active season.
-    pub async fn find_part(&self, name: &str) -> Option<OwnedPartDefinition> {
-        let season = self.season().await;
+    /// Find a part by name within the given season.
+    pub async fn find_part(&self, name: &str, season: &str) -> Option<OwnedPartDefinition> {
         self.catalog
             .read()
             .await
@@ -62,9 +55,8 @@ impl AppState {
             .cloned()
     }
 
-    /// Parts for the active season filtered by category.
-    pub async fn parts_by_category(&self, category: PartCategory) -> Vec<OwnedPartDefinition> {
-        let season = self.season().await;
+    /// Parts for the given season filtered by category.
+    pub async fn parts_by_category(&self, category: PartCategory, season: &str) -> Vec<OwnedPartDefinition> {
         self.catalog
             .read()
             .await
@@ -74,20 +66,18 @@ impl AppState {
             .collect()
     }
 
-    /// The ordered list of part categories active in the current season.
-    pub async fn categories_for_season(&self) -> Vec<PartCategory> {
-        let season = self.season().await;
+    /// The ordered list of part categories active in the given season.
+    pub async fn categories_for_season(&self, season: &str) -> Vec<PartCategory> {
         self.season_categories
             .read()
             .await
-            .get(&season)
+            .get(season)
             .cloned()
             .unwrap_or_default()
     }
 
-    /// All driver definitions for the active season, in sort_order.
-    pub async fn drivers_catalog_for_season(&self) -> Vec<OwnedDriverDefinition> {
-        let season = self.season().await;
+    /// All driver definitions for the given season, in sort_order.
+    pub async fn drivers_catalog_for_season(&self, season: &str) -> Vec<OwnedDriverDefinition> {
         self.drivers_catalog
             .read()
             .await
@@ -97,9 +87,8 @@ impl AppState {
             .collect()
     }
 
-    /// Find a driver definition by name+rarity within the active season.
-    pub async fn find_driver_def(&self, name: &str, rarity: &str) -> Option<OwnedDriverDefinition> {
-        let season = self.season().await;
+    /// Find a driver definition by name+rarity within the given season.
+    pub async fn find_driver_def(&self, name: &str, rarity: &str, season: &str) -> Option<OwnedDriverDefinition> {
         self.drivers_catalog
             .read()
             .await
@@ -107,6 +96,28 @@ impl AppState {
             .find(|d| d.name == name && d.rarity == rarity && d.season == season)
             .cloned()
     }
+}
+
+/// Read the active season for a session from the settings table.
+/// Inserts a default row on first access so new sessions are bootstrapped automatically.
+pub async fn get_session_season(pool: &PgPool, session_id: &str) -> String {
+    sqlx::query(
+        "INSERT INTO settings (key, value, session_id)
+         VALUES ('active_season', '2025', $1)
+         ON CONFLICT (key, session_id) DO NOTHING",
+    )
+    .bind(session_id)
+    .execute(pool)
+    .await
+    .ok();
+
+    sqlx::query_scalar(
+        "SELECT value FROM settings WHERE key = 'active_season' AND session_id = $1",
+    )
+    .bind(session_id)
+    .fetch_one(pool)
+    .await
+    .unwrap_or_else(|_| "2025".to_string())
 }
 
 /// Minimal base64 encoder — used to derive the session token from ADMIN_PASSWORD.
@@ -149,12 +160,6 @@ async fn main() {
     // Seed driver catalog from drivers.json (falls back to static data when absent)
     catalog::seed_drivers_catalog(&pool).await;
 
-    // Load active season from settings
-    let season: String = sqlx::query_scalar("SELECT value FROM settings WHERE key = 'active_season'")
-        .fetch_one(&pool)
-        .await
-        .unwrap_or_else(|_| "2025".to_string());
-
     // Load the full catalog (all seasons) into memory
     let parts = catalog::load_catalog(&pool).await;
 
@@ -176,7 +181,6 @@ async fn main() {
 
     let state = AppState {
         pool,
-        active_season: Arc::new(RwLock::new(season)),
         catalog: Arc::new(RwLock::new(parts)),
         season_categories: Arc::new(RwLock::new(season_cats)),
         drivers_catalog: Arc::new(RwLock::new(drivers)),
