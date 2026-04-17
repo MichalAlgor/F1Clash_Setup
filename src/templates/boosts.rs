@@ -1,4 +1,4 @@
-use maud::{html, Markup, PreEscaped};
+use maud::{Markup, PreEscaped, html};
 
 use crate::auth::AuthStatus;
 use crate::drivers_data::{DriverCategory, DriverRarity};

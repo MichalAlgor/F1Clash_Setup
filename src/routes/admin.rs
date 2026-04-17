@@ -6,14 +6,14 @@ use axum::{Form, Router};
 use serde::Deserialize;
 use std::collections::HashMap;
 
+use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::catalog;
 use crate::get_session_season;
-use crate::session::UserSession;
 use crate::models::driver::OwnedDriverLevelStats;
 use crate::models::part::OwnedLevelStats;
+use crate::session::UserSession;
 use crate::templates;
-use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -26,8 +26,14 @@ pub fn router() -> Router<AppState> {
         .route("/admin/drivers/export", get(export_drivers))
         .route("/admin/drivers/new", get(new_driver_form))
         .route("/admin/drivers/{id}/edit", get(edit_driver_form))
-        .route("/admin/drivers/{id}", delete(delete_driver).post(update_driver))
-        .route("/admin/seasons", get(list_seasons).post(save_season_categories))
+        .route(
+            "/admin/drivers/{id}",
+            delete(delete_driver).post(update_driver),
+        )
+        .route(
+            "/admin/seasons",
+            get(list_seasons).post(save_season_categories),
+        )
 }
 
 /// Returns a redirect if auth is required but the user isn't logged in.
@@ -39,15 +45,27 @@ fn guard(auth: &AuthStatus) -> Option<axum::response::Response> {
     }
 }
 
-async fn list_parts(State(state): State<AppState>, UserSession(session_id): UserSession, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+async fn list_parts(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     templates::admin::parts_list_page(&catalog, &season, &auth).into_response()
 }
 
-async fn new_part_form(State(state): State<AppState>, UserSession(session_id): UserSession, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+async fn new_part_form(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
     templates::admin::part_form_page(None, &season, &auth).into_response()
 }
@@ -58,7 +76,9 @@ async fn edit_part_form(
     Path(id): Path<i32>,
     auth: AuthStatus,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog.read().await;
     let part = catalog.iter().find(|p| p.id == id).cloned();
@@ -86,7 +106,9 @@ async fn create_part(
     auth: AuthStatus,
     Form(form): Form<PartForm>,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
 
     let levels: Vec<OwnedLevelStats> = match serde_json::from_str(&form.levels_json) {
@@ -94,7 +116,9 @@ async fn create_part(
         Err(_) => return Redirect::to("/admin/parts/new").into_response(),
     };
 
-    let additional_stat_name = form.additional_stat_name.as_deref()
+    let additional_stat_name = form
+        .additional_stat_name
+        .as_deref()
         .filter(|s| !s.trim().is_empty())
         .map(|s| s.trim().to_string());
 
@@ -133,14 +157,18 @@ async fn update_part(
     auth: AuthStatus,
     Form(form): Form<PartForm>,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
 
     let levels: Vec<OwnedLevelStats> = match serde_json::from_str(&form.levels_json) {
         Ok(v) => v,
         Err(_) => return Redirect::to("/admin/parts").into_response(),
     };
 
-    let additional_stat_name = form.additional_stat_name.as_deref()
+    let additional_stat_name = form
+        .additional_stat_name
+        .as_deref()
         .filter(|s| !s.trim().is_empty())
         .map(|s| s.trim().to_string());
 
@@ -189,28 +217,36 @@ async fn delete_part(
 }
 
 async fn export_parts(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r.into_response(); }
+    if let Some(r) = guard(&auth) {
+        return r.into_response();
+    }
 
     let all = state.catalog.read().await.clone();
 
     let mut by_season: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
     for part in &all {
-        by_season.entry(part.season.clone()).or_default().push(serde_json::json!({
-            "name": part.name,
-            "category": part.category.slug(),
-            "series": part.series,
-            "rarity": part.rarity,
-            "sort_order": part.sort_order,
-            "additional_stat_name": part.additional_stat_name,
-            "levels": part.levels,
-        }));
+        by_season
+            .entry(part.season.clone())
+            .or_default()
+            .push(serde_json::json!({
+                "name": part.name,
+                "category": part.category.slug(),
+                "series": part.series,
+                "rarity": part.rarity,
+                "sort_order": part.sort_order,
+                "additional_stat_name": part.additional_stat_name,
+                "levels": part.levels,
+            }));
     }
 
     let json = serde_json::to_string_pretty(&by_season).unwrap_or_default();
     (
         [
             (header::CONTENT_TYPE, "application/json".to_string()),
-            (header::CONTENT_DISPOSITION, "attachment; filename=\"parts.json\"".to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                "attachment; filename=\"parts.json\"".to_string(),
+            ),
         ],
         json,
     )
@@ -219,15 +255,27 @@ async fn export_parts(State(state): State<AppState>, auth: AuthStatus) -> impl I
 
 // ── Driver catalog admin ─────────────────────────────────────────────────────
 
-async fn list_drivers(State(state): State<AppState>, UserSession(session_id): UserSession, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+async fn list_drivers(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.drivers_catalog_for_season(&season).await;
     templates::admin::drivers_list_page(&catalog, &season, &auth).into_response()
 }
 
-async fn new_driver_form(State(state): State<AppState>, UserSession(session_id): UserSession, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+async fn new_driver_form(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
     templates::admin::driver_form_page(None, &season, &auth).into_response()
 }
@@ -238,7 +286,9 @@ async fn edit_driver_form(
     Path(id): Path<i32>,
     auth: AuthStatus,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.drivers_catalog.read().await;
     let driver = catalog.iter().find(|d| d.id == id).cloned();
@@ -263,7 +313,9 @@ async fn create_driver(
     auth: AuthStatus,
     Form(form): Form<DriverForm>,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season = get_session_season(&state.pool, &session_id).await;
 
     let levels: Vec<OwnedDriverLevelStats> = match serde_json::from_str(&form.levels_json) {
@@ -304,23 +356,23 @@ async fn update_driver(
     auth: AuthStatus,
     Form(form): Form<DriverForm>,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
 
     let levels: Vec<OwnedDriverLevelStats> = match serde_json::from_str(&form.levels_json) {
         Ok(v) => v,
         Err(_) => return Redirect::to("/admin/drivers").into_response(),
     };
 
-    sqlx::query(
-        "UPDATE driver_catalog SET name=$1, rarity=$2, series=$3 WHERE id=$4",
-    )
-    .bind(&form.name)
-    .bind(&form.rarity)
-    .bind(&form.series)
-    .bind(id)
-    .execute(&state.pool)
-    .await
-    .unwrap();
+    sqlx::query("UPDATE driver_catalog SET name=$1, rarity=$2, series=$3 WHERE id=$4")
+        .bind(&form.name)
+        .bind(&form.rarity)
+        .bind(&form.series)
+        .bind(id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
 
     sqlx::query("DELETE FROM driver_level_stats WHERE driver_id = $1")
         .bind(id)
@@ -353,26 +405,34 @@ async fn delete_driver(
 }
 
 async fn export_drivers(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r.into_response(); }
+    if let Some(r) = guard(&auth) {
+        return r.into_response();
+    }
 
     let all = state.drivers_catalog.read().await.clone();
 
     let mut by_season: HashMap<String, Vec<serde_json::Value>> = HashMap::new();
     for driver in &all {
-        by_season.entry(driver.season.clone()).or_default().push(serde_json::json!({
-            "name": driver.name,
-            "rarity": driver.rarity,
-            "series": driver.series,
-            "sort_order": driver.sort_order,
-            "levels": driver.levels,
-        }));
+        by_season
+            .entry(driver.season.clone())
+            .or_default()
+            .push(serde_json::json!({
+                "name": driver.name,
+                "rarity": driver.rarity,
+                "series": driver.series,
+                "sort_order": driver.sort_order,
+                "levels": driver.levels,
+            }));
     }
 
     let json = serde_json::to_string_pretty(&by_season).unwrap_or_default();
     (
         [
             (header::CONTENT_TYPE, "application/json".to_string()),
-            (header::CONTENT_DISPOSITION, "attachment; filename=\"drivers.json\"".to_string()),
+            (
+                header::CONTENT_DISPOSITION,
+                "attachment; filename=\"drivers.json\"".to_string(),
+            ),
         ],
         json,
     )
@@ -381,8 +441,14 @@ async fn export_drivers(State(state): State<AppState>, auth: AuthStatus) -> impl
 
 // ── Season categories ────────────────────────────────────────────────────────
 
-async fn list_seasons(State(state): State<AppState>, UserSession(session_id): UserSession, auth: AuthStatus) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+async fn list_seasons(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
     let season_cats = state.season_categories.read().await.clone();
     let active = get_session_season(&state.pool, &session_id).await;
     templates::admin::seasons_page(&season_cats, &active, &auth).into_response()
@@ -393,9 +459,12 @@ async fn save_season_categories(
     auth: AuthStatus,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
-    if let Some(r) = guard(&auth) { return r; }
+    if let Some(r) = guard(&auth) {
+        return r;
+    }
 
-    let season = form.iter()
+    let season = form
+        .iter()
         .find(|(k, _)| k == "season")
         .map(|(_, v)| v.clone())
         .unwrap_or_default();
@@ -404,7 +473,8 @@ async fn save_season_categories(
         return Redirect::to("/admin/seasons").into_response();
     }
 
-    let categories: Vec<&str> = form.iter()
+    let categories: Vec<&str> = form
+        .iter()
         .filter(|(k, _)| k == "categories")
         .map(|(_, v)| v.as_str())
         .collect();
@@ -440,8 +510,8 @@ async fn save_season_categories(
 
 async fn insert_levels(state: &AppState, part_id: i32, levels: &[OwnedLevelStats]) {
     for lvl in levels {
-        let details = serde_json::to_value(&lvl.additional_stat_details)
-            .unwrap_or(serde_json::json!({}));
+        let details =
+            serde_json::to_value(&lvl.additional_stat_details).unwrap_or(serde_json::json!({}));
         sqlx::query(
             "INSERT INTO part_level_stats
              (part_id, level, speed, cornering, power_unit, qualifying, pit_stop_time,

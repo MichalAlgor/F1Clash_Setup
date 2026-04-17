@@ -6,14 +6,14 @@ use maud::html;
 use serde::Deserialize;
 use sqlx::PgPool;
 
+use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::get_session_season;
-use crate::session::UserSession;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats, OwnedDriverDefinition};
 use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem, Setup, SetupWithStats};
+use crate::session::UserSession;
 use crate::templates;
-use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -42,8 +42,13 @@ async fn list(
 
     let mut with_stats = Vec::new();
     for setup in setups {
-        let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
-        with_stats.push(SetupWithStats { setup, stats, driver_stats });
+        let (stats, driver_stats) =
+            compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
+        with_stats.push(SetupWithStats {
+            setup,
+            stats,
+            driver_stats,
+        });
     }
 
     templates::setups::list_page(&with_stats, &auth)
@@ -58,9 +63,16 @@ async fn new(
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
     let categories = state.categories_for_season(&season).await;
-    let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog, &categories, &session_id).await;
+    let inventory_by_category =
+        load_inventory_by_category(&state.pool, &season, &catalog, &categories, &session_id).await;
     let driver_items = load_driver_inventory(&state.pool, &season, &session_id).await;
-    templates::setups::form_page(&inventory_by_category, &driver_items, &drivers_catalog, None, &auth)
+    templates::setups::form_page(
+        &inventory_by_category,
+        &driver_items,
+        &drivers_catalog,
+        None,
+        &auth,
+    )
 }
 
 #[derive(Deserialize)]
@@ -123,21 +135,24 @@ async fn show(
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
-    let setup = sqlx::query_as::<_, Setup>(
-        "SELECT * FROM setups WHERE id = $1 AND session_id = $2",
-    )
-    .bind(id)
-    .bind(&session_id)
-    .fetch_one(&state.pool)
-    .await
-    .unwrap();
+    let setup =
+        sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1 AND session_id = $2")
+            .bind(id)
+            .bind(&session_id)
+            .fetch_one(&state.pool)
+            .await
+            .unwrap();
 
-    let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
+    let (stats, driver_stats) =
+        compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
 
-    let additional_stat_label = catalog.iter()
-        .find_map(|p| p.additional_stat_name.clone());
+    let additional_stat_label = catalog.iter().find_map(|p| p.additional_stat_name.clone());
 
-    let s = SetupWithStats { setup, stats, driver_stats };
+    let s = SetupWithStats {
+        setup,
+        stats,
+        driver_stats,
+    };
 
     crate::templates::layout::page(
         &s.setup.name,
@@ -251,10 +266,16 @@ async fn compute_part_stats(
     session_id: &str,
 ) -> Stats {
     let mut part_ids: Vec<i32> = vec![
-        setup.engine_id, setup.front_wing_id, setup.rear_wing_id,
-        setup.suspension_id, setup.brakes_id, setup.gearbox_id,
+        setup.engine_id,
+        setup.front_wing_id,
+        setup.rear_wing_id,
+        setup.suspension_id,
+        setup.brakes_id,
+        setup.gearbox_id,
     ];
-    if let Some(id) = setup.battery_id { part_ids.push(id); }
+    if let Some(id) = setup.battery_id {
+        part_ids.push(id);
+    }
 
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE id = ANY($1) AND session_id = $2",
@@ -265,29 +286,29 @@ async fn compute_part_stats(
     .await
     .unwrap_or_default();
 
-    let boosts = sqlx::query_as::<_, Boost>(
-        "SELECT * FROM boosts WHERE session_id = $1",
-    )
-    .bind(session_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE session_id = $1")
+        .bind(session_id)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
 
     let mut stats = Stats::default();
     for item in &items {
-        if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name) {
-            if let Some(level_stats) = part_def.stats_for_level(item.level) {
-                let mut ps = Stats {
-                    speed: level_stats.speed, cornering: level_stats.cornering,
-                    power_unit: level_stats.power_unit, qualifying: level_stats.qualifying,
-                    pit_stop_time: level_stats.pit_stop_time,
-                    additional_stat_value: level_stats.additional_stat_value,
-                };
-                if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
-                    ps = ps.boosted(b.percentage);
-                }
-                stats = stats.add(&ps);
+        if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name)
+            && let Some(level_stats) = part_def.stats_for_level(item.level)
+        {
+            let mut ps = Stats {
+                speed: level_stats.speed,
+                cornering: level_stats.cornering,
+                power_unit: level_stats.power_unit,
+                qualifying: level_stats.qualifying,
+                pit_stop_time: level_stats.pit_stop_time,
+                additional_stat_value: level_stats.additional_stat_value,
+            };
+            if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
+                ps = ps.boosted(b.percentage);
             }
+            stats = stats.add(&ps);
         }
     }
     stats
@@ -300,8 +321,12 @@ async fn compute_driver_stats(
     session_id: &str,
 ) -> DriverStats {
     let driver_ids: Vec<i32> = [setup.driver1_id, setup.driver2_id]
-        .iter().filter_map(|id| *id).collect();
-    if driver_ids.is_empty() { return DriverStats::default(); }
+        .iter()
+        .filter_map(|id| *id)
+        .collect();
+    if driver_ids.is_empty() {
+        return DriverStats::default();
+    }
 
     let items = sqlx::query_as::<_, DriverInventoryItem>(
         "SELECT * FROM driver_inventory WHERE id = ANY($1) AND session_id = $2",
@@ -312,24 +337,28 @@ async fn compute_driver_stats(
     .await
     .unwrap_or_default();
 
-    let boosts = sqlx::query_as::<_, DriverBoost>(
-        "SELECT * FROM driver_boosts WHERE session_id = $1",
-    )
-    .bind(session_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    let boosts =
+        sqlx::query_as::<_, DriverBoost>("SELECT * FROM driver_boosts WHERE session_id = $1")
+            .bind(session_id)
+            .fetch_all(pool)
+            .await
+            .unwrap_or_default();
 
     let mut stats = DriverStats::default();
     for item in &items {
-        if let Some(def) = drivers_catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity) {
-            if let Some(ls) = def.stats_for_level(item.level) {
-                let mut ds = ls.to_stats();
-                if let Some(b) = boosts.iter().find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity) {
-                    ds = ds.boosted(b.percentage);
-                }
-                stats = stats.add(&ds);
+        if let Some(def) = drivers_catalog
+            .iter()
+            .find(|d| d.name == item.driver_name && d.rarity == item.rarity)
+            && let Some(ls) = def.stats_for_level(item.level)
+        {
+            let mut ds = ls.to_stats();
+            if let Some(b) = boosts
+                .iter()
+                .find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity)
+            {
+                ds = ds.boosted(b.percentage);
             }
+            stats = stats.add(&ds);
         }
     }
     stats
@@ -351,18 +380,30 @@ pub async fn load_inventory_by_category(
     .await
     .unwrap_or_default();
 
-    categories.iter().map(|cat| {
-        let cat_items: Vec<_> = items.iter().filter_map(|item| {
-            let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
-            if part_def.category != *cat { return None; }
-            let level_stats = part_def.stats_for_level(item.level)?.clone();
-            Some((item.clone(), level_stats))
-        }).collect();
-        (*cat, cat_items)
-    }).collect()
+    categories
+        .iter()
+        .map(|cat| {
+            let cat_items: Vec<_> = items
+                .iter()
+                .filter_map(|item| {
+                    let part_def = catalog.iter().find(|p| p.name == item.part_name)?;
+                    if part_def.category != *cat {
+                        return None;
+                    }
+                    let level_stats = part_def.stats_for_level(item.level)?.clone();
+                    Some((item.clone(), level_stats))
+                })
+                .collect();
+            (*cat, cat_items)
+        })
+        .collect()
 }
 
-pub async fn load_driver_inventory(pool: &PgPool, season: &str, session_id: &str) -> Vec<DriverInventoryItem> {
+pub async fn load_driver_inventory(
+    pool: &PgPool,
+    season: &str,
+    session_id: &str,
+) -> Vec<DriverInventoryItem> {
     sqlx::query_as::<_, DriverInventoryItem>(
         "SELECT * FROM driver_inventory WHERE season = $1 AND session_id = $2 ORDER BY driver_name",
     )

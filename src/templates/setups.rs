@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 use crate::auth::AuthStatus;
 use crate::drivers_data::DriverRarity;
@@ -74,7 +74,11 @@ pub fn form_page(
     setup: Option<&crate::models::setup::Setup>,
     auth: &AuthStatus,
 ) -> Markup {
-    let title = if setup.is_some() { "Edit Setup" } else { "New Setup" };
+    let title = if setup.is_some() {
+        "Edit Setup"
+    } else {
+        "New Setup"
+    };
     let action = match setup {
         Some(s) => format!("/setups/{}", s.id),
         None => "/setups".to_string(),

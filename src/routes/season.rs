@@ -5,9 +5,9 @@ use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
 
+use crate::AppState;
 use crate::get_session_season;
 use crate::session::UserSession;
-use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new()

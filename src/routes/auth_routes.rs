@@ -18,29 +18,17 @@ pub struct LoginForm {
     pub password: String,
 }
 
-async fn login(
-    State(state): State<AppState>,
-    Form(form): Form<LoginForm>,
-) -> impl IntoResponse {
-    if let (Some(token), Some(password)) = (&state.session_token, &state.admin_password) {
-        if form.password == *password {
-            let cookie = format!(
-                "admin_session={token}; HttpOnly; Path=/; SameSite=Lax"
-            );
-            return (
-                [(header::SET_COOKIE, cookie)],
-                Redirect::to("/admin/parts"),
-            )
-                .into_response();
-        }
+async fn login(State(state): State<AppState>, Form(form): Form<LoginForm>) -> impl IntoResponse {
+    if let (Some(token), Some(password)) = (&state.session_token, &state.admin_password)
+        && form.password == *password
+    {
+        let cookie = format!("admin_session={token}; HttpOnly; Path=/; SameSite=Lax");
+        return ([(header::SET_COOKIE, cookie)], Redirect::to("/admin/parts")).into_response();
     }
     Redirect::to("/").into_response()
 }
 
 async fn logout() -> impl IntoResponse {
     let clear = "admin_session=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0";
-    (
-        [(header::SET_COOKIE, clear.to_string())],
-        Redirect::to("/"),
-    )
+    ([(header::SET_COOKIE, clear.to_string())], Redirect::to("/"))
 }

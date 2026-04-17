@@ -23,11 +23,12 @@ cargo build          # Build debug binary
 cargo run            # Run dev server (needs DATABASE_URL in .env)
 cargo build --release # Build release binary
 cargo test           # Run all tests
+cargo fmt            # Format all code (run after every change)
 ```
 
 ## Verification Rule
 
-**Every code change must be verified by running `cargo test` before considering it complete.** All tests must pass. If a change breaks existing tests, fix them before moving on.
+**Every code change must be verified by running `cargo fmt` then `cargo test` before considering it complete.** All tests must pass. If a change breaks existing tests, fix them before moving on.
 
 ## UI Rules
 

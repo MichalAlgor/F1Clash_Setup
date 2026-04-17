@@ -1,16 +1,16 @@
+use axum::Form;
+use axum::Router;
 use axum::extract::State;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::get;
-use axum::Form;
-use axum::Router;
 
+use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::get_session_season;
-use crate::session::UserSession;
 use crate::models::driver::DriverBoost;
 use crate::models::setup::Boost;
+use crate::session::UserSession;
 use crate::templates;
-use crate::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/boosts", get(show).post(save))
@@ -43,7 +43,13 @@ async fn show(
     .unwrap_or_default();
 
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
-    templates::boosts::page(&part_boosts, &driver_boosts, &catalog, &drivers_catalog, &auth)
+    templates::boosts::page(
+        &part_boosts,
+        &driver_boosts,
+        &catalog,
+        &drivers_catalog,
+        &auth,
+    )
 }
 
 async fn save(
@@ -68,10 +74,14 @@ async fn save(
 
     for (key, value) in &form {
         let percentage: i32 = value.parse().unwrap_or(0);
-        if percentage == 0 { continue; }
+        if percentage == 0 {
+            continue;
+        }
 
         if let Some(part_name) = key.strip_prefix("part:") {
-            if state.find_part(part_name, &season).await.is_none() { continue; }
+            if state.find_part(part_name, &season).await.is_none() {
+                continue;
+            }
             sqlx::query(
                 "INSERT INTO boosts (part_name, percentage, season, session_id) VALUES ($1, $2, $3, $4)",
             )
@@ -83,8 +93,16 @@ async fn save(
             .await
             .unwrap();
         } else if let Some(rest) = key.strip_prefix("driver:") {
-            let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
-            if state.find_driver_def(name, rarity_str, &season).await.is_none() { continue; }
+            let Some((name, rarity_str)) = rest.rsplit_once(':') else {
+                continue;
+            };
+            if state
+                .find_driver_def(name, rarity_str, &season)
+                .await
+                .is_none()
+            {
+                continue;
+            }
             sqlx::query(
                 "INSERT INTO driver_boosts (driver_name, rarity, percentage, season, session_id) VALUES ($1, $2, $3, $4, $5)",
             )
