@@ -5,6 +5,8 @@ use axum::Form;
 use axum::Router;
 
 use crate::auth::AuthStatus;
+use crate::get_session_season;
+use crate::session::UserSession;
 use crate::models::driver::DriverBoost;
 use crate::models::setup::Boost;
 use crate::templates;
@@ -14,9 +16,13 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/boosts", get(show).post(save))
 }
 
-async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    let season = state.season().await;
-    let catalog = state.catalog_for_season().await;
+async fn show(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
 
     let part_boosts = sqlx::query_as::<_, Boost>(
         "SELECT * FROM boosts WHERE season = $1 ORDER BY part_name",
@@ -34,15 +40,16 @@ async fn show(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
     .await
     .unwrap_or_default();
 
-    let drivers_catalog = state.drivers_catalog_for_season().await;
+    let drivers_catalog = state.drivers_catalog_for_season(&season).await;
     templates::boosts::page(&part_boosts, &driver_boosts, &catalog, &drivers_catalog, &auth)
 }
 
 async fn save(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
-    let season = state.season().await;
+    let season = get_session_season(&state.pool, &session_id).await;
 
     sqlx::query("DELETE FROM boosts WHERE season = $1")
         .bind(&season)
@@ -62,7 +69,7 @@ async fn save(
         }
 
         if let Some(part_name) = key.strip_prefix("part:") {
-            if state.find_part(part_name).await.is_none() { continue; }
+            if state.find_part(part_name, &season).await.is_none() { continue; }
             sqlx::query("INSERT INTO boosts (part_name, percentage, season) VALUES ($1, $2, $3)")
                 .bind(part_name)
                 .bind(percentage)
@@ -72,7 +79,7 @@ async fn save(
                 .unwrap();
         } else if let Some(rest) = key.strip_prefix("driver:") {
             let Some((name, rarity_str)) = rest.rsplit_once(':') else { continue };
-            if state.find_driver_def(name, rarity_str).await.is_none() { continue; }
+            if state.find_driver_def(name, rarity_str, &season).await.is_none() { continue; }
             sqlx::query("INSERT INTO driver_boosts (driver_name, rarity, percentage, season) VALUES ($1, $2, $3, $4)")
                 .bind(name)
                 .bind(rarity_str)

@@ -7,6 +7,8 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::auth::AuthStatus;
+use crate::get_session_season;
+use crate::session::UserSession;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats, OwnedDriverDefinition};
 use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem, Setup, SetupWithStats};
@@ -21,10 +23,14 @@ pub fn router() -> Router<AppState> {
         .route("/setups/{id}", delete(destroy))
 }
 
-async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    let season = state.season().await;
-    let catalog = state.catalog_for_season().await;
-    let drivers_catalog = state.drivers_catalog_for_season().await;
+async fn list(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
+    let drivers_catalog = state.drivers_catalog_for_season(&season).await;
     let setups = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE season = $1 ORDER BY name")
         .bind(&season)
         .fetch_all(&state.pool)
@@ -40,11 +46,15 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
     templates::setups::list_page(&with_stats, &auth)
 }
 
-async fn new(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    let season = state.season().await;
-    let catalog = state.catalog_for_season().await;
-    let drivers_catalog = state.drivers_catalog_for_season().await;
-    let categories = state.categories_for_season().await;
+async fn new(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
+    let drivers_catalog = state.drivers_catalog_for_season(&season).await;
+    let categories = state.categories_for_season(&season).await;
     let inventory_by_category = load_inventory_by_category(&state.pool, &season, &catalog, &categories).await;
     let driver_items = load_driver_inventory(&state.pool, &season).await;
     templates::setups::form_page(&inventory_by_category, &driver_items, &drivers_catalog, None, &auth)
@@ -71,8 +81,12 @@ pub struct SetupForm {
     pub driver2_id: Option<i32>,
 }
 
-async fn create(State(state): State<AppState>, Form(form): Form<SetupForm>) -> impl IntoResponse {
-    let season = state.season().await;
+async fn create(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Form(form): Form<SetupForm>,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
     sqlx::query(
         "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
@@ -95,9 +109,15 @@ async fn create(State(state): State<AppState>, Form(form): Form<SetupForm>) -> i
     Redirect::to("/setups")
 }
 
-async fn show(State(state): State<AppState>, Path(id): Path<i32>, auth: AuthStatus) -> impl IntoResponse {
-    let catalog = state.catalog_for_season().await;
-    let drivers_catalog = state.drivers_catalog_for_season().await;
+async fn show(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Path(id): Path<i32>,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
+    let drivers_catalog = state.drivers_catalog_for_season(&season).await;
     let setup = sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1")
         .bind(id)
         .fetch_one(&state.pool)
@@ -106,7 +126,6 @@ async fn show(State(state): State<AppState>, Path(id): Path<i32>, auth: AuthStat
 
     let (stats, driver_stats) = compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog).await;
 
-    // Find the label for this season's special stat (e.g. "DRS", "Overtake Mode")
     let additional_stat_label = catalog.iter()
         .find_map(|p| p.additional_stat_name.clone());
 

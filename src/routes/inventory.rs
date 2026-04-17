@@ -6,6 +6,8 @@ use maud::html;
 use serde::Deserialize;
 
 use crate::auth::AuthStatus;
+use crate::get_session_season;
+use crate::session::UserSession;
 use crate::AppState;
 
 use crate::models::setup::InventoryItem;
@@ -25,10 +27,14 @@ async fn index() -> impl IntoResponse {
     Redirect::to("/inventory")
 }
 
-async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    let season = state.season().await;
-    let catalog = state.catalog_for_season().await;
-    let categories = state.categories_for_season().await;
+async fn list(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
+    let categories = state.categories_for_season(&season).await;
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
@@ -40,10 +46,14 @@ async fn list(State(state): State<AppState>, auth: AuthStatus) -> impl IntoRespo
     templates::inventory::list_page(&items, &catalog, &categories, &auth)
 }
 
-async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
-    let season = state.season().await;
-    let catalog = state.catalog_for_season().await;
-    let categories = state.categories_for_season().await;
+async fn bulk_form(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
+    let categories = state.categories_for_season(&season).await;
     let items = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
     )
@@ -57,9 +67,10 @@ async fn bulk_form(State(state): State<AppState>, auth: AuthStatus) -> impl Into
 
 async fn bulk_save(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     Form(form): Form<Vec<(String, String)>>,
 ) -> impl IntoResponse {
-    let season = state.season().await;
+    let season = get_session_season(&state.pool, &session_id).await;
 
     sqlx::query("DELETE FROM inventory WHERE season = $1")
         .bind(&season)
@@ -75,7 +86,7 @@ async fn bulk_save(
         if level < 1 {
             continue;
         }
-        if state.find_part(part_name).await.is_none() {
+        if state.find_part(part_name, &season).await.is_none() {
             continue;
         }
         sqlx::query("INSERT INTO inventory (part_name, level, season) VALUES ($1, $2, $3)")
@@ -118,6 +129,7 @@ pub struct CardsForm {
 /// Returns the updated cards cell fragment (used by htmx to swap in place).
 async fn update_cards(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     Form(form): Form<CardsForm>,
 ) -> impl IntoResponse {
@@ -130,14 +142,14 @@ async fn update_cards(
         .await
         .unwrap();
 
-    // Fetch updated item to re-render the cell
     let item = sqlx::query_as::<_, InventoryItem>("SELECT * FROM inventory WHERE id = $1")
         .bind(id)
         .fetch_one(&state.pool)
         .await
         .unwrap();
 
-    let catalog = state.catalog_for_season().await;
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
     let part_def = catalog.iter().find(|p| p.name == item.part_name);
 
     templates::inventory::cards_cell(id, cards, item.level, part_def)

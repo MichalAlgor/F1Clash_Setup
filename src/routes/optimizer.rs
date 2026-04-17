@@ -7,6 +7,8 @@ use crate::AppState;
 
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
+use crate::get_session_season;
+use crate::session::UserSession;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem};
@@ -93,7 +95,7 @@ async fn resolve_parts(
     #[cfg(debug_assertions)]
     let t = std::time::Instant::now();
 
-    let catalog = state.catalog_for_season().await;
+    let catalog = state.catalog_for_season(season).await;
     #[cfg(debug_assertions)]
     eprintln!("[optimizer] catalog_for_season:    {:>8.2?}", t.elapsed());
 
@@ -121,7 +123,7 @@ async fn resolve_parts(
 
     #[cfg(debug_assertions)]
     let t1 = std::time::Instant::now();
-    let categories = state.categories_for_season().await;
+    let categories = state.categories_for_season(season).await;
     #[cfg(debug_assertions)]
     eprintln!("[optimizer] categories_for_season: {:>8.2?}  ({} cats)", t1.elapsed(), categories.len());
 
@@ -183,7 +185,7 @@ async fn resolve_drivers(
     #[cfg(debug_assertions)]
     eprintln!("[optimizer] query driver_boosts:    {:>8.2?}  ({} boosts)", t1.elapsed(), driver_boosts.len());
 
-    let drivers_catalog = state.drivers_catalog_for_season().await;
+    let drivers_catalog = state.drivers_catalog_for_season(season).await;
 
     driver_items.iter().filter_map(|item| {
         let def = drivers_catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity)?;
@@ -215,12 +217,13 @@ fn build_driver_pairs(resolved_drivers: &[ResolvedDriver]) -> Vec<(Option<usize>
 
 async fn run_presets(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     axum::extract::Query(query): axum::extract::Query<PresetsQuery>,
     auth: AuthStatus,
 ) -> impl IntoResponse {
     #[cfg(debug_assertions)]
     let t_total = std::time::Instant::now();
-    let season = state.season().await;
+    let season = get_session_season(&state.pool, &session_id).await;
     let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
     #[cfg(debug_assertions)]
     eprintln!("[optimizer] === run_presets start (series ≤{max_part_series}) ===");
@@ -271,10 +274,11 @@ async fn run_presets(
 
 async fn run(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     axum::extract::Query(query): axum::extract::Query<OptimizerQuery>,
     auth: AuthStatus,
 ) -> impl IntoResponse {
-    let season = state.season().await;
+    let season = get_session_season(&state.pool, &session_id).await;
     let max_part_series = query.max_part_series.unwrap_or(i32::MAX);
     let max_driver_series = query.max_driver_series.unwrap_or(i32::MAX);
 
@@ -439,8 +443,12 @@ pub struct SaveForm {
     pub driver2_id: Option<i32>,
 }
 
-async fn save(State(state): State<AppState>, Form(form): Form<SaveForm>) -> impl IntoResponse {
-    let season = state.season().await;
+async fn save(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Form(form): Form<SaveForm>,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
     sqlx::query(
         "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
