@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0] — 2026-04-17
+
+### Added
+- **Multi-user session isolation** — every visitor gets a private, independent workspace with no signup required; a UUID cookie (`user_session`) identifies each session, SHA-256 hashed before DB storage
+- **Per-session active season** — each session independently tracks which season is active; switching seasons in one browser does not affect any other
+- **Session ID display** — the Export / Import page shows the hashed session ID under a collapsed section, allowing data transfer to another browser by copying the cookie value
+- **Export / Import combined page** — Export and Import are now a single page (`/import`) instead of two separate nav entries; includes session info, a download button, and the import form
+
+### Changed
+- All user-data queries (inventory, drivers, setups, boosts, optimizer) now filter by `session_id` — complete data isolation between visitors
+- `user_session` cookie set with `HttpOnly; SameSite=Lax; Max-Age=31536000`; `SameSite=Lax` also covers CSRF for this app
+- Optimizer `prune_category()` caps candidates at 10 per category to keep brute-force tractable with large inventories (8^6 = 262K combos vs unbounded)
+- `drivers.json` committed to repo; removed 1700-line static `DRIVER_CATALOG` from `drivers_data.rs`
+
+### Fixed
+- FK constraint violation when bulk-saving or importing inventory — setup part/driver references are now NULLed before the inventory DELETE
+
+---
+
 ## [0.3.0] — 2026-04-16
 
 ### Added
