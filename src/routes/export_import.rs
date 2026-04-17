@@ -45,17 +45,19 @@ async fn export(
     let season = get_session_season(&state.pool, &session_id).await;
 
     let parts = sqlx::query_as::<_, InventoryItem>(
-        "SELECT * FROM inventory WHERE season = $1 ORDER BY part_name",
+        "SELECT * FROM inventory WHERE season = $1 AND session_id = $2 ORDER BY part_name",
     )
     .bind(&season)
+    .bind(&session_id)
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
 
     let drivers = sqlx::query_as::<_, DriverInventoryItem>(
-        "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
+        "SELECT * FROM driver_inventory WHERE season = $1 AND session_id = $2 ORDER BY driver_name",
     )
     .bind(&season)
+    .bind(&session_id)
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
