@@ -3,6 +3,7 @@ pub mod catalog;
 pub mod data;
 pub mod optimizer_core;
 pub mod drivers_data;
+pub mod session;
 mod models;
 mod routes;
 mod templates;
@@ -194,6 +195,7 @@ async fn main() {
         .merge(routes::admin::router())
         .merge(routes::auth_routes::router())
         .nest_service("/static", ServeDir::new("static"))
+        .layer(axum::middleware::from_fn(session::session_middleware))
         .with_state(state);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
