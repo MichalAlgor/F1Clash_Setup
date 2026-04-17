@@ -104,17 +104,42 @@ async fn import_form(
     let season = get_session_season(&state.pool, &session_id).await;
 
     crate::templates::layout::page(
-        "Import",
+        "Export / Import",
         &auth,
         maud::html! {
             hgroup {
-                h1 { "Import Inventory" }
-                p { "Paste exported JSON to import parts and drivers into season " strong { (&season) } }
+                h1 { "Export / Import" }
+                p { "Back up your inventory or restore it from a file." }
             }
+
+            // ── Session info ──────────────────────────────────────────────────
+            details style="margin-bottom:1.5rem" {
+                summary { small.secondary { "Your session ID" } }
+                p style="margin-top:0.5rem" {
+                    code style="word-break:break-all;font-size:0.75em" { (&session_id) }
+                }
+                p {
+                    small.secondary {
+                        "Your data is tied to this browser's cookie. "
+                        "Set the " code { "user_session" } " cookie to this value in another browser to access the same data."
+                    }
+                }
+            }
+
+            // ── Export ────────────────────────────────────────────────────────
+            h2 { "Export" }
+            p { "Download your current inventory for season " strong { (&season) } " as a JSON file." }
+            a href="/export" role="button" { "Download inventory JSON" }
+
+            hr style="margin:2rem 0";
+
+            // ── Import ────────────────────────────────────────────────────────
+            h2 { "Import" }
+            p { "Restore inventory into season " strong { (&season) } " from a previously exported file." }
 
             form method="post" action="/import" {
                 label for="json_data" { "JSON data" }
-                textarea id="json_data" name="json_data" rows="12" required
+                textarea id="json_data" name="json_data" rows="10" required
                     placeholder="Paste the contents of your exported JSON file here..." {}
                 button type="submit" { "Import" }
             }

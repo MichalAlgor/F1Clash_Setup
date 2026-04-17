@@ -30,8 +30,7 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                             li { a href="/setups" { "Setups" } }
                             li { a href="/boosts" { "Boosts" } }
                             li { a href="/optimizer" { "Optimizer" } }
-                            li { a href="/export" { "Export" } }
-                            li { a href="/import" { "Import" } }
+                            li { a href="/import" { "Export / Import" } }
                             @if !auth.enabled || auth.logged_in {
                                 li { a href="/admin/parts" { "Admin" } }
                             }
@@ -68,6 +67,10 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                     p style="text-align:center" {
                         small.secondary {
                             "F1 Clash Setup v" (env!("CARGO_PKG_VERSION"))
+                            " · Your data is saved in this browser. "
+                            a href="/import" { "Export" }
+                            " to back it up."
+                            " · Made with ❤️ by Mikele"
                         }
                     }
                 }
