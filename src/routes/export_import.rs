@@ -122,25 +122,56 @@ async fn import(
         return Redirect::to("/import");
     };
 
-    sqlx::query("DELETE FROM inventory WHERE season = $1")
-        .bind(&season).execute(&state.pool).await.unwrap();
-    sqlx::query("DELETE FROM driver_inventory WHERE season = $1")
-        .bind(&season).execute(&state.pool).await.unwrap();
+    // NULL out setup references to this session's inventory/driver rows
+    // before deleting — avoids FK constraint violations.
+    sqlx::query(
+        "UPDATE setups SET engine_id=NULL, front_wing_id=NULL, rear_wing_id=NULL, \
+         suspension_id=NULL, brakes_id=NULL, gearbox_id=NULL, battery_id=NULL \
+         WHERE engine_id      IN (SELECT id FROM inventory WHERE session_id=$1) \
+            OR front_wing_id  IN (SELECT id FROM inventory WHERE session_id=$1) \
+            OR rear_wing_id   IN (SELECT id FROM inventory WHERE session_id=$1) \
+            OR suspension_id  IN (SELECT id FROM inventory WHERE session_id=$1) \
+            OR brakes_id      IN (SELECT id FROM inventory WHERE session_id=$1) \
+            OR gearbox_id     IN (SELECT id FROM inventory WHERE session_id=$1) \
+            OR battery_id     IN (SELECT id FROM inventory WHERE session_id=$1)",
+    )
+    .bind(&session_id).execute(&state.pool).await.unwrap();
+
+    sqlx::query(
+        "UPDATE setups SET driver1_id=NULL WHERE driver1_id IN \
+         (SELECT id FROM driver_inventory WHERE session_id=$1)",
+    )
+    .bind(&session_id).execute(&state.pool).await.unwrap();
+
+    sqlx::query(
+        "UPDATE setups SET driver2_id=NULL WHERE driver2_id IN \
+         (SELECT id FROM driver_inventory WHERE session_id=$1)",
+    )
+    .bind(&session_id).execute(&state.pool).await.unwrap();
+
+    sqlx::query("DELETE FROM inventory WHERE season = $1 AND session_id = $2")
+        .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+    sqlx::query("DELETE FROM driver_inventory WHERE season = $1 AND session_id = $2")
+        .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
 
     for part in &data.parts {
         if part.level < 1 { continue; }
         if state.find_part(&part.name, &season).await.is_none() { continue; }
-        sqlx::query("INSERT INTO inventory (part_name, level, season) VALUES ($1, $2, $3)")
-            .bind(&part.name).bind(part.level).bind(&season)
-            .execute(&state.pool).await.unwrap();
+        sqlx::query(
+            "INSERT INTO inventory (part_name, level, season, session_id) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(&part.name).bind(part.level).bind(&season).bind(&session_id)
+        .execute(&state.pool).await.unwrap();
     }
 
     for driver in &data.drivers {
         if driver.level < 1 { continue; }
         if state.find_driver_def(&driver.name, &driver.rarity, &season).await.is_none() { continue; }
-        sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level, season) VALUES ($1, $2, $3, $4)")
-            .bind(&driver.name).bind(&driver.rarity).bind(driver.level).bind(&season)
-            .execute(&state.pool).await.unwrap();
+        sqlx::query(
+            "INSERT INTO driver_inventory (driver_name, rarity, level, season, session_id) VALUES ($1, $2, $3, $4, $5)",
+        )
+        .bind(&driver.name).bind(&driver.rarity).bind(driver.level).bind(&season).bind(&session_id)
+        .execute(&state.pool).await.unwrap();
     }
 
     Redirect::to("/inventory")

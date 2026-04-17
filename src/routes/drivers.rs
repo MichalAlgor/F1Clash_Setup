@@ -29,9 +29,10 @@ async fn list(
 ) -> impl IntoResponse {
     let season = get_session_season(&state.pool, &session_id).await;
     let items = sqlx::query_as::<_, DriverInventoryItem>(
-        "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
+        "SELECT * FROM driver_inventory WHERE season = $1 AND session_id = $2 ORDER BY driver_name",
     )
     .bind(&season)
+    .bind(&session_id)
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
@@ -47,9 +48,10 @@ async fn bulk_form(
 ) -> impl IntoResponse {
     let season = get_session_season(&state.pool, &session_id).await;
     let items = sqlx::query_as::<_, DriverInventoryItem>(
-        "SELECT * FROM driver_inventory WHERE season = $1 ORDER BY driver_name",
+        "SELECT * FROM driver_inventory WHERE season = $1 AND session_id = $2 ORDER BY driver_name",
     )
     .bind(&season)
+    .bind(&session_id)
     .fetch_all(&state.pool)
     .await
     .unwrap_or_default();
@@ -65,12 +67,21 @@ async fn bulk_save(
 ) -> impl IntoResponse {
     let season = get_session_season(&state.pool, &session_id).await;
 
-    sqlx::query("UPDATE setups SET driver1_id = NULL WHERE driver1_id IN (SELECT id FROM driver_inventory WHERE season = $1)")
-        .bind(&season).execute(&state.pool).await.unwrap();
-    sqlx::query("UPDATE setups SET driver2_id = NULL WHERE driver2_id IN (SELECT id FROM driver_inventory WHERE season = $1)")
-        .bind(&season).execute(&state.pool).await.unwrap();
-    sqlx::query("DELETE FROM driver_inventory WHERE season = $1")
+    sqlx::query(
+        "UPDATE setups SET driver1_id = NULL WHERE driver1_id IN \
+         (SELECT id FROM driver_inventory WHERE season = $1 AND session_id = $2)",
+    )
+    .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+
+    sqlx::query(
+        "UPDATE setups SET driver2_id = NULL WHERE driver2_id IN \
+         (SELECT id FROM driver_inventory WHERE season = $1 AND session_id = $2)",
+    )
+    .bind(&season).bind(&session_id).execute(&state.pool).await.unwrap();
+
+    sqlx::query("DELETE FROM driver_inventory WHERE season = $1 AND session_id = $2")
         .bind(&season)
+        .bind(&session_id)
         .execute(&state.pool)
         .await
         .unwrap();
@@ -82,14 +93,18 @@ async fn bulk_save(
         if level < 1 { continue; }
         if state.find_driver_def(name, rarity_str, &season).await.is_none() { continue; }
 
-        sqlx::query("INSERT INTO driver_inventory (driver_name, rarity, level, season) VALUES ($1, $2, $3, $4)")
-            .bind(name)
-            .bind(rarity_str)
-            .bind(level)
-            .bind(&season)
-            .execute(&state.pool)
-            .await
-            .unwrap();
+        sqlx::query(
+            "INSERT INTO driver_inventory (driver_name, rarity, level, season, session_id) \
+             VALUES ($1, $2, $3, $4, $5)",
+        )
+        .bind(name)
+        .bind(rarity_str)
+        .bind(level)
+        .bind(&season)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await
+        .unwrap();
     }
 
     Redirect::to("/drivers")
@@ -102,12 +117,14 @@ pub struct LevelForm {
 
 async fn update_level(
     State(state): State<AppState>,
+    UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     Form(form): Form<LevelForm>,
 ) -> impl IntoResponse {
-    sqlx::query("UPDATE driver_inventory SET level = $1 WHERE id = $2")
+    sqlx::query("UPDATE driver_inventory SET level = $1 WHERE id = $2 AND session_id = $3")
         .bind(form.level)
         .bind(id)
+        .bind(&session_id)
         .execute(&state.pool)
         .await
         .unwrap();
@@ -128,31 +145,40 @@ async fn update_cards(
 ) -> impl IntoResponse {
     let cards = form.cards.max(0);
 
-    sqlx::query("UPDATE driver_inventory SET cards_owned = $1 WHERE id = $2")
+    sqlx::query("UPDATE driver_inventory SET cards_owned = $1 WHERE id = $2 AND session_id = $3")
         .bind(cards)
         .bind(id)
+        .bind(&session_id)
         .execute(&state.pool)
         .await
         .unwrap();
 
-    let item = sqlx::query_as::<_, DriverInventoryItem>("SELECT * FROM driver_inventory WHERE id = $1")
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await
-        .unwrap();
+    let item = sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory WHERE id = $1 AND session_id = $2",
+    )
+    .bind(id)
+    .bind(&session_id)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap();
 
     let season = get_session_season(&state.pool, &session_id).await;
     let def = state.find_driver_def(&item.driver_name, &item.rarity, &season).await;
     driver_cards_cell(id, cards, item.level, def.as_ref())
 }
 
-async fn destroy(State(state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
-    sqlx::query("UPDATE setups SET driver1_id = NULL WHERE driver1_id = $1")
-        .bind(id).execute(&state.pool).await.unwrap();
-    sqlx::query("UPDATE setups SET driver2_id = NULL WHERE driver2_id = $1")
-        .bind(id).execute(&state.pool).await.unwrap();
-    sqlx::query("DELETE FROM driver_inventory WHERE id = $1")
+async fn destroy(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    sqlx::query("UPDATE setups SET driver1_id = NULL WHERE driver1_id = $1 AND session_id = $2")
+        .bind(id).bind(&session_id).execute(&state.pool).await.unwrap();
+    sqlx::query("UPDATE setups SET driver2_id = NULL WHERE driver2_id = $1 AND session_id = $2")
+        .bind(id).bind(&session_id).execute(&state.pool).await.unwrap();
+    sqlx::query("DELETE FROM driver_inventory WHERE id = $1 AND session_id = $2")
         .bind(id)
+        .bind(&session_id)
         .execute(&state.pool)
         .await
         .unwrap();
