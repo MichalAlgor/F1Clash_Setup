@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font: 14px/1.4 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+      margin: 0; padding: 24px; background: #f7f7f8; color: #222;
+    }
+    h1 { margin: 0 0 16px; font-size: 20px; }
+    .controls { margin-bottom: 20px; }
+    select, button {
+      padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
+      background: white; font: inherit; cursor: pointer;
+    }
+    .grid {
+      display: grid; gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+    .card {
+      background: white; padding: 16px; border-radius: 8px;
+      border: 1px solid #e5e5e7;
+    }
+    .card h2 {
+      margin: 0 0 12px; font-size: 13px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em; color: #666;
+    }
+    .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    .kpi { background: white; padding: 14px; border-radius: 8px; border: 1px solid #e5e5e7; }
+    .kpi .value { font-size: 22px; font-weight: 600; }
+    .kpi .label { font-size: 12px; color: #666; text-transform: uppercase; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid #f0f0f2; }
+    th { color: #666; font-weight: 600; }
+    td:last-child, th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+    .chart-box { position: relative; height: 220px; }
+    .error { color: #b00; padding: 12px; }
+    @media (max-width: 600px) {
+      .kpis { grid-template-columns: repeat(2,1fr); }
+      body { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Analytics</h1>
+
+  <div class="controls">
+    <label>Range:
+      <select id="range">
+        <option value="1">Last 24 hours</option>
+        <option value="7" selected>Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </label>
+    <button id="refresh">Refresh</button>
+  </div>
+
+  <div id="error" class="error" hidden></div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Page views</div><div class="value" id="k-total">&ndash;</div></div>
+    <div class="kpi"><div class="label">Unique visitors</div><div class="value" id="k-visitors">&ndash;</div></div>
+    <div class="kpi"><div class="label">Avg response</div><div class="value" id="k-ms">&ndash;</div></div>
+    <div class="kpi"><div class="label">Bot traffic</div><div class="value" id="k-bot">&ndash;</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h2>Visits per day</h2>
+    <div class="chart-box"><canvas id="chart-visits"></canvas></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>Top paths</h2><table id="t-paths"></table></div>
+    <div class="card"><h2>Top referrers</h2><table id="t-refs"></table></div>
+    <div class="card"><h2>Countries</h2><table id="t-countries"></table></div>
+    <div class="card"><h2>Devices</h2><table id="t-devices"></table></div>
+  </div>
+
+<script>
+const rangeEl = document.getElementById('range');
+const errEl = document.getElementById('error');
+let chart;
+
+async function load() {
+  errEl.hidden = true;
+  const days = rangeEl.value;
+  try {
+    const r = await fetch(`/admin/api/v1/stats/dashboard?days=${days}&limit=10`, {
+      credentials: 'same-origin'
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    render(await r.json());
+  } catch (e) {
+    errEl.hidden = false;
+    errEl.textContent = `Failed to load: ${e.message}`;
+  }
+}
+
+function render(d) {
+  document.getElementById('k-total').textContent = d.summary.total_events.toLocaleString();
+  document.getElementById('k-visitors').textContent = d.summary.unique_visitors.toLocaleString();
+  document.getElementById('k-ms').textContent = Math.round(d.summary.avg_response_ms) + ' ms';
+  document.getElementById('k-bot').textContent = d.summary.bot_percentage.toFixed(1) + '%';
+
+  renderChart(d.visits_per_day);
+  renderTable('t-paths', d.top_paths, 'path', 'count');
+  renderTable('t-refs', d.top_referrers, 'referrer', 'count');
+  renderTable('t-countries', d.top_countries, 'country', 'count');
+  renderTable('t-devices', d.device_breakdown, 'device', 'count');
+}
+
+function renderTable(id, rows, keyCol, valCol) {
+  const el = document.getElementById(id);
+  if (!rows.length) { el.innerHTML = '<tr><td style="color:#999">No data</td></tr>'; return; }
+  const header = `<tr><th>${escapeHtml(keyCol)}</th><th>${escapeHtml(valCol)}</th></tr>`;
+  const body = rows.map(r =>
+    `<tr><td>${escapeHtml(String(r[keyCol]))}</td><td>${r[valCol].toLocaleString()}</td></tr>`
+  ).join('');
+  el.innerHTML = header + body;
+}
+
+function renderChart(rows) {
+  const ctx = document.getElementById('chart-visits');
+  const labels = rows.map(r => r.day);
+  const data = rows.map(r => r.count);
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      data, borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.1)',
+      fill: true, tension: 0.25, pointRadius: 3
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+rangeEl.addEventListener('change', load);
+document.getElementById('refresh').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>

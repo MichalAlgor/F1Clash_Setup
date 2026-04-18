@@ -33,6 +33,8 @@ pub struct AppState {
     pub admin_password: Option<String>,
     /// Opaque token stored in the session cookie (derived from password).
     pub session_token: Option<String>,
+    /// Analytics handle for query API and dashboard.
+    pub analytics: analytics::AnalyticsHandle,
 }
 
 impl AppState {
@@ -207,12 +209,25 @@ async fn main() {
         tracing::warn!("ADMIN_PASSWORD not set — admin routes are unprotected");
     }
 
+    // GeoIP provider selection
+    let geoip: Arc<dyn analytics::geoip::GeoIpProvider> =
+        match std::env::var("GEOIP_PROVIDER").ok().as_deref() {
+            #[cfg(feature = "maxmind")]
+            Some("maxmind") => {
+                let path = std::env::var("GEOIP_DB_PATH").expect("GEOIP_DB_PATH required");
+                Arc::new(analytics::geoip::maxmind::MaxMindGeoIp::open(path).unwrap())
+            }
+            #[cfg(feature = "http-geoip")]
+            Some("http") => Arc::new(analytics::geoip::http::HttpGeoIp::new()),
+            _ => Arc::new(analytics::geoip::NoopGeoIp),
+        };
+
     // Analytics setup
     let analytics_handle: analytics::AnalyticsHandle =
         Arc::new(analytics::postgres::PostgresAnalytics::new(pool.clone()));
     let analytics_state = analytics::middleware::AnalyticsState {
         sink: analytics_handle.clone(),
-        geoip: Arc::new(analytics::geoip::NoopGeoIp),
+        geoip,
     };
 
     // Background pruning — delete events older than 90 days, once per day
@@ -236,6 +251,7 @@ async fn main() {
         drivers_catalog: Arc::new(RwLock::new(drivers)),
         admin_password,
         session_token,
+        analytics: analytics_handle.clone(),
     };
 
     let app = Router::new()
@@ -247,6 +263,7 @@ async fn main() {
         .merge(routes::season::router())
         .merge(routes::export_import::router())
         .merge(routes::admin::router())
+        .merge(analytics::admin::router())
         .merge(routes::auth_routes::router())
         .nest_service("/static", ServeDir::new("static"))
         .layer(axum::middleware::from_fn_with_state(

@@ -1,3 +1,4 @@
+pub mod admin;
 pub mod domain;
 pub mod geoip;
 pub mod middleware;

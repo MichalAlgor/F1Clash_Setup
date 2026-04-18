@@ -26,6 +26,7 @@ pub fn parts_list_page(
                 a href="/admin/parts/export" role="button" class="outline" { "Export parts.json" }
                 a href="/admin/seasons" role="button" class="outline" { "Season Settings" }
                 a href="/admin/drivers" role="button" class="outline" { "Driver Catalog" }
+                a href="/admin/stats" role="button" class="outline" { "Analytics" }
             }
 
             @if catalog.is_empty() {
@@ -210,6 +211,7 @@ pub fn drivers_list_page(
                 a href="/admin/drivers/new" role="button" { "+ Add Driver" }
                 a href="/admin/drivers/export" role="button" class="outline" { "Export drivers.json" }
                 a href="/admin/parts" role="button" class="outline" { "Parts Catalog" }
+                a href="/admin/stats" role="button" class="outline" { "Analytics" }
             }
 
             @if catalog.is_empty() {
