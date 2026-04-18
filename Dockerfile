@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 WORKDIR /app
 COPY --from=builder /app/target/release/f1clash_setup /usr/local/bin/
 COPY --from=builder /app/parts.json ./parts.json
+COPY --from=builder /app/drivers.json ./drivers.json
 RUN mkdir -p /app/static
 COPY --from=builder /app/static/ ./static/
 EXPOSE 3000
