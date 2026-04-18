@@ -1,3 +1,4 @@
+mod analytics;
 pub mod auth;
 pub mod catalog;
 pub mod data;
@@ -12,6 +13,7 @@ use axum::Router;
 use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
@@ -205,6 +207,28 @@ async fn main() {
         tracing::warn!("ADMIN_PASSWORD not set — admin routes are unprotected");
     }
 
+    // Analytics setup
+    let analytics_handle: analytics::AnalyticsHandle =
+        Arc::new(analytics::postgres::PostgresAnalytics::new(pool.clone()));
+    let analytics_state = analytics::middleware::AnalyticsState {
+        sink: analytics_handle.clone(),
+        geoip: Arc::new(analytics::geoip::NoopGeoIp),
+    };
+
+    // Background pruning — delete events older than 90 days, once per day
+    let pruner = analytics::postgres::PostgresAnalytics::new(pool.clone());
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(24 * 3600));
+        loop {
+            interval.tick().await;
+            match pruner.prune(90).await {
+                Ok(n) if n > 0 => tracing::info!("pruned {} old page_events", n),
+                Ok(_) => {}
+                Err(e) => tracing::warn!(error = %e, "prune failed"),
+            }
+        }
+    });
+
     let state = AppState {
         pool,
         catalog: Arc::new(RwLock::new(parts)),
@@ -225,6 +249,10 @@ async fn main() {
         .merge(routes::admin::router())
         .merge(routes::auth_routes::router())
         .nest_service("/static", ServeDir::new("static"))
+        .layer(axum::middleware::from_fn_with_state(
+            analytics_state,
+            analytics::middleware::record_analytics,
+        ))
         .layer(axum::middleware::from_fn(session::session_middleware))
         .with_state(state);
 
@@ -233,5 +261,10 @@ async fn main() {
     tracing::info!("Listening on {addr}");
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
