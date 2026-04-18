@@ -34,8 +34,8 @@ impl AnalyticsSink for PostgresAnalytics {
         sqlx::query(
             r#"
             INSERT INTO page_events
-                (path, method, status, referrer, device, country, response_ms, ts)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                (path, method, status, referrer, device, country, response_ms, ts, session_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             "#,
         )
         .bind(&e.path)
@@ -46,6 +46,7 @@ impl AnalyticsSink for PostgresAnalytics {
         .bind(&e.country)
         .bind(e.response_ms as i32)
         .bind(e.ts)
+        .bind(&e.session_id)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -175,10 +176,11 @@ impl AnalyticsQuery for PostgresAnalytics {
     }
 
     async fn summary(&self, days: u32) -> Result<Summary, AnalyticsError> {
-        let row: (i64, i64, Option<f64>, Option<f64>) = sqlx::query_as(
+        let row: (i64, i64, i64, Option<f64>, Option<f64>) = sqlx::query_as(
             r#"
             SELECT
                 COUNT(*)::bigint                                                  AS total,
+                COUNT(DISTINCT session_id)::bigint                                AS visitors,
                 COUNT(DISTINCT path)::bigint                                      AS paths,
                 AVG(response_ms)::float8                                          AS avg_ms,
                 (100.0 * SUM(CASE WHEN device = 'bot' THEN 1 ELSE 0 END)::float8
@@ -193,9 +195,10 @@ impl AnalyticsQuery for PostgresAnalytics {
 
         Ok(Summary {
             total_events: row.0,
-            unique_paths: row.1,
-            avg_response_ms: row.2.unwrap_or(0.0),
-            bot_percentage: row.3.unwrap_or(0.0),
+            unique_visitors: row.1,
+            unique_paths: row.2,
+            avg_response_ms: row.3.unwrap_or(0.0),
+            bot_percentage: row.4.unwrap_or(0.0),
         })
     }
 }

@@ -41,6 +41,10 @@ pub async fn record_analytics(
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
         .map(|ci| ci.0);
+    let session_id = req
+        .extensions()
+        .get::<crate::session::UserSession>()
+        .map(|s| s.0.clone());
 
     let started = Instant::now();
     let response = next.run(req).await;
@@ -54,10 +58,18 @@ pub async fn record_analytics(
     let geoip = state.geoip.clone();
     let sink = state.sink.clone();
 
+    // Cloudflare provides country for free via header — use it before falling back to provider
+    let cf_country = header_str(&headers, "cf-ipcountry")
+        .map(str::to_ascii_uppercase)
+        .filter(|c| c.len() == 2 && c != "XX");
+
     tokio::spawn(async move {
-        let country = match ip {
-            Some(ip) => geoip.lookup(ip).await,
-            None => None,
+        let country = match cf_country {
+            Some(c) => Some(c),
+            None => match ip {
+                Some(ip) => geoip.lookup(ip).await,
+                None => None,
+            },
         };
 
         let event = PageEvent {
@@ -69,6 +81,7 @@ pub async fn record_analytics(
             country,
             response_ms,
             ts: Utc::now(),
+            session_id,
         };
 
         if let Err(e) = sink.record(event).await {

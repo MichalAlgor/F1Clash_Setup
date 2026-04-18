@@ -14,6 +14,7 @@ pub struct PageEvent {
     pub country: Option<String>, // ISO 3166-1 alpha-2
     pub response_ms: u32,
     pub ts: DateTime<Utc>,
+    pub session_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -118,6 +119,7 @@ pub struct DeviceCount {
 #[derive(Debug, Serialize)]
 pub struct Summary {
     pub total_events: i64,
+    pub unique_visitors: i64,
     pub unique_paths: i64,
     pub avg_response_ms: f64,
     pub bot_percentage: f64,
