@@ -21,7 +21,7 @@ pub fn parts_list_page(
                 p { "Season: " strong { (active_season) } }
             }
 
-            div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem" {
+            div class="admin-actions" {
                 a href="/admin/parts/new" role="button" { "+ Add Part" }
                 a href="/admin/parts/export" role="button" class="outline" { "Export parts.json" }
                 a href="/admin/seasons" role="button" class="outline" { "Season Settings" }
@@ -207,7 +207,7 @@ pub fn drivers_list_page(
                 p { "Season: " strong { (active_season) } }
             }
 
-            div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem" {
+            div class="admin-actions" {
                 a href="/admin/drivers/new" role="button" { "+ Add Driver" }
                 a href="/admin/drivers/export" role="button" class="outline" { "Export drivers.json" }
                 a href="/admin/parts" role="button" class="outline" { "Parts Catalog" }

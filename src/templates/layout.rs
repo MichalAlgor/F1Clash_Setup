@@ -16,6 +16,7 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
             }
             body {
                 header.container {
+                    input #nav-toggle type="checkbox" {}
                     nav {
                         ul {
                             li {
@@ -23,8 +24,11 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                                     strong { "F1 Clash Setup" }
                                 }
                             }
+                            li.nav-toggle-li {
+                                label.nav-toggle-label for="nav-toggle" { "☰" }
+                            }
                         }
-                        ul {
+                        ul.nav-links {
                             li { a href="/inventory" { "Parts" } }
                             li { a href="/drivers" { "Drivers" } }
                             li { a href="/setups" { "Setups" } }
@@ -411,5 +415,306 @@ footer hr {
 }
 footer p {
     margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+/* --- Mobile navigation (hamburger) --- */
+#nav-toggle {
+    display: none;
+}
+.nav-toggle-li {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .nav-toggle-li {
+        display: list-item !important;
+    }
+    .nav-toggle-label {
+        cursor: pointer;
+        font-size: 1.5rem;
+        padding: 0.3rem 0.5rem;
+        line-height: 1;
+    }
+    .nav-links {
+        display: none !important;
+        flex-direction: column;
+        width: 100%;
+        padding: 0.5rem 0;
+    }
+    #nav-toggle:checked ~ nav .nav-links {
+        display: flex !important;
+    }
+    header.container nav {
+        flex-wrap: wrap;
+    }
+    header.container nav ul li {
+        width: 100%;
+    }
+    header.container nav ul li a,
+    header.container nav ul li span {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    /* Auth form stacks vertically on mobile */
+    .auth-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .auth-form input.auth-input {
+        width: 100%;
+    }
+}
+
+/* --- Responsive table → card layout on mobile --- */
+@media (max-width: 768px) {
+    /* PicoCSS overrides for card mode */
+    figure:has(.responsive-table) {
+        margin: 0;
+        overflow: visible;
+    }
+    .responsive-table {
+        width: 100% !important;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .responsive-table thead {
+        display: none;
+    }
+
+    /* Card container */
+    .responsive-table tbody tr {
+        display: flex;
+        flex-wrap: wrap;
+        border: 1px solid var(--pico-muted-border-color);
+        border-radius: var(--pico-border-radius);
+        padding: 0.5rem;
+        margin-bottom: 0.75rem;
+        background: var(--pico-card-background-color);
+    }
+
+    /* Default: metadata cells — full-width label-value rows */
+    .responsive-table tbody td {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.15rem 0;
+        border: none;
+    }
+    .responsive-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--pico-muted-color);
+        min-width: 60px;
+        flex-shrink: 0;
+    }
+
+    /* First cell = card header */
+    .responsive-table tbody td:first-child {
+        font-weight: 600;
+        font-size: 1rem;
+        border-bottom: 1px solid var(--pico-muted-border-color);
+        margin-bottom: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+    .responsive-table tbody td:first-child::before {
+        content: none;
+    }
+
+    /* Stat cells — compact grid: label on top, value below */
+    .responsive-table tbody td.stat-cell {
+        width: auto;
+        flex: 1 1 48px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: center;
+        padding: 0.3rem 0.1rem;
+        order: 1;
+        min-width: 0;
+    }
+    .responsive-table tbody td.stat-cell::before {
+        min-width: auto;
+        text-align: center;
+        margin-bottom: 0.1rem;
+        font-size: 0.65rem;
+    }
+
+    /* Action cell (delete) — right-aligned at bottom */
+    .responsive-table tbody td.action-cell {
+        order: 2;
+        justify-content: flex-end;
+        padding-top: 0.25rem;
+    }
+    .responsive-table tbody td.action-cell::before {
+        content: none;
+    }
+
+    /* tfoot (totals row) */
+    .responsive-table tfoot tr {
+        display: flex;
+        flex-wrap: wrap;
+        border: 2px solid var(--pico-primary);
+        border-radius: var(--pico-border-radius);
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .responsive-table tfoot td {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.1rem 0;
+        border: none;
+        width: 100%;
+    }
+    .responsive-table tfoot td::before {
+        content: none;
+    }
+    .responsive-table tfoot td:first-child {
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--pico-muted-border-color);
+        margin-bottom: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+    .responsive-table tfoot td.stat-cell {
+        width: auto;
+        flex: 1 1 48px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 0.3rem 0.1rem;
+        min-width: 0;
+    }
+    .responsive-table tfoot td.stat-cell::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        color: var(--pico-muted-color);
+        margin-bottom: 0.1rem;
+    }
+}
+
+/* --- Optimizer: migrated inline styles to classes --- */
+.series-limits-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.back-link {
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+.preset-figure {
+    margin: 0 0 0.5rem;
+}
+.preset-score {
+    margin: 0.25rem 0;
+}
+.preset-save-form {
+    margin-top: 0.5rem;
+}
+.save-form-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+.save-form-input {
+    flex: 1;
+}
+.save-form-btn {
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .series-limits-grid {
+        grid-template-columns: 1fr;
+    }
+    .save-form-row {
+        flex-direction: column;
+    }
+    .save-form-input {
+        width: 100%;
+    }
+    /* Preset cards: hide individual stats, show name + total only */
+    .preset-parts-table .stat-cell,
+    .preset-parts-table .stat-header {
+        display: none !important;
+    }
+    .preset-parts-table tfoot .stat-cell {
+        display: none !important;
+    }
+}
+
+/* --- Touch targets & form adjustments --- */
+@media (max-width: 768px) {
+    /* Minimum touch target for interactive elements */
+    button,
+    [role="button"],
+    a[role="button"] {
+        min-height: 44px;
+    }
+    /* Submit buttons go full-width on mobile */
+    form > button[type="submit"],
+    form > input[type="submit"] {
+        width: 100%;
+    }
+    /* Select dropdowns — smaller text for long option labels */
+    select {
+        font-size: 0.85rem;
+    }
+    /* Compact number inputs (boosts) — ensure tappable */
+    input[type="number"].compact {
+        min-height: 36px;
+        width: 70px;
+    }
+    /* Checkboxes — larger on mobile */
+    input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+    }
+    /* Fieldset labels — ensure tappable */
+    fieldset label {
+        padding: 0.3rem 0;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    /* Inline-select dropdowns (bulk edit, level selectors) */
+    select.inline-select {
+        min-height: 36px;
+        font-size: 0.85rem;
+    }
+    /* Boost tabs */
+    .boost-tab {
+        padding: 0.75rem 1rem;
+        min-height: 44px;
+    }
+}
+
+/* --- Admin action bar --- */
+.admin-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+/* --- Boosts & admin adjustments on narrow screens --- */
+@media (max-width: 480px) {
+    .boost-entry {
+        flex-wrap: wrap;
+    }
+    .boost-name {
+        min-width: 100%;
+    }
 }
 "#;

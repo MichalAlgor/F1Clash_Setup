@@ -116,7 +116,7 @@ pub fn custom_form_page(auth: &AuthStatus) -> Markup {
 
                 fieldset {
                     legend { "Series limits" }
-                    div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;" {
+                    div class="series-limits-grid" {
                         label {
                             "Max part series (1–12)"
                             input type="number" name="max_part_series" min="1" max="12" value="12";
@@ -158,7 +158,7 @@ pub fn presets_result_page(presets: &[PresetResult], auth: &AuthStatus) -> Marku
             }
             (tab_bar("presets"))
 
-            a href="/optimizer" role="button" class="outline" style="margin-bottom:1rem;display:inline-block" {
+            a href="/optimizer" role="button" class="outline back-link" {
                 "← Change series limits"
             }
 
@@ -187,17 +187,17 @@ fn preset_card(preset: &PresetResult) -> Markup {
                 }
                 Some(r) => {
                     // Parts table
-                    figure style="margin:0 0 0.5rem" {
-                        table {
+                    figure class="preset-figure" {
+                        table class="responsive-table preset-parts-table" {
                             thead {
                                 tr {
                                     th { "Part" }
                                     th { "Lvl" }
-                                    th { "SPD" }
-                                    th { "COR" }
-                                    th { "PWR" }
-                                    th { "QUA" }
-                                    th { "PIT" }
+                                    th class="stat-header" { "SPD" }
+                                    th class="stat-header" { "COR" }
+                                    th class="stat-header" { "PWR" }
+                                    th class="stat-header" { "QUA" }
+                                    th class="stat-header" { "PIT" }
                                     th { "Tot" }
                                 }
                             }
@@ -205,32 +205,32 @@ fn preset_card(preset: &PresetResult) -> Markup {
                                 @for (cat, item, stats, rarity_class) in &r.part_picks {
                                     tr {
                                         td { small class="secondary" { (cat.display_name()) } " " span class=(*rarity_class) { (item.part_name.clone()) } }
-                                        td { (item.level) }
-                                        td { (stats.speed) }
-                                        td { (stats.cornering) }
-                                        td { (stats.power_unit) }
-                                        td { (stats.qualifying) }
-                                        td { (format!("{:.2}", stats.pit_stop_time)) }
-                                        td { strong { (stats.total_performance()) } }
+                                        td data-label="Lvl" { (item.level) }
+                                        td data-label="SPD" class="stat-cell" { (stats.speed) }
+                                        td data-label="COR" class="stat-cell" { (stats.cornering) }
+                                        td data-label="PWR" class="stat-cell" { (stats.power_unit) }
+                                        td data-label="QUA" class="stat-cell" { (stats.qualifying) }
+                                        td data-label="PIT" class="stat-cell" { (format!("{:.2}", stats.pit_stop_time)) }
+                                        td data-label="Total" { strong { (stats.total_performance()) } }
                                     }
                                 }
                             }
                             tfoot {
                                 tr {
-                                    td colspan="2" { strong { "Total" } }
-                                    td { strong { (r.total_parts.speed) } }
-                                    td { strong { (r.total_parts.cornering) } }
-                                    td { strong { (r.total_parts.power_unit) } }
-                                    td { strong { (r.total_parts.qualifying) } }
-                                    td { strong { (format!("{:.2}", r.total_parts.pit_stop_time)) } }
-                                    td { strong { (r.total_parts.total_performance()) } }
+                                    td colspan="2" data-label="Parts" { strong { "Total" } }
+                                    td data-label="SPD" class="stat-cell" { strong { (r.total_parts.speed) } }
+                                    td data-label="COR" class="stat-cell" { strong { (r.total_parts.cornering) } }
+                                    td data-label="PWR" class="stat-cell" { strong { (r.total_parts.power_unit) } }
+                                    td data-label="QUA" class="stat-cell" { strong { (r.total_parts.qualifying) } }
+                                    td data-label="PIT" class="stat-cell" { strong { (format!("{:.2}", r.total_parts.pit_stop_time)) } }
+                                    td data-label="Total" { strong { (r.total_parts.total_performance()) } }
                                 }
                             }
                         }
                     }
 
                     // Parts score
-                    p style="margin:0.25rem 0" {
+                    p class="preset-score" {
                         "Total: "
                         strong { (r.total_parts.total_performance()) }
                         small class="secondary" {
@@ -239,13 +239,13 @@ fn preset_card(preset: &PresetResult) -> Markup {
                     }
 
                     // Save form (parts only)
-                    form method="post" action="/optimizer/save" style="margin-top:0.5rem" {
-                        div style="display:flex;gap:0.5rem;align-items:flex-end" {
-                            div style="flex:1" {
+                    form method="post" action="/optimizer/save" class="preset-save-form" {
+                        div class="save-form-row" {
+                            div class="save-form-input" {
                                 input type="text" name="name" required
                                     value={"Optimized (" (preset.label) ")"};
                             }
-                            button type="submit" style="white-space:nowrap" { "Save" }
+                            button type="submit" class="save-form-btn" { "Save" }
                         }
                         @for (cat, item, _, _) in &r.part_picks {
                             input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
@@ -317,7 +317,7 @@ pub fn result_page(
             } @else {
                 h2 { "Parts" }
                 figure {
-                    table {
+                    table.responsive-table {
                         thead {
                             tr {
                                 th { "Category" }
@@ -334,27 +334,26 @@ pub fn result_page(
                         tbody {
                             @for (cat, item, stats, rarity_class) in part_picks {
                                 tr {
-                                    td { (cat.display_name()) }
-                                    td { strong class=(*rarity_class) { (item.part_name.clone()) } }
-                                    td { (item.level) }
-                                    td { (stats.speed) }
-                                    td { (stats.cornering) }
-                                    td { (stats.power_unit) }
-                                    td { (stats.qualifying) }
-                                    td { (format!("{:.2}", stats.pit_stop_time)) }
-                                    td { (stats.total_performance()) }
+                                    td { (cat.display_name()) " " strong class=(*rarity_class) { (item.part_name.clone()) } }
+                                    td data-label="Lvl" { (item.level) }
+                                    td.stat-cell data-label="SPD" { (stats.speed) }
+                                    td.stat-cell data-label="COR" { (stats.cornering) }
+                                    td.stat-cell data-label="PWR" { (stats.power_unit) }
+                                    td.stat-cell data-label="QUA" { (stats.qualifying) }
+                                    td.stat-cell data-label="PIT" { (format!("{:.2}", stats.pit_stop_time)) }
+                                    td.stat-cell data-label="Total" { (stats.total_performance()) }
                                 }
                             }
                         }
                         tfoot {
                             tr {
-                                td colspan="3" { strong { "Total" } }
-                                td { strong { (total_parts.speed) } }
-                                td { strong { (total_parts.cornering) } }
-                                td { strong { (total_parts.power_unit) } }
-                                td { strong { (total_parts.qualifying) } }
-                                td { strong { (format!("{:.2}", total_parts.pit_stop_time)) } }
-                                td { strong { (total_parts.total_performance()) } }
+                                td { strong { "Total" } }
+                                td.stat-cell data-label="SPD" { strong { (total_parts.speed) } }
+                                td.stat-cell data-label="COR" { strong { (total_parts.cornering) } }
+                                td.stat-cell data-label="PWR" { strong { (total_parts.power_unit) } }
+                                td.stat-cell data-label="QUA" { strong { (total_parts.qualifying) } }
+                                td.stat-cell data-label="PIT" { strong { (format!("{:.2}", total_parts.pit_stop_time)) } }
+                                td.stat-cell data-label="Total" { strong { (total_parts.total_performance()) } }
                             }
                         }
                     }
@@ -365,7 +364,7 @@ pub fn result_page(
                     p { "No drivers in inventory." }
                 } @else {
                     figure {
-                        table {
+                        table.responsive-table {
                             thead {
                                 tr {
                                     th { "Driver" }
@@ -385,27 +384,27 @@ pub fn result_page(
                                         @let d_rarity = DriverRarity::from_db(&item.rarity);
                                         tr {
                                             td class=[d_rarity.map(|r| r.css_class())] { strong { (item.driver_name.clone()) } }
-                                            td { (item.rarity) }
-                                            td { (item.level) }
-                                            td { (stats.overtaking) }
-                                            td { (stats.defending) }
-                                            td { (stats.qualifying) }
-                                            td { (stats.race_start) }
-                                            td { (stats.tyre_management) }
-                                            td { (stats.total()) }
+                                            td data-label="Rarity" { (item.rarity) }
+                                            td data-label="Lvl" { (item.level) }
+                                            td.stat-cell data-label="OVT" { (stats.overtaking) }
+                                            td.stat-cell data-label="DEF" { (stats.defending) }
+                                            td.stat-cell data-label="QUA" { (stats.qualifying) }
+                                            td.stat-cell data-label="RST" { (stats.race_start) }
+                                            td.stat-cell data-label="TYR" { (stats.tyre_management) }
+                                            td.stat-cell data-label="Total" { (stats.total()) }
                                         }
                                     }
                                 }
                             }
                             tfoot {
                                 tr {
-                                    td colspan="3" { strong { "Total" } }
-                                    td { strong { (total_drivers.overtaking) } }
-                                    td { strong { (total_drivers.defending) } }
-                                    td { strong { (total_drivers.qualifying) } }
-                                    td { strong { (total_drivers.race_start) } }
-                                    td { strong { (total_drivers.tyre_management) } }
-                                    td { strong { (total_drivers.total()) } }
+                                    td { strong { "Total" } }
+                                    td.stat-cell data-label="OVT" { strong { (total_drivers.overtaking) } }
+                                    td.stat-cell data-label="DEF" { strong { (total_drivers.defending) } }
+                                    td.stat-cell data-label="QUA" { strong { (total_drivers.qualifying) } }
+                                    td.stat-cell data-label="RST" { strong { (total_drivers.race_start) } }
+                                    td.stat-cell data-label="TYR" { strong { (total_drivers.tyre_management) } }
+                                    td.stat-cell data-label="Total" { strong { (total_drivers.total()) } }
                                 }
                             }
                         }
