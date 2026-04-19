@@ -22,7 +22,7 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                 p { "No setups yet. Add parts to your inventory, then create a setup." }
             } @else {
                 figure {
-                    table {
+                    table.responsive-table {
                         thead {
                             tr {
                                 th { "Name" }
@@ -41,15 +41,15 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                             @for s in setups {
                                 tr {
                                     td { a href={"/setups/" (s.setup.id)} { (s.setup.name) } }
-                                    td { (s.stats.speed) }
-                                    td { (s.stats.cornering) }
-                                    td { (s.stats.power_unit) }
-                                    td { (s.stats.qualifying) }
-                                    td { (format!("{:.2}", s.stats.pit_stop_time)) }
-                                    td { (s.stats.total_performance()) }
-                                    td { (s.driver_stats.total()) }
-                                    td { strong { (s.stats.total_performance() + s.driver_stats.total()) } }
-                                    td {
+                                    td.stat-cell data-label="SPD" { (s.stats.speed) }
+                                    td.stat-cell data-label="COR" { (s.stats.cornering) }
+                                    td.stat-cell data-label="PWR" { (s.stats.power_unit) }
+                                    td.stat-cell data-label="QUA" { (s.stats.qualifying) }
+                                    td.stat-cell data-label="PIT" { (format!("{:.2}", s.stats.pit_stop_time)) }
+                                    td.stat-cell data-label="P.Tot" { (s.stats.total_performance()) }
+                                    td.stat-cell data-label="D.Tot" { (s.driver_stats.total()) }
+                                    td.stat-cell data-label="Score" { strong { (s.stats.total_performance() + s.driver_stats.total()) } }
+                                    td.action-cell {
                                         button.outline.secondary
                                             hx-delete={"/setups/" (s.setup.id)}
                                             hx-confirm="Delete this setup?"

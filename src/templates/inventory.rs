@@ -46,7 +46,7 @@ pub fn list_page(
                         section {
                             h2 { (category.display_name()) }
                             figure {
-                                table {
+                                table.responsive-table {
                                     thead {
                                         tr {
                                             th { "Name" }
@@ -71,8 +71,8 @@ pub fn list_page(
                                                 @if let Some(stats) = part_def.stats_for_level(item.level) {
                                                     tr {
                                                         td class=(part_def.rarity_css_class()) { (item.part_name) }
-                                                        td { (part_def.series) }
-                                                        td {
+                                                        td data-label="Series" { (part_def.series) }
+                                                        td data-label="Lvl" {
                                                             form method="post" action={"/inventory/" (item.id) "/level"} style="display:inline;margin:0" {
                                                                 select name="level" onchange="this.form.submit()" class="inline-select" {
                                                                     @for l in &part_def.levels {
@@ -83,14 +83,14 @@ pub fn list_page(
                                                                 }
                                                             }
                                                         }
-                                                        td { (stats.speed) }
-                                                        td { (stats.cornering) }
-                                                        td { (stats.power_unit) }
-                                                        td { (stats.qualifying) }
-                                                        td { (format!("{:.2}", stats.pit_stop_time)) }
-                                                        td { strong { (stats.speed + stats.cornering + stats.power_unit + stats.qualifying) } }
+                                                        td.stat-cell data-label="SPD" { (stats.speed) }
+                                                        td.stat-cell data-label="COR" { (stats.cornering) }
+                                                        td.stat-cell data-label="PWR" { (stats.power_unit) }
+                                                        td.stat-cell data-label="QUA" { (stats.qualifying) }
+                                                        td.stat-cell data-label="PIT" { (format!("{:.2}", stats.pit_stop_time)) }
+                                                        td.stat-cell data-label="Total" { strong { (stats.speed + stats.cornering + stats.power_unit + stats.qualifying) } }
                                                         @if additional_stat_name.is_some() {
-                                                            td {
+                                                            td data-label="Special" {
                                                                 @if stats.additional_stat_value > 0 {
                                                                     (stats.additional_stat_value)
                                                                     @if !stats.additional_stat_details.is_empty() {
@@ -111,7 +111,7 @@ pub fn list_page(
                                                             }
                                                         }
                                                         (cards_cell(item.id, item.cards_owned, item.level, Some(part_def)))
-                                                        td {
+                                                        td.action-cell {
                                                             button.outline.secondary
                                                                 hx-delete={"/inventory/" (item.id)}
                                                                 hx-confirm="Remove this part?"
@@ -171,7 +171,7 @@ pub fn cards_cell(
     };
 
     html! {
-        td id={"cards-" (item_id)} {
+        td id={"cards-" (item_id)} data-label="Cards" {
             div class="cards-cell" {
                 input type="number" name="cards"
                     value=(cards_owned)

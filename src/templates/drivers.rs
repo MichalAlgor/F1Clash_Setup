@@ -43,7 +43,7 @@ pub fn list_page(
                         section {
                             h2 { (category.display_name()) }
                             figure {
-                                table {
+                                table.responsive-table {
                                     thead {
                                         tr {
                                             th { "Name" }
@@ -67,9 +67,9 @@ pub fn list_page(
                                                     @let rarity_css = DriverRarity::from_db(&driver_def.rarity).map_or("", |r| r.css_class());
                                                     tr {
                                                         td class=(rarity_css) { (item.driver_name) }
-                                                        td { (driver_def.rarity) }
-                                                        td { (driver_def.series) }
-                                                        td {
+                                                        td data-label="Rarity" { (driver_def.rarity) }
+                                                        td data-label="Series" { (driver_def.series) }
+                                                        td data-label="Lvl" {
                                                             form method="post" action={"/drivers/" (item.id) "/level"} style="display:inline;margin:0" {
                                                                 select name="level" onchange="this.form.submit()" class="inline-select" {
                                                                     @for l in &driver_def.levels {
@@ -80,14 +80,14 @@ pub fn list_page(
                                                                 }
                                                             }
                                                         }
-                                                        td { (stats.overtaking) }
-                                                        td { (stats.defending) }
-                                                        td { (stats.qualifying) }
-                                                        td { (stats.race_start) }
-                                                        td { (stats.tyre_management) }
-                                                        td { strong { (stats.total()) } }
+                                                        td.stat-cell data-label="OVT" { (stats.overtaking) }
+                                                        td.stat-cell data-label="DEF" { (stats.defending) }
+                                                        td.stat-cell data-label="QUA" { (stats.qualifying) }
+                                                        td.stat-cell data-label="RST" { (stats.race_start) }
+                                                        td.stat-cell data-label="TYR" { (stats.tyre_management) }
+                                                        td.stat-cell data-label="Total" { strong { (stats.total()) } }
                                                         (driver_cards_cell(item.id, item.cards_owned, item.level, Some(driver_def)))
-                                                        td {
+                                                        td.action-cell {
                                                             button.outline.secondary
                                                                 hx-delete={"/drivers/" (item.id)}
                                                                 hx-confirm="Remove this driver?"
@@ -211,7 +211,7 @@ pub fn driver_cards_cell(
     };
 
     html! {
-        td id={"dcards-" (item_id)} {
+        td id={"dcards-" (item_id)} data-label="Cards" {
             div class="cards-cell" {
                 input type="number" name="cards"
                     value=(cards_owned)
