@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::net::IpAddr;
+use serde_json::Value;
 
 /// A single recorded page view. Fully anonymous.
 #[derive(Debug, Clone)]
@@ -19,6 +19,15 @@ pub struct PageEvent {
     pub response_ms: u32,
     pub ts: DateTime<Utc>,
     pub session_id: Option<String>,
+}
+
+/// A structured behavioral signal recorded from a route handler.
+/// properties JSONB holds only categorical/bucketed data — never PII.
+#[derive(Debug, Clone)]
+pub struct FeatureEvent {
+    pub session_id: String,
+    pub event: String,
+    pub properties: Value,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,6 +78,7 @@ impl Device {
 #[async_trait]
 pub trait AnalyticsSink: Send + Sync + 'static {
     async fn record(&self, event: PageEvent) -> Result<(), AnalyticsError>;
+    async fn record_feature(&self, event: FeatureEvent) -> Result<(), AnalyticsError>;
 }
 
 /// Read side — aggregates only, never raw events.
@@ -88,7 +98,18 @@ pub trait AnalyticsQuery: Send + Sync + 'static {
     ) -> Result<Vec<CountryCount>, AnalyticsError>;
     async fn device_breakdown(&self, days: u32) -> Result<Vec<DeviceCount>, AnalyticsError>;
     async fn summary(&self, days: u32) -> Result<Summary, AnalyticsError>;
+    // Stage 2
+    async fn feature_counts(&self, days: u32) -> Result<Vec<FeatureCount>, AnalyticsError>;
+    // Stage 3
+    async fn engagement(&self, days: u32) -> Result<EngagementStats, AnalyticsError>;
+    // Stage 4
+    async fn hourly_distribution(&self, days: u32) -> Result<Vec<HourCount>, AnalyticsError>;
+    async fn day_of_week_distribution(&self, days: u32) -> Result<Vec<DayCount>, AnalyticsError>;
+    // Stage 5
+    async fn funnel(&self, days: u32) -> Result<FunnelStats, AnalyticsError>;
 }
+
+// ── Output types ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize)]
 pub struct DailyCount {
@@ -129,6 +150,47 @@ pub struct Summary {
     pub bot_percentage: f64,
 }
 
+/// Feature event count per event name.
+#[derive(Debug, Serialize)]
+pub struct FeatureCount {
+    pub event: String,
+    pub count: i64,
+}
+
+/// Session-level engagement signals derived from page_events.
+#[derive(Debug, Serialize)]
+pub struct EngagementStats {
+    /// % of sessions with exactly 1 page view.
+    pub bounce_rate: f64,
+    /// % of sessions seen on ≥2 distinct calendar days.
+    pub return_visitor_rate: f64,
+    /// Average page views per session (excluding bots).
+    pub avg_session_depth: f64,
+}
+
+/// Count per UTC hour (0–23).
+#[derive(Debug, Serialize)]
+pub struct HourCount {
+    pub hour: i32,
+    pub count: i64,
+}
+
+/// Count per UTC day-of-week (0=Sunday … 6=Saturday).
+#[derive(Debug, Serialize)]
+pub struct DayCount {
+    pub dow: i32,
+    pub count: i64,
+}
+
+/// Conversion funnel: inventory → optimizer → save → share.
+#[derive(Debug, Serialize)]
+pub struct FunnelStats {
+    pub visited_inventory: i64,
+    pub ran_optimizer: i64,
+    pub saved_setup: i64,
+    pub created_share: i64,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum AnalyticsError {
     #[error("database error: {0}")]
@@ -136,6 +198,3 @@ pub enum AnalyticsError {
     #[error("{0}")]
     Other(String),
 }
-
-/// IP is only used by the GeoIP provider; it's never stored.
-pub type ClientIp = Option<IpAddr>;

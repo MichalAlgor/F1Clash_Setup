@@ -85,6 +85,13 @@ async fn export(
     let json = serde_json::to_string_pretty(&export)?;
     let filename = format!("f1clash_inventory_{season}.json");
 
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "export",
+        serde_json::json!({ "season": season }),
+    );
+
     Ok((
         [
             (header::CONTENT_TYPE, "application/json".to_string()),
@@ -250,6 +257,22 @@ async fn import(
         .execute(&state.pool)
         .await?;
     }
+
+    let parts_count_bucket = match data.parts.len() {
+        0 => "0",
+        1..=7 => "1-7",
+        8..=14 => "8-14",
+        _ => "15+",
+    };
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "import",
+        serde_json::json!({
+            "season": season,
+            "parts_count_bucket": parts_count_bucket,
+        }),
+    );
 
     Ok(Redirect::to("/inventory"))
 }

@@ -71,6 +71,14 @@ async fn switch(
         return Ok(Redirect::to("/"));
     }
 
+    let current = crate::get_session_season(&state.pool, &session_id).await;
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "season_switch",
+        serde_json::json!({ "from": current, "to": target }),
+    );
+
     sqlx::query(
         "INSERT INTO settings (key, value, session_id) VALUES ('active_season', $1, $2)
          ON CONFLICT (key, session_id) DO UPDATE SET value = EXCLUDED.value",
