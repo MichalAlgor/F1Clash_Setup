@@ -240,13 +240,14 @@ fn preset_card(preset: &PresetResult) -> Markup {
 
                     // Save form (parts only)
                     form method="post" action="/optimizer/save" class="preset-save-form" {
-                        div class="save-form-row" {
-                            div class="save-form-input" {
-                                input type="text" name="name" required
-                                    value={"Optimized (" (preset.label) ")"};
-                            }
-                            button type="submit" class="save-form-btn" { "Save" }
+                        input #{"save-toggle-" (preset.label.replace(' ', "-"))} type="checkbox" class="save-toggle" {}
+                        div class="save-name-row" {
+                            span class="save-name-display" { "Optimized (" (preset.label) ")" }
+                            label class="save-edit-btn" for={"save-toggle-" (preset.label.replace(' ', "-"))} { "✏" }
                         }
+                        input type="text" name="name" required class="save-name-edit"
+                            value={"Optimized (" (preset.label) ")"};
+                        button type="submit" class="save-form-btn outline" { "Save Setup" }
                         @for (cat, item, _, _) in &r.part_picks {
                             input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
                         }
@@ -418,10 +419,15 @@ pub fn result_page(
                 }
 
                 h2 { "Save this setup" }
-                form method="post" action="/optimizer/save" {
-                    label for="name" { "Setup Name" }
-                    input type="text" id="name" name="name" required
+                form method="post" action="/optimizer/save" class="custom-save-form" {
+                    input id="custom-save-toggle" type="checkbox" class="save-toggle" {}
+                    div class="save-name-row" {
+                        span class="save-name-display" { "Optimized (" (all_labels) ")" }
+                        label class="save-edit-btn" for="custom-save-toggle" { "✏" }
+                    }
+                    input type="text" name="name" required class="save-name-edit"
                         value=(format!("Optimized ({all_labels})"));
+                    button type="submit" class="save-form-btn" { "Save Setup" }
 
                     @for (cat, item, _, _) in part_picks {
                         input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
@@ -432,8 +438,6 @@ pub fn result_page(
                     @if let Some((item, _)) = driver2 {
                         input type="hidden" name="driver2_id" value=(item.id);
                     }
-
-                    button type="submit" { "Save Setup" }
                 }
 
                 a href="/optimizer/custom" role="button" class="outline" { "← Try different priorities" }

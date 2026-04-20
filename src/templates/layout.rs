@@ -618,29 +618,81 @@ footer p {
 .preset-score {
     margin: 0.25rem 0;
 }
-.preset-save-form {
+.preset-save-form,
+.custom-save-form {
     margin-top: 0.5rem;
-}
-.save-form-row {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
-    align-items: flex-end;
+    flex-wrap: wrap;
 }
-.save-form-input {
+/* Hidden checkbox toggle */
+.save-toggle {
+    display: none !important;
+}
+/* Name row: visible text + pencil icon */
+.save-name-row {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+}
+.save-name-display {
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.save-edit-btn {
+    cursor: pointer;
+    font-size: 0.75rem;
+    opacity: 0.5;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.save-edit-btn:hover {
+    opacity: 1;
+}
+/* Editable input — hidden by default */
+.save-name-edit {
+    display: none !important;
+    flex: 1;
+    margin: 0;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+    height: auto;
+}
+/* When toggle checked: swap display↔input */
+.save-toggle:checked ~ .save-name-row {
+    display: none;
+}
+.save-toggle:checked ~ .save-name-edit {
+    display: block !important;
 }
 .save-form-btn {
     white-space: nowrap;
+    width: auto !important;
+    margin: 0;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
 }
 
 @media (max-width: 768px) {
     .series-limits-grid {
         grid-template-columns: 1fr;
     }
-    .save-form-row {
+    /* Save form: stack vertically on mobile */
+    .preset-save-form,
+    .custom-save-form {
         flex-direction: column;
+        align-items: stretch;
     }
-    .save-form-input {
+    .save-name-row {
+        justify-content: space-between;
+    }
+    .save-name-edit {
         width: 100%;
     }
     /* Preset cards: hide individual stats, show name + total only */
