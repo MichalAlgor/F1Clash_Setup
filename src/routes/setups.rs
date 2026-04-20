@@ -8,6 +8,7 @@ use sqlx::PgPool;
 
 use crate::AppState;
 use crate::auth::AuthStatus;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats, OwnedDriverDefinition};
 use crate::models::part::{OwnedLevelStats, OwnedPartDefinition, PartCategory, Stats};
@@ -118,7 +119,7 @@ async fn create(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Form(form): Form<SetupForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
     sqlx::query(
         "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, \
@@ -138,10 +139,9 @@ async fn create(
     .bind(&season)
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    Redirect::to("/setups")
+    Ok(Redirect::to("/setups"))
 }
 
 async fn show(
@@ -149,7 +149,7 @@ async fn show(
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     auth: AuthStatus,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
@@ -158,8 +158,7 @@ async fn show(
             .bind(id)
             .bind(&session_id)
             .fetch_one(&state.pool)
-            .await
-            .unwrap();
+            .await?;
 
     let (stats, driver_stats) =
         compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id).await;
@@ -232,7 +231,7 @@ async fn show(
         driver_stats,
     };
 
-    crate::templates::layout::page(
+    Ok(crate::templates::layout::page(
         &s.setup.name,
         &auth,
         html! {
@@ -296,7 +295,7 @@ async fn show(
 
             a href="/setups" role="button" class="outline" { "← Back to setups" }
         },
-    )
+    ))
 }
 
 async fn update(
@@ -304,7 +303,7 @@ async fn update(
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     Form(form): Form<SetupForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     sqlx::query(
         "UPDATE setups SET name=$1, engine_id=$2, front_wing_id=$3, rear_wing_id=$4, \
          suspension_id=$5, brakes_id=$6, gearbox_id=$7, battery_id=$8, \
@@ -324,25 +323,23 @@ async fn update(
     .bind(id)
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    Redirect::to("/setups")
+    Ok(Redirect::to("/setups"))
 }
 
 async fn destroy(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     sqlx::query("DELETE FROM setups WHERE id = $1 AND session_id = $2")
         .bind(id)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
-    html! {}
+    Ok(html! {})
 }
 
 #[derive(Deserialize)]

@@ -6,6 +6,7 @@ use maud::html;
 use serde::Deserialize;
 
 use crate::AppState;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::session::UserSession;
 
@@ -64,10 +65,10 @@ async fn switch(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Form(form): Form<SeasonForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let target = form.season.trim().to_string();
     if target.is_empty() {
-        return Redirect::to("/");
+        return Ok(Redirect::to("/"));
     }
 
     sqlx::query(
@@ -77,8 +78,7 @@ async fn switch(
     .bind(&target)
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    Redirect::to("/")
+    Ok(Redirect::to("/"))
 }

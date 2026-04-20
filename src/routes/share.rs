@@ -10,6 +10,7 @@ use sqlx::{Row, postgres::PgRow};
 use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::{DriverBoost, DriverInventoryItem};
 use crate::models::part::Stats;
@@ -93,7 +94,7 @@ async fn create_share(
     UserSession(session_id): UserSession,
     auth: AuthStatus,
     Form(form): Form<ShareForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
@@ -266,15 +267,18 @@ async fn create_share(
     .bind(&form.name)
     .bind(&season)
     .bind(&priorities_val)
-    .bind(serde_json::to_value(&parts_snapshot).unwrap())
-    .bind(serde_json::to_value(&drivers_snapshot).unwrap())
+    .bind(serde_json::to_value(&parts_snapshot)?)
+    .bind(serde_json::to_value(&drivers_snapshot)?)
     .bind(&total_parts_val)
     .bind(&total_drivers_val)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    templates::share::shared_page(&share_hash, &form.name, &auth)
+    Ok(templates::share::shared_page(
+        &share_hash,
+        &form.name,
+        &auth,
+    ))
 }
 
 // ── View share ────────────────────────────────────────────────────────────────

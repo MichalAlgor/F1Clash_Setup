@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
@@ -691,7 +692,7 @@ async fn save(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Form(form): Form<SaveForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
     sqlx::query(
         "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, \
@@ -711,8 +712,7 @@ async fn save(
     .bind(&season)
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    Redirect::to("/setups")
+    Ok(Redirect::to("/setups"))
 }
