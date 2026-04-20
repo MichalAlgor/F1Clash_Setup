@@ -38,11 +38,11 @@ impl StatPriorities {
 
 /// Cards required to upgrade from level N to N+1 (index 0 = L1→L2).
 /// Same for all rarities and series.
-const CARD_COSTS: &[i32] = &[4, 10, 20, 50, 100, 200, 400, 1_000, 2_000, 4_000];
+pub const CARD_COSTS: &[i32] = &[4, 10, 20, 50, 100, 200, 400, 1_000, 2_000, 4_000];
 
 /// Coin cost to upgrade from level N to N+1, per series (outer index = series - 1,
 /// inner index 0 = L1→L2).
-const COIN_COSTS_BY_SERIES: &[&[u64]] = &[
+pub const COIN_COSTS_BY_SERIES: &[&[u64]] = &[
     // Series 1
     &[
         2_000, 8_000, 35_000, 90_000, 275_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000,

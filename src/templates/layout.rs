@@ -34,6 +34,7 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                             li { a href="/setups" { "Setups" } }
                             li { a href="/boosts" { "Boosts" } }
                             li { a href="/optimizer" { "Optimizer" } }
+                            li { a href="/advisor" { "Advisor" } }
                             li { a href="/import" { "Export / Import" } }
                             @if !auth.enabled || auth.logged_in {
                                 li { a href="/admin/parts" { "Admin" } }
@@ -750,6 +751,29 @@ footer p {
         padding: 0.75rem 1rem;
         min-height: 44px;
     }
+}
+
+/* --- Upgrade Advisor --- */
+.upgrade-positive {
+    color: var(--pico-ins-color, #2ecc71);
+}
+.ready-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: var(--pico-ins-color, #2ecc71);
+    color: #000;
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+}
+.stat-delta {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+}
+.stat-delta span {
+    white-space: nowrap;
 }
 
 /* --- Admin action bar --- */
