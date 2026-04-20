@@ -76,24 +76,41 @@ async fn new(
     )
 }
 
+fn empty_str_as_none<'de, D>(d: D) -> Result<Option<i32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(d)?;
+    if s.trim().is_empty() {
+        Ok(None)
+    } else {
+        s.trim()
+            .parse::<i32>()
+            .map(Some)
+            .map_err(serde::de::Error::custom)
+    }
+}
+
 #[derive(Deserialize)]
 pub struct SetupForm {
     pub name: String,
-    #[serde(rename = "engine", default)]
+    #[serde(rename = "engine", deserialize_with = "empty_str_as_none", default)]
     pub engine_id: Option<i32>,
-    #[serde(rename = "front_wing", default)]
+    #[serde(rename = "front_wing", deserialize_with = "empty_str_as_none", default)]
     pub front_wing_id: Option<i32>,
-    #[serde(rename = "rear_wing", default)]
+    #[serde(rename = "rear_wing", deserialize_with = "empty_str_as_none", default)]
     pub rear_wing_id: Option<i32>,
-    #[serde(rename = "suspension", default)]
+    #[serde(rename = "suspension", deserialize_with = "empty_str_as_none", default)]
     pub suspension_id: Option<i32>,
-    #[serde(rename = "brakes", default)]
+    #[serde(rename = "brakes", deserialize_with = "empty_str_as_none", default)]
     pub brakes_id: Option<i32>,
-    #[serde(rename = "gearbox", default)]
+    #[serde(rename = "gearbox", deserialize_with = "empty_str_as_none", default)]
     pub gearbox_id: Option<i32>,
-    #[serde(rename = "battery", default)]
+    #[serde(rename = "battery", deserialize_with = "empty_str_as_none", default)]
     pub battery_id: Option<i32>,
+    #[serde(deserialize_with = "empty_str_as_none", default)]
     pub driver1_id: Option<i32>,
+    #[serde(deserialize_with = "empty_str_as_none", default)]
     pub driver2_id: Option<i32>,
 }
 
@@ -149,6 +166,66 @@ async fn show(
 
     let additional_stat_label = catalog.iter().find_map(|p| p.additional_stat_name.clone());
 
+    // Load part names for the slots (to show "Default" where missing)
+    let categories = state.categories_for_season(&season).await;
+    let slot_ids: Vec<i32> = [
+        setup.engine_id,
+        setup.front_wing_id,
+        setup.rear_wing_id,
+        setup.suspension_id,
+        setup.brakes_id,
+        setup.gearbox_id,
+        setup.battery_id,
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    let slot_items = if slot_ids.is_empty() {
+        vec![]
+    } else {
+        sqlx::query_as::<_, InventoryItem>(
+            "SELECT * FROM inventory WHERE id = ANY($1) AND session_id = $2",
+        )
+        .bind(&slot_ids[..])
+        .bind(&session_id)
+        .fetch_all(&state.pool)
+        .await
+        .unwrap_or_default()
+    };
+
+    // Build per-slot display: (category_name, part_name_or_default, level_or_none)
+    let slot_display: Vec<(&str, String, Option<i32>)> = {
+        let cat_slots: Vec<(&PartCategory, Option<i32>)> = categories
+            .iter()
+            .map(|cat| {
+                let id = match cat {
+                    PartCategory::Engine => setup.engine_id,
+                    PartCategory::FrontWing => setup.front_wing_id,
+                    PartCategory::RearWing => setup.rear_wing_id,
+                    PartCategory::Suspension => setup.suspension_id,
+                    PartCategory::Brakes => setup.brakes_id,
+                    PartCategory::Gearbox => setup.gearbox_id,
+                    PartCategory::Battery => setup.battery_id,
+                };
+                (cat, id)
+            })
+            .collect();
+        cat_slots
+            .into_iter()
+            .map(|(cat, id)| {
+                let (name, level) = match id {
+                    None => ("Default".to_string(), None),
+                    Some(part_id) => slot_items
+                        .iter()
+                        .find(|i| i.id == part_id)
+                        .map(|i| (i.part_name.clone(), Some(i.level)))
+                        .unwrap_or_else(|| ("Default".to_string(), None)),
+                };
+                (cat.display_name(), name, level)
+            })
+            .collect()
+    };
+
     let s = SetupWithStats {
         setup,
         stats,
@@ -160,6 +237,26 @@ async fn show(
         &auth,
         html! {
             h1 { (&s.setup.name) }
+
+            h2 { "Parts" }
+            figure {
+                table {
+                    thead { tr { th { "Category" } th { "Part" } th { "Lvl" } } }
+                    tbody {
+                        @for (cat_name, part_name, level) in &slot_display {
+                            tr {
+                                td { (cat_name) }
+                                @if part_name == "Default" {
+                                    td colspan="2" class="secondary" { "Default (1/1/1/1 · 1.00s pit)" }
+                                } @else {
+                                    td { (part_name) }
+                                    td { (level.unwrap_or(0)) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             h2 { "Part Stats" }
             figure {
@@ -304,32 +401,51 @@ async fn compute_all_stats(
     (part_stats, driver_stats)
 }
 
+/// Stats for a slot with no assigned part: 1/1/1/1 + 1.0s pit stop.
+fn default_part_stats() -> Stats {
+    Stats {
+        speed: 1,
+        cornering: 1,
+        power_unit: 1,
+        qualifying: 1,
+        pit_stop_time: 1.0,
+        additional_stat_value: 0,
+    }
+}
+
 async fn compute_part_stats(
     pool: &PgPool,
     setup: &Setup,
     catalog: &[OwnedPartDefinition],
     session_id: &str,
 ) -> Stats {
-    let mut part_ids: Vec<i32> = vec![
+    let slot_ids: [Option<i32>; 7] = [
         setup.engine_id,
         setup.front_wing_id,
         setup.rear_wing_id,
         setup.suspension_id,
         setup.brakes_id,
         setup.gearbox_id,
+        setup.battery_id,
     ];
-    if let Some(id) = setup.battery_id {
-        part_ids.push(id);
-    }
 
-    let items = sqlx::query_as::<_, InventoryItem>(
-        "SELECT * FROM inventory WHERE id = ANY($1) AND session_id = $2",
-    )
-    .bind(&part_ids[..])
-    .bind(session_id)
-    .fetch_all(pool)
-    .await
-    .unwrap_or_default();
+    // Count how many slots are empty (None = Default)
+    let default_count = slot_ids.iter().filter(|id| id.is_none()).count();
+
+    let real_ids: Vec<i32> = slot_ids.into_iter().flatten().collect();
+
+    let items = if real_ids.is_empty() {
+        vec![]
+    } else {
+        sqlx::query_as::<_, InventoryItem>(
+            "SELECT * FROM inventory WHERE id = ANY($1) AND session_id = $2",
+        )
+        .bind(&real_ids[..])
+        .bind(session_id)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default()
+    };
 
     let boosts = sqlx::query_as::<_, Boost>("SELECT * FROM boosts WHERE session_id = $1")
         .bind(session_id)
@@ -338,6 +454,8 @@ async fn compute_part_stats(
         .unwrap_or_default();
 
     let mut stats = Stats::default();
+
+    // Accumulate real part stats
     for item in &items {
         if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name)
             && let Some(level_stats) = part_def.stats_for_level(item.level)
@@ -356,6 +474,12 @@ async fn compute_part_stats(
             stats = stats.add(&ps);
         }
     }
+
+    // Each empty slot contributes 1/1/1/1 + 1.0s
+    for _ in 0..default_count {
+        stats = stats.add(&default_part_stats());
+    }
+
     stats
 }
 
