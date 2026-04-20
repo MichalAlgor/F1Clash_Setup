@@ -679,6 +679,11 @@ footer p {
     padding: 0.25rem 0.75rem;
     font-size: 0.8rem;
 }
+.preset-form-btns {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
 
 @media (max-width: 768px) {
     .series-limits-grid {
@@ -751,6 +756,23 @@ footer p {
         padding: 0.75rem 1rem;
         min-height: 44px;
     }
+}
+
+/* --- Share page --- */
+.share-url-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+.share-url {
+    flex: 1;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    font-size: 0.85rem;
+    word-break: break-all;
 }
 
 /* --- Setup Comparison --- */

@@ -8,3 +8,4 @@ pub mod inventory;
 pub mod optimizer;
 pub mod season;
 pub mod setups;
+pub mod share;

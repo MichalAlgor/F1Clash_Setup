@@ -262,6 +262,7 @@ async fn main() {
         .merge(routes::drivers::router())
         .merge(routes::optimizer::router())
         .merge(routes::advisor::router())
+        .merge(routes::share::router())
         .merge(routes::season::router())
         .merge(routes::export_import::router())
         .merge(routes::admin::router())

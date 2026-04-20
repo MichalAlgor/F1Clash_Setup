@@ -6,3 +6,4 @@ pub mod inventory;
 pub mod layout;
 pub mod optimizer;
 pub mod setups;
+pub mod share;
