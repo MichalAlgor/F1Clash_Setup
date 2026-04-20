@@ -238,7 +238,7 @@ fn preset_card(preset: &PresetResult) -> Markup {
                         }
                     }
 
-                    // Save form (parts only)
+                    // Save / Share form (parts only)
                     form method="post" action="/optimizer/save" class="preset-save-form" {
                         input #{"save-toggle-" (preset.label.replace(' ', "-"))} type="checkbox" class="save-toggle" {}
                         div class="save-name-row" {
@@ -247,7 +247,10 @@ fn preset_card(preset: &PresetResult) -> Markup {
                         }
                         input type="text" name="name" required class="save-name-edit"
                             value={"Optimized (" (preset.label) ")"};
-                        button type="submit" class="save-form-btn outline" { "Save Setup" }
+                        div class="preset-form-btns" {
+                            button type="submit" class="save-form-btn outline" { "Save" }
+                            button type="submit" formaction="/optimizer/share" class="save-form-btn outline" { "Share" }
+                        }
                         @for (cat, item, _, _) in &r.part_picks {
                             input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
                         }
@@ -418,7 +421,7 @@ pub fn result_page(
                     " (" (total_parts.total_performance()) " parts + " (total_drivers.total()) " drivers)"
                 }
 
-                h2 { "Save this setup" }
+                h2 { "Save or Share" }
                 form method="post" action="/optimizer/save" class="custom-save-form" {
                     input id="custom-save-toggle" type="checkbox" class="save-toggle" {}
                     div class="save-name-row" {
@@ -427,7 +430,10 @@ pub fn result_page(
                     }
                     input type="text" name="name" required class="save-name-edit"
                         value=(format!("Optimized ({all_labels})"));
-                    button type="submit" class="save-form-btn" { "Save Setup" }
+                    div class="preset-form-btns" {
+                        button type="submit" class="save-form-btn" { "Save Setup" }
+                        button type="submit" formaction="/optimizer/share" class="save-form-btn outline" { "Share" }
+                    }
 
                     @for (cat, item, _, _) in part_picks {
                         input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
@@ -438,6 +444,11 @@ pub fn result_page(
                     @if let Some((item, _)) = driver2 {
                         input type="hidden" name="driver2_id" value=(item.id);
                     }
+                    // Priority flags for share
+                    @if part_priorities.speed { input type="hidden" name="speed" value="true"; }
+                    @if part_priorities.cornering { input type="hidden" name="cornering" value="true"; }
+                    @if part_priorities.power_unit { input type="hidden" name="power_unit" value="true"; }
+                    @if part_priorities.qualifying { input type="hidden" name="qualifying" value="true"; }
                 }
 
                 a href="/optimizer/custom" role="button" class="outline" { "← Try different priorities" }
