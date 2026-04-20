@@ -183,13 +183,34 @@ pub(crate) async fn resolve_parts(
                 t1.elapsed(),
                 cat_parts.len()
             );
-            let cat_parts = prune_category(cat_parts);
+            let mut cat_parts = prune_category(cat_parts);
             #[cfg(debug_assertions)]
             eprintln!(
                 "[optimizer] resolved parts after prune: {:>8.2?}  ({} cat_parts)",
                 t1.elapsed(),
                 cat_parts.len()
             );
+            // If no parts in this category, insert a zero placeholder so the
+            // optimizer can still run. Stats are 1/1/1/1 with 1.0s pit stop.
+            if cat_parts.is_empty() {
+                cat_parts.push(ResolvedPart {
+                    item: InventoryItem {
+                        id: 0,
+                        part_name: format!("(no {})", cat.display_name()),
+                        level: 0,
+                        cards_owned: 0,
+                    },
+                    stats: Stats {
+                        speed: 1,
+                        cornering: 1,
+                        power_unit: 1,
+                        qualifying: 1,
+                        pit_stop_time: 1.0,
+                        additional_stat_value: 0,
+                    },
+                    rarity_css_class: "secondary",
+                });
+            }
             cat_parts
         })
         .collect::<Vec<Vec<ResolvedPart>>>();
