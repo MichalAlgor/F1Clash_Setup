@@ -7,6 +7,10 @@ use std::net::IpAddr;
 #[derive(Debug, Clone)]
 pub struct PageEvent {
     pub path: String,
+    /// Path with dynamic segments replaced: /inventory/42/level → /inventory/:id/level
+    pub canonical_path: String,
+    /// "page" for GET navigations, "action" for POST/DELETE/etc.
+    pub kind: String,
     pub method: String,
     pub status: u16,
     pub referrer: Option<String>,

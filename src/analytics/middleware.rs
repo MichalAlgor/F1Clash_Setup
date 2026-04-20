@@ -63,6 +63,13 @@ pub async fn record_analytics(
         .map(str::to_ascii_uppercase)
         .filter(|c| c.len() == 2 && c != "XX");
 
+    let canonical_path = canonicalize_path(&path);
+    let kind = if method == "GET" {
+        "page".to_string()
+    } else {
+        "action".to_string()
+    };
+
     tokio::spawn(async move {
         let country = match cf_country {
             Some(c) => Some(c),
@@ -74,6 +81,8 @@ pub async fn record_analytics(
 
         let event = PageEvent {
             path,
+            canonical_path,
+            kind,
             method,
             status,
             referrer,
@@ -108,6 +117,63 @@ fn extract_referrer_host(raw: Option<&str>) -> Option<String> {
     let raw = raw?;
     let parsed = url::Url::parse(raw).ok()?;
     parsed.host_str().map(|s| s.to_string())
+}
+
+/// Replace dynamic path segments with placeholders so paths are groupable.
+///
+/// Rules applied left-to-right per segment:
+///   - All digits                         → `:id`   (numeric DB row IDs)
+///   - All ASCII-alphanumeric, len ≥ 6,
+///     and not a known static keyword     → `:hash` (share hashes, etc.)
+///   - Everything else                    → kept verbatim
+pub fn canonicalize_path(path: &str) -> String {
+    path.split('/')
+        .map(|seg| {
+            if !seg.is_empty() && seg.chars().all(|c| c.is_ascii_digit()) {
+                ":id"
+            } else if seg.len() >= 6
+                && seg.chars().all(|c| c.is_ascii_alphanumeric())
+                && !is_static_segment(seg)
+            {
+                ":hash"
+            } else {
+                seg
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+/// Known static path components that must not be replaced with `:hash`.
+fn is_static_segment(seg: &str) -> bool {
+    matches!(
+        seg,
+        "inventory"
+            | "setups"
+            | "drivers"
+            | "boosts"
+            | "optimizer"
+            | "presets"
+            | "compare"
+            | "seasons"
+            | "advisor"
+            | "summary"
+            | "visits"
+            | "devices"
+            | "dashboard"
+            | "referrers"
+            | "countries"
+            | "engagement"
+            | "features"
+            | "funnel"
+            | "selector"
+            | "static"
+            | "export"
+            | "import"
+            | "season"
+            | "share"
+            | "admin"
+    )
 }
 
 /// Extract client IP. Prefers proxy headers (Render / Cloudflare set these).
