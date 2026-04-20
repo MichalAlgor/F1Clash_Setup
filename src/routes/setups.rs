@@ -21,6 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/setups", get(list).post(create))
         .route("/setups/new", get(new))
         .route("/setups/compare", get(compare))
+        .route("/setups/{id}/edit", get(edit))
         .route("/setups/{id}", get(show).post(update))
         .route("/setups/{id}", delete(destroy))
 }
@@ -293,8 +294,39 @@ async fn show(
                 }
             }
 
-            a href="/setups" role="button" class="outline" { "← Back to setups" }
+            div class="setup-actions" {
+                a href="/setups" role="button" class="outline" { "← Back" }
+                a href={"/setups/" (s.setup.id) "/edit"} role="button" { "Edit" }
+            }
         },
+    ))
+}
+
+async fn edit(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    Path(id): Path<i32>,
+    auth: AuthStatus,
+) -> Result<impl IntoResponse, AppError> {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let setup =
+        sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1 AND session_id = $2")
+            .bind(id)
+            .bind(&session_id)
+            .fetch_one(&state.pool)
+            .await?;
+    let catalog = state.catalog_for_season(&season).await;
+    let drivers_catalog = state.drivers_catalog_for_season(&season).await;
+    let categories = state.categories_for_season(&season).await;
+    let inventory_by_category =
+        load_inventory_by_category(&state.pool, &season, &catalog, &categories, &session_id).await;
+    let driver_items = load_driver_inventory(&state.pool, &season, &session_id).await;
+    Ok(templates::setups::form_page(
+        &inventory_by_category,
+        &driver_items,
+        &drivers_catalog,
+        Some(&setup),
+        &auth,
     ))
 }
 

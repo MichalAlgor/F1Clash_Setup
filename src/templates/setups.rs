@@ -64,6 +64,9 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                                     td.stat-cell data-label="D.Tot" { (s.driver_stats.total()) }
                                     td.stat-cell data-label="Score" { strong { (s.stats.total_performance() + s.driver_stats.total()) } }
                                     td.action-cell {
+                                        a href={"/setups/" (s.setup.id) "/edit"}
+                                            role="button" class="outline" style="margin-right:0.25rem"
+                                        { "✎" }
                                         button.outline.secondary
                                             hx-delete={"/setups/" (s.setup.id)}
                                             hx-confirm="Delete this setup?"
@@ -161,14 +164,17 @@ pub fn form_page(
                 h2 { "Drivers" }
                 @for slot in &["driver1_id", "driver2_id"] {
                     @let label_text = if *slot == "driver1_id" { "Driver 1" } else { "Driver 2" };
+                    @let current_driver_id = setup.and_then(|s| {
+                        if *slot == "driver1_id" { s.driver1_id } else { s.driver2_id }
+                    });
                     label for=(*slot) { (label_text) }
                     select id=(*slot) name=(*slot) {
-                        option value="" { "No driver" }
+                        option value="" selected[current_driver_id.is_none()] { "No driver" }
                         @for item in driver_items {
                             @if let Some(driver_def) = drivers_catalog.iter().find(|d| d.name == item.driver_name && d.rarity == item.rarity) {
                                 @if let Some(stats) = driver_def.stats_for_level(item.level) {
                                     @let rarity_label = DriverRarity::from_db(&driver_def.rarity).map_or(driver_def.rarity.as_str(), |r| r.label());
-                                    option value=(item.id) {
+                                    option value=(item.id) selected[current_driver_id == Some(item.id)] {
                                         (item.driver_name) " (" (rarity_label) ") Lvl " (item.level)
                                         " — " (stats.total()) " total"
                                     }
