@@ -122,6 +122,12 @@ async fn create(
     Form(form): Form<SetupForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "setup_create",
+        serde_json::json!({ "season": season }),
+    );
     sqlx::query(
         "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, \
          brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season, session_id) \
@@ -365,6 +371,13 @@ async fn destroy(
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
 ) -> Result<impl IntoResponse, AppError> {
+    let season = get_session_season(&state.pool, &session_id).await;
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "setup_delete",
+        serde_json::json!({ "season": season }),
+    );
     sqlx::query("DELETE FROM setups WHERE id = $1 AND session_id = $2")
         .bind(id)
         .bind(&session_id)

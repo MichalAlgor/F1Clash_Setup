@@ -74,6 +74,19 @@ async fn bulk_save(
     Form(form): Form<Vec<(String, String)>>,
 ) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
+    let parts_count = form.iter().filter(|(k, _)| k.starts_with("part:")).count();
+    let bucket = match parts_count {
+        0 => "0",
+        1..=7 => "1-7",
+        8..=14 => "8-14",
+        _ => "15+",
+    };
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "bulk_inventory_save",
+        serde_json::json!({ "season": season, "parts_count_bucket": bucket }),
+    );
 
     // NULL out setup references before deleting to avoid FK violations
     sqlx::query(

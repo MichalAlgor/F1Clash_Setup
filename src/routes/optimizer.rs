@@ -415,6 +415,18 @@ async fn run_presets(
         "[optimizer] === run_presets TOTAL:  {:>8.2?} ===",
         t_total.elapsed()
     );
+    let has_inventory = parts_per_cat.iter().any(|cat| !cat.is_empty());
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "optimizer_presets",
+        serde_json::json!({
+            "season": season,
+            "has_inventory": has_inventory,
+            "series_filter": query.max_part_series.is_some(),
+        }),
+    );
+
     templates::optimizer::presets_result_page(&presets, &auth)
 }
 
@@ -446,6 +458,44 @@ async fn run(
         resolve_parts(&state, &season, &session_id, max_part_series).await;
     let resolved_drivers = resolve_drivers(&state, &season, &session_id, max_driver_series).await;
     let driver_pairs = build_driver_pairs(&resolved_drivers);
+
+    let preset_label = {
+        let flags = [
+            query.speed,
+            query.cornering,
+            query.power_unit,
+            query.qualifying,
+        ];
+        let count = flags.iter().filter(|&&b| b).count();
+        match count {
+            0 => "none",
+            1 => {
+                if query.speed {
+                    "speed"
+                } else if query.cornering {
+                    "cornering"
+                } else if query.power_unit {
+                    "power_unit"
+                } else {
+                    "qualifying"
+                }
+            }
+            _ => "custom",
+        }
+    };
+    let has_inventory = parts_per_cat.iter().any(|cat| !cat.is_empty());
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "optimizer_run",
+        serde_json::json!({
+            "season": season,
+            "preset": preset_label,
+            "has_inventory": has_inventory,
+            "has_drivers": !resolved_drivers.is_empty(),
+            "series_filter": query.max_part_series.is_some(),
+        }),
+    );
 
     match run_brute_force(
         &parts_per_cat,
@@ -695,6 +745,12 @@ async fn save(
     Form(form): Form<SaveForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "optimizer_save",
+        serde_json::json!({ "season": season }),
+    );
     sqlx::query(
         "INSERT INTO setups (name, engine_id, front_wing_id, rear_wing_id, suspension_id, \
          brakes_id, gearbox_id, battery_id, driver1_id, driver2_id, season, session_id) \

@@ -274,6 +274,13 @@ async fn create_share(
     .execute(&state.pool)
     .await?;
 
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "share_create",
+        serde_json::json!({ "season": season }),
+    );
+
     Ok(templates::share::shared_page(
         &share_hash,
         &form.name,
@@ -334,6 +341,13 @@ async fn view_share(
         power_unit: priorities_val.0["power_unit"].as_bool().unwrap_or(false),
         qualifying: priorities_val.0["qualifying"].as_bool().unwrap_or(false),
     };
+
+    crate::analytics::fire(
+        &state.analytics,
+        session_id.clone(),
+        "share_view",
+        serde_json::json!({ "season": record_season }),
+    );
 
     templates::share::view_page(
         &record_hash,
