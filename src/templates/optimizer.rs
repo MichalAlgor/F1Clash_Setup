@@ -252,7 +252,9 @@ fn preset_card(preset: &PresetResult) -> Markup {
                             button type="submit" formaction="/optimizer/share" class="save-form-btn outline" { "Share" }
                         }
                         @for (cat, item, _, _) in &r.part_picks {
-                            input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                            @if item.id != 0 {
+                                input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                            }
                         }
                     }
                 }
@@ -436,7 +438,9 @@ pub fn result_page(
                     }
 
                     @for (cat, item, _, _) in part_picks {
-                        input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                        @if item.id != 0 {
+                            input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                        }
                     }
                     @if let Some((item, _)) = driver1 {
                         input type="hidden" name="driver1_id" value=(item.id);
