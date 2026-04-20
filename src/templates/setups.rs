@@ -134,11 +134,22 @@ pub fn form_page(
 
                 h2 { "Parts" }
                 @for (category, items) in inventory_by_category {
+                    @let current_id = setup.and_then(|s| {
+                        match category {
+                            crate::models::part::PartCategory::Engine     => s.engine_id,
+                            crate::models::part::PartCategory::FrontWing  => s.front_wing_id,
+                            crate::models::part::PartCategory::RearWing   => s.rear_wing_id,
+                            crate::models::part::PartCategory::Suspension => s.suspension_id,
+                            crate::models::part::PartCategory::Brakes     => s.brakes_id,
+                            crate::models::part::PartCategory::Gearbox    => s.gearbox_id,
+                            crate::models::part::PartCategory::Battery    => s.battery_id,
+                        }
+                    });
                     label for=(category.slug()) { (category.display_name()) }
-                    select id=(category.slug()) name=(category.slug()) required {
-                        option value="" { "Select a part…" }
+                    select id=(category.slug()) name=(category.slug()) {
+                        option value="" selected[current_id.is_none()] { "Default (1/1/1/1 · 1.00s pit)" }
                         @for (item, stats) in items {
-                            option value=(item.id) {
+                            option value=(item.id) selected[current_id == Some(item.id)] {
                                 (item.part_name) " Lvl " (item.level)
                                 " — " (stats.speed + stats.cornering + stats.power_unit + stats.qualifying) " perf"
                                 " / " (format!("{:.2}", stats.pit_stop_time)) "s pit"
