@@ -11,25 +11,23 @@
       font: 14px/1.4 -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
       margin: 0; padding: 24px; background: #f7f7f8; color: #222;
     }
-    h1 { margin: 0 0 16px; font-size: 20px; }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    h3 { margin: 0 0 12px; font-size: 13px; font-weight: 600;
+         text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
     .controls { margin-bottom: 20px; }
     select, button {
       padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
       background: white; font: inherit; cursor: pointer;
     }
-    .grid {
-      display: grid; gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #999; margin: 24px 0 10px;
     }
-    .card {
-      background: white; padding: 16px; border-radius: 8px;
-      border: 1px solid #e5e5e7;
-    }
-    .card h2 {
-      margin: 0 0 12px; font-size: 13px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.04em; color: #666;
-    }
-    .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+    .card { background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e5e7; }
+    .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 8px; }
+    .kpis-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 8px; }
     .kpi { background: white; padding: 14px; border-radius: 8px; border: 1px solid #e5e5e7; }
     .kpi .value { font-size: 22px; font-weight: 600; }
     .kpi .label { font-size: 12px; color: #666; text-transform: uppercase; }
@@ -38,10 +36,19 @@
     th { color: #666; font-weight: 600; }
     td:last-child, th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
     .chart-box { position: relative; height: 220px; }
+    .chart-box-sm { position: relative; height: 160px; }
+    .funnel-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .funnel-label { width: 160px; font-size: 13px; flex-shrink: 0; }
+    .funnel-bar-wrap { flex: 1; background: #f0f0f2; border-radius: 4px; height: 24px; overflow: hidden; }
+    .funnel-bar { height: 100%; background: #4f46e5; border-radius: 4px; transition: width 0.4s; }
+    .funnel-count { width: 60px; text-align: right; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .funnel-pct { width: 48px; text-align: right; font-size: 12px; color: #888; }
     .error { color: #b00; padding: 12px; }
     @media (max-width: 600px) {
       .kpis { grid-template-columns: repeat(2,1fr); }
+      .kpis-3 { grid-template-columns: repeat(2,1fr); }
       body { padding: 12px; }
+      .funnel-label { width: 110px; font-size: 12px; }
     }
   </style>
 </head>
@@ -62,6 +69,8 @@
 
   <div id="error" class="error" hidden></div>
 
+  <!-- ── Traffic ─────────────────────────────────────────────────── -->
+  <div class="section-label">Traffic</div>
   <div class="kpis">
     <div class="kpi"><div class="label">Page views</div><div class="value" id="k-total">&ndash;</div></div>
     <div class="kpi"><div class="label">Unique visitors</div><div class="value" id="k-visitors">&ndash;</div></div>
@@ -70,29 +79,54 @@
   </div>
 
   <div class="card" style="margin-bottom:16px">
-    <h2>Visits per day</h2>
+    <h3>Visits per day</h3>
     <div class="chart-box"><canvas id="chart-visits"></canvas></div>
   </div>
 
+  <!-- ── Engagement ─────────────────────────────────────────────── -->
+  <div class="section-label">Engagement</div>
+  <div class="kpis-3">
+    <div class="kpi"><div class="label">Bounce rate</div><div class="value" id="k-bounce">&ndash;</div></div>
+    <div class="kpi"><div class="label">Return visitors</div><div class="value" id="k-return">&ndash;</div></div>
+    <div class="kpi"><div class="label">Avg pages/session</div><div class="value" id="k-depth">&ndash;</div></div>
+  </div>
+
+  <!-- ── Features & Funnel ──────────────────────────────────────── -->
+  <div class="section-label">Feature usage</div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card"><h3>Events</h3><table id="t-features"></table></div>
+    <div class="card">
+      <h3>Funnel — inventory → optimizer → save → share</h3>
+      <div id="funnel-chart"></div>
+    </div>
+  </div>
+
+  <!-- ── Time patterns ──────────────────────────────────────────── -->
+  <div class="section-label">Time patterns (UTC)</div>
+  <div class="grid-2" style="margin-bottom:16px">
+    <div class="card"><h3>Hour of day</h3><div class="chart-box-sm"><canvas id="chart-hour"></canvas></div></div>
+    <div class="card"><h3>Day of week</h3><div class="chart-box-sm"><canvas id="chart-dow"></canvas></div></div>
+  </div>
+
+  <!-- ── Audience ───────────────────────────────────────────────── -->
+  <div class="section-label">Audience</div>
   <div class="grid">
-    <div class="card"><h2>Top paths</h2><table id="t-paths"></table></div>
-    <div class="card"><h2>Top referrers</h2><table id="t-refs"></table></div>
-    <div class="card"><h2>Countries</h2><table id="t-countries"></table></div>
-    <div class="card"><h2>Devices</h2><table id="t-devices"></table></div>
+    <div class="card"><h3>Top paths</h3><table id="t-paths"></table></div>
+    <div class="card"><h3>Top referrers</h3><table id="t-refs"></table></div>
+    <div class="card"><h3>Countries</h3><table id="t-countries"></table></div>
+    <div class="card"><h3>Devices</h3><table id="t-devices"></table></div>
   </div>
 
 <script>
 const rangeEl = document.getElementById('range');
-const errEl = document.getElementById('error');
-let chart;
+const errEl   = document.getElementById('error');
+const charts  = {};
 
 async function load() {
   errEl.hidden = true;
   const days = rangeEl.value;
   try {
-    const r = await fetch(`/admin/api/v1/stats/dashboard?days=${days}&limit=10`, {
-      credentials: 'same-origin'
-    });
+    const r = await fetch(`/admin/api/v1/stats/dashboard?days=${days}&limit=10`, { credentials: 'same-origin' });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     render(await r.json());
   } catch (e) {
@@ -102,49 +136,125 @@ async function load() {
 }
 
 function render(d) {
-  document.getElementById('k-total').textContent = d.summary.total_events.toLocaleString();
-  document.getElementById('k-visitors').textContent = d.summary.unique_visitors.toLocaleString();
-  document.getElementById('k-ms').textContent = Math.round(d.summary.avg_response_ms) + ' ms';
-  document.getElementById('k-bot').textContent = d.summary.bot_percentage.toFixed(1) + '%';
+  // Traffic KPIs
+  setText('k-total',    d.summary.total_events.toLocaleString());
+  setText('k-visitors', d.summary.unique_visitors.toLocaleString());
+  setText('k-ms',       Math.round(d.summary.avg_response_ms) + ' ms');
+  setText('k-bot',      d.summary.bot_percentage.toFixed(1) + '%');
 
-  renderChart(d.visits_per_day);
-  renderTable('t-paths', d.top_paths, 'path', 'count');
-  renderTable('t-refs', d.top_referrers, 'referrer', 'count');
-  renderTable('t-countries', d.top_countries, 'country', 'count');
-  renderTable('t-devices', d.device_breakdown, 'device', 'count');
+  // Engagement KPIs
+  setText('k-bounce', d.engagement.bounce_rate.toFixed(1) + '%');
+  setText('k-return', d.engagement.return_visitor_rate.toFixed(1) + '%');
+  setText('k-depth',  d.engagement.avg_session_depth.toFixed(1));
+
+  // Charts
+  renderLineChart('chart-visits', d.visits_per_day.map(r => r.day), d.visits_per_day.map(r => r.count));
+  renderBarChart('chart-hour', buildHourLabels(d.hourly), buildHourData(d.hourly), '#4f46e5');
+  renderBarChart('chart-dow',  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], buildDowData(d.dow), '#0ea5e9');
+
+  // Tables
+  renderTable('t-paths',     d.top_paths,      'path',    'count');
+  renderTable('t-refs',      d.top_referrers,  'referrer','count');
+  renderTable('t-countries', d.top_countries,  'country', 'count');
+  renderTable('t-devices',   d.device_breakdown,'device', 'count');
+  renderFeatureTable(d.feature_counts);
+
+  // Funnel
+  renderFunnel(d.funnel);
 }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function setText(id, val) { document.getElementById(id).textContent = val; }
 
 function renderTable(id, rows, keyCol, valCol) {
   const el = document.getElementById(id);
-  if (!rows.length) { el.innerHTML = '<tr><td style="color:#999">No data</td></tr>'; return; }
-  const header = `<tr><th>${escapeHtml(keyCol)}</th><th>${escapeHtml(valCol)}</th></tr>`;
-  const body = rows.map(r =>
-    `<tr><td>${escapeHtml(String(r[keyCol]))}</td><td>${r[valCol].toLocaleString()}</td></tr>`
-  ).join('');
-  el.innerHTML = header + body;
+  if (!rows || !rows.length) { el.innerHTML = '<tr><td style="color:#999">No data</td></tr>'; return; }
+  el.innerHTML =
+    `<tr><th>${esc(keyCol)}</th><th>${esc(valCol)}</th></tr>` +
+    rows.map(r => `<tr><td>${esc(String(r[keyCol]))}</td><td>${r[valCol].toLocaleString()}</td></tr>`).join('');
 }
 
-function renderChart(rows) {
-  const ctx = document.getElementById('chart-visits');
-  const labels = rows.map(r => r.day);
-  const data = rows.map(r => r.count);
-  if (chart) chart.destroy();
-  chart = new Chart(ctx, {
+function renderFeatureTable(rows) {
+  const el = document.getElementById('t-features');
+  if (!rows || !rows.length) { el.innerHTML = '<tr><td style="color:#999">No events yet</td></tr>'; return; }
+  const labels = {
+    optimizer_presets: 'Optimizer (presets)',
+    optimizer_run:     'Optimizer (custom)',
+    optimizer_save:    'Optimizer save',
+    share_create:      'Share created',
+    share_view:        'Share viewed',
+    export:            'Export',
+    import:            'Import',
+    season_switch:     'Season switch',
+    setup_create:      'Setup created',
+    setup_delete:      'Setup deleted',
+    bulk_inventory_save: 'Bulk inventory save',
+  };
+  el.innerHTML =
+    '<tr><th>Event</th><th>Count</th></tr>' +
+    rows.map(r =>
+      `<tr><td>${esc(labels[r.event] || r.event)}</td><td>${r.count.toLocaleString()}</td></tr>`
+    ).join('');
+}
+
+function renderFunnel(f) {
+  const steps = [
+    { label: 'Visited inventory', count: f.visited_inventory },
+    { label: 'Ran optimizer',     count: f.ran_optimizer },
+    { label: 'Saved setup',       count: f.saved_setup },
+    { label: 'Created share',     count: f.created_share },
+  ];
+  const max = Math.max(1, ...steps.map(s => s.count));
+  const container = document.getElementById('funnel-chart');
+  container.innerHTML = steps.map((s, i) => {
+    const pct = max > 0 ? (s.count / max * 100).toFixed(0) : 0;
+    const prev = i > 0 ? steps[i-1].count : null;
+    const dropPct = prev && prev > 0 ? ((1 - s.count / prev) * 100).toFixed(0) : null;
+    return `<div class="funnel-row">
+      <div class="funnel-label">${esc(s.label)}</div>
+      <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${pct}%"></div></div>
+      <div class="funnel-count">${s.count.toLocaleString()}</div>
+      <div class="funnel-pct">${dropPct != null ? '−' + dropPct + '%' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLineChart(id, labels, data) {
+  const ctx = document.getElementById(id);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [{
-      data, borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.1)',
-      fill: true, tension: 0.25, pointRadius: 3
-    }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-    }
+    data: { labels, datasets: [{ data, borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.1)', fill: true, tension: 0.25, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 }
 
-function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderBarChart(id, labels, data, color) {
+  const ctx = document.getElementById(id);
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: color + '99', borderColor: color, borderWidth: 1 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+// Build full 24-slot hourly arrays (0 for missing hours)
+function buildHourLabels(hourly) {
+  return Array.from({length: 24}, (_, i) => i.toString().padStart(2,'0') + 'h');
+}
+function buildHourData(hourly) {
+  const map = Object.fromEntries((hourly || []).map(r => [r.hour, r.count]));
+  return Array.from({length: 24}, (_, i) => map[i] || 0);
+}
+function buildDowData(dow) {
+  const map = Object.fromEntries((dow || []).map(r => [r.dow, r.count]));
+  return Array.from({length: 7}, (_, i) => map[i] || 0);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 rangeEl.addEventListener('change', load);

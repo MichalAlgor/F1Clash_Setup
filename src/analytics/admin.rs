@@ -33,6 +33,11 @@ pub struct DashboardPayload {
     pub top_referrers: Vec<ReferrerCount>,
     pub top_countries: Vec<CountryCount>,
     pub device_breakdown: Vec<DeviceCount>,
+    pub feature_counts: Vec<FeatureCount>,
+    pub engagement: EngagementStats,
+    pub hourly: Vec<HourCount>,
+    pub dow: Vec<DayCount>,
+    pub funnel: FunnelStats,
     pub days: u32,
 }
 
@@ -45,6 +50,10 @@ pub fn router() -> Router<AppState> {
         .route("/admin/api/v1/stats/referrers", get(referrers))
         .route("/admin/api/v1/stats/countries", get(countries))
         .route("/admin/api/v1/stats/devices", get(devices))
+        .route("/admin/api/v1/stats/engagement", get(engagement))
+        .route("/admin/api/v1/stats/features", get(features))
+        .route("/admin/api/v1/stats/time", get(time_patterns))
+        .route("/admin/api/v1/stats/funnel", get(funnel))
         .route("/admin/api/v1/stats/dashboard", get(dashboard))
 }
 
@@ -111,19 +120,70 @@ async fn devices(
     Ok(Json(state.analytics.device_breakdown(q.days).await?))
 }
 
+async fn engagement(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    Query(q): Query<RangeParams>,
+) -> Result<Json<EngagementStats>, ApiError> {
+    guard(&auth)?;
+    Ok(Json(state.analytics.engagement(q.days).await?))
+}
+
+async fn features(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    Query(q): Query<RangeParams>,
+) -> Result<Json<Vec<FeatureCount>>, ApiError> {
+    guard(&auth)?;
+    Ok(Json(state.analytics.feature_counts(q.days).await?))
+}
+
+#[derive(Serialize)]
+pub struct TimePayload {
+    pub hourly: Vec<HourCount>,
+    pub dow: Vec<DayCount>,
+}
+
+async fn time_patterns(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    Query(q): Query<RangeParams>,
+) -> Result<Json<TimePayload>, ApiError> {
+    guard(&auth)?;
+    let (hourly, dow) = tokio::try_join!(
+        state.analytics.hourly_distribution(q.days),
+        state.analytics.day_of_week_distribution(q.days),
+    )?;
+    Ok(Json(TimePayload { hourly, dow }))
+}
+
+async fn funnel(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    Query(q): Query<RangeParams>,
+) -> Result<Json<FunnelStats>, ApiError> {
+    guard(&auth)?;
+    Ok(Json(state.analytics.funnel(q.days).await?))
+}
+
 async fn dashboard(
     State(state): State<AppState>,
     auth: AuthStatus,
     Query(q): Query<RangeParams>,
 ) -> Result<Json<DashboardPayload>, ApiError> {
     guard(&auth)?;
-    let (summary, vpd, paths, refs, countries, devices) = tokio::try_join!(
+    let (summary, vpd, paths, refs, countries, devices, feat, eng, hourly, dow, funnel_stats) = tokio::try_join!(
         state.analytics.summary(q.days),
         state.analytics.visits_per_day(q.days),
         state.analytics.top_paths(q.days, q.limit),
         state.analytics.top_referrers(q.days, q.limit),
         state.analytics.top_countries(q.days, q.limit),
         state.analytics.device_breakdown(q.days),
+        state.analytics.feature_counts(q.days),
+        state.analytics.engagement(q.days),
+        state.analytics.hourly_distribution(q.days),
+        state.analytics.day_of_week_distribution(q.days),
+        state.analytics.funnel(q.days),
     )?;
 
     Ok(Json(DashboardPayload {
@@ -133,6 +193,11 @@ async fn dashboard(
         top_referrers: refs,
         top_countries: countries,
         device_breakdown: devices,
+        feature_counts: feat,
+        engagement: eng,
+        hourly,
+        dow,
+        funnel: funnel_stats,
         days: q.days,
     }))
 }
