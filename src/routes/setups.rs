@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::{delete, get};
 use axum::{Form, Router};
@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/setups", get(list).post(create))
         .route("/setups/new", get(new))
+        .route("/setups/compare", get(compare))
         .route("/setups/{id}", get(show).post(update))
         .route("/setups/{id}", delete(destroy))
 }
@@ -245,6 +246,50 @@ async fn destroy(
         .unwrap();
 
     html! {}
+}
+
+#[derive(Deserialize)]
+struct CompareQuery {
+    ids: String,
+}
+
+async fn compare(
+    State(state): State<AppState>,
+    UserSession(session_id): UserSession,
+    auth: AuthStatus,
+    Query(q): Query<CompareQuery>,
+) -> impl IntoResponse {
+    let season = get_session_season(&state.pool, &session_id).await;
+    let catalog = state.catalog_for_season(&season).await;
+    let drivers_catalog = state.drivers_catalog_for_season(&season).await;
+
+    let ids: Vec<i32> = q
+        .ids
+        .split(',')
+        .filter_map(|s| s.trim().parse::<i32>().ok())
+        .collect();
+
+    let mut setups_with_stats: Vec<SetupWithStats> = Vec::new();
+    for id in &ids {
+        if let Ok(setup) =
+            sqlx::query_as::<_, Setup>("SELECT * FROM setups WHERE id = $1 AND session_id = $2")
+                .bind(id)
+                .bind(&session_id)
+                .fetch_one(&state.pool)
+                .await
+        {
+            let (stats, driver_stats) =
+                compute_all_stats(&state.pool, &setup, &catalog, &drivers_catalog, &session_id)
+                    .await;
+            setups_with_stats.push(SetupWithStats {
+                setup,
+                stats,
+                driver_stats,
+            });
+        }
+    }
+
+    templates::setups::comparison_page(&setups_with_stats, &auth)
 }
 
 async fn compute_all_stats(

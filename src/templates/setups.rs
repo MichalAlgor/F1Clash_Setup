@@ -16,15 +16,23 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                 p { "Create and compare configurations" }
             }
 
-            a href="/setups/new" role="button" { "New Setup" }
+            div class="setups-actions" {
+                a href="/setups/new" role="button" { "New Setup" }
+                @if setups.len() >= 2 {
+                    a #compare-link role="button" class="outline" href="/setups/compare" style="display:none" { "Compare" }
+                }
+            }
 
             @if setups.is_empty() {
                 p { "No setups yet. Add parts to your inventory, then create a setup." }
             } @else {
                 figure {
-                    table.responsive-table {
+                    table.responsive-table #setups-table {
                         thead {
                             tr {
+                                @if setups.len() >= 2 {
+                                    th class="compare-col" { "" }
+                                }
                                 th { "Name" }
                                 th { "SPD" }
                                 th { "COR" }
@@ -40,6 +48,12 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                         tbody {
                             @for s in setups {
                                 tr {
+                                    @if setups.len() >= 2 {
+                                        td class="compare-col action-cell" {
+                                            input type="checkbox" class="compare-check"
+                                                value=(s.setup.id);
+                                        }
+                                    }
                                     td { a href={"/setups/" (s.setup.id)} { (s.setup.name) } }
                                     td.stat-cell data-label="SPD" { (s.stats.speed) }
                                     td.stat-cell data-label="COR" { (s.stats.cornering) }
@@ -61,6 +75,30 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                             }
                         }
                     }
+                }
+            }
+
+            // Compare script — minimal vanilla JS for checkbox aggregation
+            @if setups.len() >= 2 {
+                script {
+                    (maud::PreEscaped(r#"
+(function() {
+    var link = document.getElementById('compare-link');
+    document.querySelectorAll('.compare-check').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var checked = document.querySelectorAll('.compare-check:checked');
+            if (checked.length >= 2) {
+                var ids = Array.from(checked).map(function(c) { return c.value; }).join(',');
+                link.href = '/setups/compare?ids=' + ids;
+                link.textContent = 'Compare (' + checked.length + ')';
+                link.style.display = '';
+            } else {
+                link.style.display = 'none';
+            }
+        });
+    });
+})();
+                    "#))
                 }
             }
         },
@@ -133,4 +171,130 @@ pub fn form_page(
             }
         },
     )
+}
+
+pub fn comparison_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
+    if setups.is_empty() {
+        return super::layout::page(
+            "Compare Setups",
+            auth,
+            html! {
+                h1 { "Compare Setups" }
+                p { "No setups found." }
+                a href="/setups" role="button" class="outline" { "← Back to setups" }
+            },
+        );
+    }
+
+    // Collect all stat values per row for highlighting
+    let speeds: Vec<i32> = setups.iter().map(|s| s.stats.speed).collect();
+    let corners: Vec<i32> = setups.iter().map(|s| s.stats.cornering).collect();
+    let pwrs: Vec<i32> = setups.iter().map(|s| s.stats.power_unit).collect();
+    let quals: Vec<i32> = setups.iter().map(|s| s.stats.qualifying).collect();
+    let pits: Vec<f64> = setups.iter().map(|s| s.stats.pit_stop_time).collect();
+    let ptotals: Vec<i32> = setups.iter().map(|s| s.stats.total_performance()).collect();
+    let dtotals: Vec<i32> = setups.iter().map(|s| s.driver_stats.total()).collect();
+    let scores: Vec<i32> = setups
+        .iter()
+        .map(|s| s.stats.total_performance() + s.driver_stats.total())
+        .collect();
+
+    super::layout::page(
+        "Compare Setups",
+        auth,
+        html! {
+            hgroup {
+                h1 { "Compare Setups" }
+                p { "Side-by-side stat comparison" }
+            }
+            a href="/setups" role="button" class="outline back-link" { "← Back to setups" }
+
+            div style="overflow-x:auto;-webkit-overflow-scrolling:touch" {
+                table class="compare-table" {
+                    thead {
+                        tr {
+                            th { "Stat" }
+                            @for s in setups {
+                                th {
+                                    a href={"/setups/" (s.setup.id)} { (s.setup.name) }
+                                }
+                            }
+                        }
+                    }
+                    tbody {
+                        (compare_row("SPD", &speeds.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                        (compare_row("COR", &corners.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                        (compare_row("PWR", &pwrs.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                        (compare_row("QUA", &quals.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                        (compare_row_f("PIT (s)", &pits, true))
+                        (compare_row("P.Total", &ptotals.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                        (compare_row("D.Total", &dtotals.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                        (compare_row("Score", &scores.iter().map(|v| v.to_string()).collect::<Vec<_>>(), false))
+                    }
+                }
+            }
+        },
+    )
+}
+
+/// Render a comparison table row with best/worst highlighting (int values).
+/// `lower_is_better`: true for PIT stop time.
+fn compare_row(label: &str, values: &[String], lower_is_better: bool) -> Markup {
+    let parsed: Vec<i64> = values
+        .iter()
+        .filter_map(|v| v.parse::<i64>().ok())
+        .collect();
+    let best = if lower_is_better {
+        parsed.iter().copied().min()
+    } else {
+        parsed.iter().copied().max()
+    };
+    let worst = if lower_is_better {
+        parsed.iter().copied().max()
+    } else {
+        parsed.iter().copied().min()
+    };
+    html! {
+        tr {
+            td { strong { (label) } }
+            @for (val, parsed_val) in values.iter().zip(parsed.iter()) {
+                @let is_best = Some(*parsed_val) == best && parsed.iter().filter(|&&v| v == *parsed_val).count() < parsed.len();
+                @let is_worst = Some(*parsed_val) == worst && parsed.iter().filter(|&&v| v == *parsed_val).count() < parsed.len();
+                td class={
+                    @if is_best { "compare-best" }
+                    @else if is_worst { "compare-worst" }
+                    @else { "" }
+                } { (val) }
+            }
+        }
+    }
+}
+
+/// Render a comparison row for float values (PIT stop time).
+fn compare_row_f(label: &str, values: &[f64], lower_is_better: bool) -> Markup {
+    let display: Vec<String> = values.iter().map(|v| format!("{:.2}", v)).collect();
+    let best = if lower_is_better {
+        values.iter().copied().reduce(f64::min)
+    } else {
+        values.iter().copied().reduce(f64::max)
+    };
+    let worst = if lower_is_better {
+        values.iter().copied().reduce(f64::max)
+    } else {
+        values.iter().copied().reduce(f64::min)
+    };
+    html! {
+        tr {
+            td { strong { (label) } }
+            @for (val, raw) in display.iter().zip(values.iter()) {
+                @let is_best = best.map_or(false, |b| (raw - b).abs() < 0.001) && values.iter().filter(|&&v| (v - raw).abs() < 0.001).count() < values.len();
+                @let is_worst = worst.map_or(false, |w| (raw - w).abs() < 0.001) && values.iter().filter(|&&v| (v - raw).abs() < 0.001).count() < values.len();
+                td class={
+                    @if is_best { "compare-best" }
+                    @else if is_worst { "compare-worst" }
+                    @else { "" }
+                } { (val) }
+            }
+        }
+    }
 }

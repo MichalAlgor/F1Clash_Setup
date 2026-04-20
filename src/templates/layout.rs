@@ -753,6 +753,39 @@ footer p {
     }
 }
 
+/* --- Setup Comparison --- */
+.setups-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.compare-col {
+    width: 1rem;
+    padding: 0.25rem !important;
+}
+.compare-table {
+    width: 100%;
+    font-size: 0.85rem;
+}
+.compare-table th:first-child,
+.compare-table td:first-child {
+    text-align: left;
+    white-space: nowrap;
+    padding-right: 1rem;
+}
+.compare-table td {
+    text-align: center;
+}
+.compare-best {
+    color: var(--pico-ins-color, #2ecc71);
+    font-weight: 700;
+}
+.compare-worst {
+    color: var(--pico-del-color, #e74c3c);
+}
+
 /* --- Upgrade Advisor --- */
 .upgrade-positive {
     color: var(--pico-ins-color, #2ecc71);
