@@ -8,6 +8,7 @@ pub mod optimizer_core;
 mod routes;
 pub mod session;
 mod templates;
+pub mod upgrade_advisor;
 
 use axum::Router;
 use sqlx::PgPool;
@@ -260,6 +261,7 @@ async fn main() {
         .merge(routes::boosts::router())
         .merge(routes::drivers::router())
         .merge(routes::optimizer::router())
+        .merge(routes::advisor::router())
         .merge(routes::season::router())
         .merge(routes::export_import::router())
         .merge(routes::admin::router())

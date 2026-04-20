@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod advisor;
 pub mod auth_routes;
 pub mod boosts;
 pub mod drivers;

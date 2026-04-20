@@ -11,7 +11,9 @@ use crate::get_session_season;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats};
 use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem};
-use crate::optimizer_core::{DriverPriorities, ResolvedDriver, ResolvedPart, run_brute_force};
+use crate::optimizer_core::{
+    DriverPriorities, ResolvedDriver, ResolvedPart, prune_category, run_brute_force,
+};
 use crate::session::UserSession;
 use crate::templates;
 
@@ -83,51 +85,9 @@ where
     }
 }
 
-// ── Internal types ────────────────────────────────────────────────────────────
-
-/// Cap candidates per category so the brute-force stays tractable.
-/// Always keeps the single best part for each of the 4 performance stats
-/// (guaranteeing the optimal solution for any single-stat priority), then
-/// fills remaining slots by total performance.
-/// With MAX=8 and 7 categories: 8^7 = 2M combos — sub-100ms.
-const MAX_PARTS_PER_CAT: usize = 10;
-
-fn prune_category(mut parts: Vec<ResolvedPart>) -> Vec<ResolvedPart> {
-    if parts.len() <= MAX_PARTS_PER_CAT {
-        return parts;
-    }
-    // IDs of the top-1 part for each individual performance stat
-    let must: Vec<i32> = [
-        parts.iter().max_by_key(|p| p.stats.speed),
-        parts.iter().max_by_key(|p| p.stats.cornering),
-        parts.iter().max_by_key(|p| p.stats.power_unit),
-        parts.iter().max_by_key(|p| p.stats.qualifying),
-    ]
-    .into_iter()
-    .flatten()
-    .map(|p| p.item.id)
-    .collect::<std::collections::HashSet<_>>()
-    .into_iter()
-    .collect();
-
-    // Sort: must-include first, then by total performance descending
-    parts.sort_by(|a, b| {
-        let a_must = must.contains(&a.item.id);
-        let b_must = must.contains(&b.item.id);
-        if a_must != b_must {
-            return b_must.cmp(&a_must);
-        }
-        b.stats
-            .total_performance()
-            .cmp(&a.stats.total_performance())
-    });
-    parts.truncate(MAX_PARTS_PER_CAT);
-    parts
-}
-
 // ── Resolution helpers ────────────────────────────────────────────────────────
 
-async fn resolve_parts(
+pub(crate) async fn resolve_parts(
     state: &AppState,
     season: &str,
     session_id: &str,
