@@ -34,11 +34,14 @@ impl AnalyticsSink for PostgresAnalytics {
         sqlx::query(
             r#"
             INSERT INTO page_events
-                (path, method, status, referrer, device, country, response_ms, ts, session_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                (path, canonical_path, kind, method, status, referrer,
+                 device, country, response_ms, ts, session_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             "#,
         )
         .bind(&e.path)
+        .bind(&e.canonical_path)
+        .bind(&e.kind)
         .bind(&e.method)
         .bind(e.status as i16)
         .bind(&e.referrer)
@@ -62,6 +65,7 @@ impl AnalyticsQuery for PostgresAnalytics {
             FROM page_events
             WHERE ts > now() - ($1::int || ' days')::interval
               AND device <> 'bot'
+              AND kind = 'page'
             GROUP BY day
             ORDER BY day
             "#,
@@ -79,11 +83,12 @@ impl AnalyticsQuery for PostgresAnalytics {
     async fn top_paths(&self, days: u32, limit: u32) -> Result<Vec<PathCount>, AnalyticsError> {
         let rows = sqlx::query_as::<_, (String, i64)>(
             r#"
-            SELECT path, COUNT(*) AS c
+            SELECT COALESCE(canonical_path, path) AS p, COUNT(*) AS c
             FROM page_events
             WHERE ts > now() - ($1::int || ' days')::interval
               AND device <> 'bot'
-            GROUP BY path
+              AND kind = 'page'
+            GROUP BY p
             ORDER BY c DESC
             LIMIT $2
             "#,
