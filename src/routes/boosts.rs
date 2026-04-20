@@ -6,6 +6,7 @@ use axum::routing::get;
 
 use crate::AppState;
 use crate::auth::AuthStatus;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::DriverBoost;
 use crate::models::setup::Boost;
@@ -56,21 +57,19 @@ async fn save(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Form(form): Form<Vec<(String, String)>>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
 
     sqlx::query("DELETE FROM boosts WHERE season = $1 AND session_id = $2")
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     sqlx::query("DELETE FROM driver_boosts WHERE season = $1 AND session_id = $2")
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     for (key, value) in &form {
         let percentage: i32 = value.parse().unwrap_or(0);
@@ -90,8 +89,7 @@ async fn save(
             .bind(&season)
             .bind(&session_id)
             .execute(&state.pool)
-            .await
-            .unwrap();
+            .await?;
         } else if let Some(rest) = key.strip_prefix("driver:") {
             let Some((name, rarity_str)) = rest.rsplit_once(':') else {
                 continue;
@@ -112,10 +110,9 @@ async fn save(
             .bind(&season)
             .bind(&session_id)
             .execute(&state.pool)
-            .await
-            .unwrap();
+            .await?;
         }
     }
 
-    Redirect::to("/boosts")
+    Ok(Redirect::to("/boosts"))
 }

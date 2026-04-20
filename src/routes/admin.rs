@@ -1,6 +1,6 @@
 use axum::extract::{Path, State};
 use axum::http::header;
-use axum::response::{IntoResponse, Redirect};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{delete, get};
 use axum::{Form, Router};
 use serde::Deserialize;
@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use crate::AppState;
 use crate::auth::AuthStatus;
 use crate::catalog;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::OwnedDriverLevelStats;
 use crate::models::part::OwnedLevelStats;
@@ -37,7 +38,7 @@ pub fn router() -> Router<AppState> {
 }
 
 /// Returns a redirect if auth is required but the user isn't logged in.
-fn guard(auth: &AuthStatus) -> Option<axum::response::Response> {
+fn guard(auth: &AuthStatus) -> Option<Response> {
     if auth.enabled && !auth.logged_in {
         Some(Redirect::to("/").into_response())
     } else {
@@ -105,15 +106,15 @@ async fn create_part(
     UserSession(session_id): UserSession,
     auth: AuthStatus,
     Form(form): Form<PartForm>,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if let Some(r) = guard(&auth) {
-        return r;
+        return Ok(r);
     }
     let season = get_session_season(&state.pool, &session_id).await;
 
     let levels: Vec<OwnedLevelStats> = match serde_json::from_str(&form.levels_json) {
         Ok(v) => v,
-        Err(_) => return Redirect::to("/admin/parts/new").into_response(),
+        Err(_) => return Ok(Redirect::to("/admin/parts/new").into_response()),
     };
 
     let additional_stat_name = form
@@ -143,12 +144,11 @@ async fn create_part(
     .bind(sort_order)
     .bind(&additional_stat_name)
     .fetch_one(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    insert_levels(&state, part_id, &levels).await;
+    insert_levels(&state, part_id, &levels).await?;
     reload_catalog(&state).await;
-    Redirect::to("/admin/parts").into_response()
+    Ok(Redirect::to("/admin/parts").into_response())
 }
 
 async fn update_part(
@@ -156,14 +156,14 @@ async fn update_part(
     Path(id): Path<i32>,
     auth: AuthStatus,
     Form(form): Form<PartForm>,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if let Some(r) = guard(&auth) {
-        return r;
+        return Ok(r);
     }
 
     let levels: Vec<OwnedLevelStats> = match serde_json::from_str(&form.levels_json) {
         Ok(v) => v,
-        Err(_) => return Redirect::to("/admin/parts").into_response(),
+        Err(_) => return Ok(Redirect::to("/admin/parts").into_response()),
     };
 
     let additional_stat_name = form
@@ -183,37 +183,34 @@ async fn update_part(
     .bind(&additional_stat_name)
     .bind(id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
     sqlx::query("DELETE FROM part_level_stats WHERE part_id = $1")
         .bind(id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
-    insert_levels(&state, id, &levels).await;
+    insert_levels(&state, id, &levels).await?;
     reload_catalog(&state).await;
-    Redirect::to("/admin/parts").into_response()
+    Ok(Redirect::to("/admin/parts").into_response())
 }
 
 async fn delete_part(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     auth: AuthStatus,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if auth.enabled && !auth.logged_in {
-        return maud::html! {}.into_response();
+        return Ok(maud::html! {}.into_response());
     }
 
     sqlx::query("DELETE FROM part_catalog WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     reload_catalog(&state).await;
-    maud::html! {}.into_response()
+    Ok(maud::html! {}.into_response())
 }
 
 async fn export_parts(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
@@ -312,15 +309,15 @@ async fn create_driver(
     UserSession(session_id): UserSession,
     auth: AuthStatus,
     Form(form): Form<DriverForm>,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if let Some(r) = guard(&auth) {
-        return r;
+        return Ok(r);
     }
     let season = get_session_season(&state.pool, &session_id).await;
 
     let levels: Vec<OwnedDriverLevelStats> = match serde_json::from_str(&form.levels_json) {
         Ok(v) => v,
-        Err(_) => return Redirect::to("/admin/drivers/new").into_response(),
+        Err(_) => return Ok(Redirect::to("/admin/drivers/new").into_response()),
     };
 
     let sort_order: i32 = sqlx::query_scalar(
@@ -342,12 +339,11 @@ async fn create_driver(
     .bind(&form.series)
     .bind(sort_order)
     .fetch_one(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
-    insert_driver_levels(&state, driver_id, &levels).await;
+    insert_driver_levels(&state, driver_id, &levels).await?;
     reload_drivers_catalog(&state).await;
-    Redirect::to("/admin/drivers").into_response()
+    Ok(Redirect::to("/admin/drivers").into_response())
 }
 
 async fn update_driver(
@@ -355,14 +351,14 @@ async fn update_driver(
     Path(id): Path<i32>,
     auth: AuthStatus,
     Form(form): Form<DriverForm>,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if let Some(r) = guard(&auth) {
-        return r;
+        return Ok(r);
     }
 
     let levels: Vec<OwnedDriverLevelStats> = match serde_json::from_str(&form.levels_json) {
         Ok(v) => v,
-        Err(_) => return Redirect::to("/admin/drivers").into_response(),
+        Err(_) => return Ok(Redirect::to("/admin/drivers").into_response()),
     };
 
     sqlx::query("UPDATE driver_catalog SET name=$1, rarity=$2, series=$3 WHERE id=$4")
@@ -371,37 +367,34 @@ async fn update_driver(
         .bind(&form.series)
         .bind(id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     sqlx::query("DELETE FROM driver_level_stats WHERE driver_id = $1")
         .bind(id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
-    insert_driver_levels(&state, id, &levels).await;
+    insert_driver_levels(&state, id, &levels).await?;
     reload_drivers_catalog(&state).await;
-    Redirect::to("/admin/drivers").into_response()
+    Ok(Redirect::to("/admin/drivers").into_response())
 }
 
 async fn delete_driver(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     auth: AuthStatus,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if auth.enabled && !auth.logged_in {
-        return maud::html! {}.into_response();
+        return Ok(maud::html! {}.into_response());
     }
 
     sqlx::query("DELETE FROM driver_catalog WHERE id = $1")
         .bind(id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     reload_drivers_catalog(&state).await;
-    maud::html! {}.into_response()
+    Ok(maud::html! {}.into_response())
 }
 
 async fn export_drivers(State(state): State<AppState>, auth: AuthStatus) -> impl IntoResponse {
@@ -458,9 +451,9 @@ async fn save_season_categories(
     State(state): State<AppState>,
     auth: AuthStatus,
     Form(form): Form<Vec<(String, String)>>,
-) -> impl IntoResponse {
+) -> Result<Response, AppError> {
     if let Some(r) = guard(&auth) {
-        return r;
+        return Ok(r);
     }
 
     let season = form
@@ -470,7 +463,7 @@ async fn save_season_categories(
         .unwrap_or_default();
 
     if season.is_empty() {
-        return Redirect::to("/admin/seasons").into_response();
+        return Ok(Redirect::to("/admin/seasons").into_response());
     }
 
     let categories: Vec<&str> = form
@@ -483,8 +476,7 @@ async fn save_season_categories(
     sqlx::query("DELETE FROM season_categories WHERE season = $1")
         .bind(&season)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     for cat_slug in &categories {
         sqlx::query(
@@ -495,20 +487,23 @@ async fn save_season_categories(
         .bind(&season)
         .bind(*cat_slug)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     }
 
     // Reload season categories
     let new_cats = catalog::load_season_categories(&state.pool).await;
     *state.season_categories.write().await = new_cats;
 
-    Redirect::to("/admin/seasons").into_response()
+    Ok(Redirect::to("/admin/seasons").into_response())
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-async fn insert_levels(state: &AppState, part_id: i32, levels: &[OwnedLevelStats]) {
+async fn insert_levels(
+    state: &AppState,
+    part_id: i32,
+    levels: &[OwnedLevelStats],
+) -> Result<(), AppError> {
     for lvl in levels {
         let details =
             serde_json::to_value(&lvl.additional_stat_details).unwrap_or(serde_json::json!({}));
@@ -528,9 +523,9 @@ async fn insert_levels(state: &AppState, part_id: i32, levels: &[OwnedLevelStats
         .bind(lvl.additional_stat_value)
         .bind(details)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     }
+    Ok(())
 }
 
 async fn reload_catalog(state: &AppState) {
@@ -538,7 +533,11 @@ async fn reload_catalog(state: &AppState) {
     *state.catalog.write().await = new_catalog;
 }
 
-async fn insert_driver_levels(state: &AppState, driver_id: i32, levels: &[OwnedDriverLevelStats]) {
+async fn insert_driver_levels(
+    state: &AppState,
+    driver_id: i32,
+    levels: &[OwnedDriverLevelStats],
+) -> Result<(), AppError> {
     for lvl in levels {
         sqlx::query(
             "INSERT INTO driver_level_stats
@@ -557,9 +556,9 @@ async fn insert_driver_levels(state: &AppState, driver_id: i32, levels: &[OwnedD
         .bind(lvl.coins_cost)
         .bind(lvl.legacy_points)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     }
+    Ok(())
 }
 
 async fn reload_drivers_catalog(state: &AppState) {

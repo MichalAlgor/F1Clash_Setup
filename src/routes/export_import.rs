@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 use crate::auth::AuthStatus;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::DriverInventoryItem;
 use crate::models::setup::InventoryItem;
@@ -41,7 +42,7 @@ pub struct DriverEntry {
 async fn export(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
 
     let parts = sqlx::query_as::<_, InventoryItem>(
@@ -81,10 +82,10 @@ async fn export(
             .collect(),
     };
 
-    let json = serde_json::to_string_pretty(&export).unwrap();
+    let json = serde_json::to_string_pretty(&export)?;
     let filename = format!("f1clash_inventory_{season}.json");
 
-    (
+    Ok((
         [
             (header::CONTENT_TYPE, "application/json".to_string()),
             (
@@ -93,7 +94,7 @@ async fn export(
             ),
         ],
         json,
-    )
+    ))
 }
 
 async fn import_form(
@@ -158,11 +159,11 @@ async fn import(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Form(form): Form<ImportForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
 
     let Ok(data) = serde_json::from_str::<ExportData>(&form.json_data) else {
-        return Redirect::to("/import");
+        return Ok(Redirect::to("/import"));
     };
 
     // NULL out setup references to this session's inventory/driver rows
@@ -180,8 +181,7 @@ async fn import(
     )
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
     sqlx::query(
         "UPDATE setups SET driver1_id=NULL WHERE driver1_id IN \
@@ -189,8 +189,7 @@ async fn import(
     )
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
     sqlx::query(
         "UPDATE setups SET driver2_id=NULL WHERE driver2_id IN \
@@ -198,21 +197,18 @@ async fn import(
     )
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
     sqlx::query("DELETE FROM inventory WHERE season = $1 AND session_id = $2")
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     sqlx::query("DELETE FROM driver_inventory WHERE season = $1 AND session_id = $2")
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     for part in &data.parts {
         if part.level < 1 {
@@ -229,8 +225,7 @@ async fn import(
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     }
 
     for driver in &data.drivers {
@@ -247,9 +242,14 @@ async fn import(
         sqlx::query(
             "INSERT INTO driver_inventory (driver_name, rarity, level, season, session_id) VALUES ($1, $2, $3, $4, $5)",
         )
-        .bind(&driver.name).bind(&driver.rarity).bind(driver.level).bind(&season).bind(&session_id)
-        .execute(&state.pool).await.unwrap();
+        .bind(&driver.name)
+        .bind(&driver.rarity)
+        .bind(driver.level)
+        .bind(&season)
+        .bind(&session_id)
+        .execute(&state.pool)
+        .await?;
     }
 
-    Redirect::to("/inventory")
+    Ok(Redirect::to("/inventory"))
 }

@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use crate::AppState;
 use crate::auth::AuthStatus;
+use crate::error::AppError;
 use crate::get_session_season;
 use crate::session::UserSession;
 
@@ -71,7 +72,7 @@ async fn bulk_save(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Form(form): Form<Vec<(String, String)>>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let season = get_session_season(&state.pool, &session_id).await;
 
     // NULL out setup references before deleting to avoid FK violations
@@ -88,15 +89,13 @@ async fn bulk_save(
     )
     .bind(&session_id)
     .execute(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
     sqlx::query("DELETE FROM inventory WHERE season = $1 AND session_id = $2")
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     for (key, value) in &form {
         let Some(part_name) = key.strip_prefix("part:") else {
@@ -118,11 +117,10 @@ async fn bulk_save(
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
     }
 
-    Redirect::to("/inventory")
+    Ok(Redirect::to("/inventory"))
 }
 
 #[derive(Deserialize)]
@@ -135,16 +133,15 @@ async fn update_level(
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     Form(form): Form<LevelForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     sqlx::query("UPDATE inventory SET level = $1 WHERE id = $2 AND session_id = $3")
         .bind(form.level)
         .bind(id)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
-    Redirect::to("/inventory")
+    Ok(Redirect::to("/inventory"))
 }
 
 #[derive(Deserialize)]
@@ -157,7 +154,7 @@ async fn update_cards(
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
     Form(form): Form<CardsForm>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let cards = form.cards.max(0);
 
     sqlx::query("UPDATE inventory SET cards_owned = $1 WHERE id = $2 AND session_id = $3")
@@ -165,8 +162,7 @@ async fn update_cards(
         .bind(id)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
     let item = sqlx::query_as::<_, InventoryItem>(
         "SELECT * FROM inventory WHERE id = $1 AND session_id = $2",
@@ -174,27 +170,27 @@ async fn update_cards(
     .bind(id)
     .bind(&session_id)
     .fetch_one(&state.pool)
-    .await
-    .unwrap();
+    .await?;
 
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let part_def = catalog.iter().find(|p| p.name == item.part_name);
 
-    templates::inventory::cards_cell(id, cards, item.level, part_def)
+    Ok(templates::inventory::cards_cell(
+        id, cards, item.level, part_def,
+    ))
 }
 
 async fn destroy(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     Path(id): Path<i32>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     sqlx::query("DELETE FROM inventory WHERE id = $1 AND session_id = $2")
         .bind(id)
         .bind(&session_id)
         .execute(&state.pool)
-        .await
-        .unwrap();
+        .await?;
 
-    html! {}
+    Ok(html! {})
 }

@@ -3,6 +3,7 @@ pub mod auth;
 pub mod catalog;
 pub mod data;
 pub mod drivers_data;
+pub mod error;
 mod models;
 pub mod optimizer_core;
 mod routes;
@@ -269,6 +270,9 @@ async fn main() {
         .merge(analytics::admin::router())
         .merge(routes::auth_routes::router())
         .nest_service("/static", ServeDir::new("static"))
+        .fallback(|| async {
+            templates::error::error_page(axum::http::StatusCode::NOT_FOUND, "Page not found.")
+        })
         .layer(axum::middleware::from_fn_with_state(
             analytics_state,
             analytics::middleware::record_analytics,
