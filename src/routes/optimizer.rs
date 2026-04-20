@@ -626,9 +626,10 @@ mod tests {
 
     #[test]
     fn score_part_combo_no_priorities_returns_total_performance_twice() {
+        // pit=1.0 → round(7 + (7-1)*200/7) = 178; total = 100 + 178 = 278
         let stats = part_stats(10, 20, 30, 40);
         let p = StatPriorities::default();
-        assert_eq!(score_part_combo(&stats, &p), (100, 100));
+        assert_eq!(score_part_combo(&stats, &p), (278, 278));
     }
 
     #[test]
