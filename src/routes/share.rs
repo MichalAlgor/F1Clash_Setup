@@ -17,6 +17,7 @@ use crate::models::part::Stats;
 use crate::models::setup::{Boost, InventoryItem};
 use crate::session::UserSession;
 use crate::templates;
+use crate::templates::share::SharePage;
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -135,33 +136,33 @@ async fn create_share(
     let mut total_parts = Stats::default();
 
     for item in &items {
-        if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name) {
-            if let Some(ls) = part_def.stats_for_level(item.level) {
-                let mut s = Stats {
-                    speed: ls.speed,
-                    cornering: ls.cornering,
-                    power_unit: ls.power_unit,
-                    qualifying: ls.qualifying,
-                    pit_stop_time: ls.pit_stop_time,
-                    additional_stat_value: ls.additional_stat_value,
-                };
-                if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
-                    s = s.boosted(b.percentage);
-                }
-                total_parts = total_parts.add(&s);
-                parts_snapshot.push(PartSnapshot {
-                    category: part_def.category.display_name().to_string(),
-                    part_name: item.part_name.clone(),
-                    level: item.level,
-                    rarity: part_def.rarity.clone(),
-                    speed: s.speed,
-                    cornering: s.cornering,
-                    power_unit: s.power_unit,
-                    qualifying: s.qualifying,
-                    pit_stop_time: s.pit_stop_time,
-                    total: s.total_performance(),
-                });
+        if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name)
+            && let Some(ls) = part_def.stats_for_level(item.level)
+        {
+            let mut s = Stats {
+                speed: ls.speed,
+                cornering: ls.cornering,
+                power_unit: ls.power_unit,
+                qualifying: ls.qualifying,
+                pit_stop_time: ls.pit_stop_time,
+                additional_stat_value: ls.additional_stat_value,
+            };
+            if let Some(b) = boosts.iter().find(|b| b.part_name == item.part_name) {
+                s = s.boosted(b.percentage);
             }
+            total_parts = total_parts.add(&s);
+            parts_snapshot.push(PartSnapshot {
+                category: part_def.category.display_name().to_string(),
+                part_name: item.part_name.clone(),
+                level: item.level,
+                rarity: part_def.rarity.clone(),
+                speed: s.speed,
+                cornering: s.cornering,
+                power_unit: s.power_unit,
+                qualifying: s.qualifying,
+                pit_stop_time: s.pit_stop_time,
+                total: s.total_performance(),
+            });
         }
     }
 
@@ -202,32 +203,31 @@ async fn create_share(
         if let Some(def) = drivers_catalog
             .iter()
             .find(|d| d.name == item.driver_name && d.rarity == item.rarity)
+            && let Some(ls) = def.stats_for_level(item.level)
         {
-            if let Some(ls) = def.stats_for_level(item.level) {
-                let mut ds = ls.to_stats();
-                if let Some(b) = driver_boosts
-                    .iter()
-                    .find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity)
-                {
-                    ds = ds.boosted(b.percentage);
-                }
-                total_ovt += ds.overtaking;
-                total_def += ds.defending;
-                total_qual += ds.qualifying;
-                total_rst += ds.race_start;
-                total_tyr += ds.tyre_management;
-                drivers_snapshot.push(DriverSnapshot {
-                    driver_name: item.driver_name.clone(),
-                    rarity: item.rarity.clone(),
-                    level: item.level,
-                    overtaking: ds.overtaking,
-                    defending: ds.defending,
-                    qualifying: ds.qualifying,
-                    race_start: ds.race_start,
-                    tyre_management: ds.tyre_management,
-                    total: ds.total(),
-                });
+            let mut ds = ls.to_stats();
+            if let Some(b) = driver_boosts
+                .iter()
+                .find(|b| b.driver_name == item.driver_name && b.rarity == item.rarity)
+            {
+                ds = ds.boosted(b.percentage);
             }
+            total_ovt += ds.overtaking;
+            total_def += ds.defending;
+            total_qual += ds.qualifying;
+            total_rst += ds.race_start;
+            total_tyr += ds.tyre_management;
+            drivers_snapshot.push(DriverSnapshot {
+                driver_name: item.driver_name.clone(),
+                rarity: item.rarity.clone(),
+                level: item.level,
+                overtaking: ds.overtaking,
+                defending: ds.defending,
+                qualifying: ds.qualifying,
+                race_start: ds.race_start,
+                tyre_management: ds.tyre_management,
+                total: ds.total(),
+            });
         }
     }
 
@@ -350,15 +350,18 @@ async fn view_share(
         serde_json::json!({ "season": record_season }),
     );
 
+    let share_page = SharePage {
+        _hash: record_hash,
+        name: record_name,
+        season: record_season,
+        priorities,
+        total_parts: total_parts_val.0,
+        total_drivers: total_drivers_val.0,
+    };
     templates::share::view_page(
-        &record_hash,
-        &record_name,
-        &record_season,
-        &priorities,
+        &share_page,
         &parts,
         &drivers,
-        &total_parts_val.0,
-        &total_drivers_val.0,
         &viewer_items,
         &auth,
     )

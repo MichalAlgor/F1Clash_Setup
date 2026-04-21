@@ -64,29 +64,41 @@ pub fn not_found_page(auth: &AuthStatus) -> Markup {
     )
 }
 
+pub struct SharePage {
+    pub _hash: String,
+    pub name: String,
+    pub season: String,
+    pub priorities: StatPriorities,
+    pub total_parts: Value,
+    pub total_drivers: Value,
+}
+
 /// Public view of a shared setup snapshot.
 pub fn view_page(
-    hash: &str,
-    name: &str,
-    season: &str,
-    priorities: &StatPriorities,
+    share_page: &SharePage,
+    // _hash: &str,
+    // name: &str,
+    // season: &str,
+    // priorities: &StatPriorities,
     parts: &[PartSnapshot],
     drivers: &[DriverSnapshot],
-    total_parts: &Value,
-    total_drivers: &Value,
+    // total_parts: &Value,
+    // total_drivers: &Value,
     viewer_inventory: &[InventoryItem],
     auth: &AuthStatus,
 ) -> Markup {
     let priority_label = {
-        let labels = priorities.labels();
+        let labels = share_page.priorities.labels();
         if labels.is_empty() {
             "Total performance".to_string()
         } else {
             labels.join(", ")
         }
     };
-    let parts_total = total_parts["total"].as_i64().unwrap_or(0);
-    let drivers_total = total_drivers["total"].as_i64().unwrap_or(0);
+    let parts_total = share_page.total_parts["total"].as_i64().unwrap_or(0);
+    let drivers_total = share_page.total_drivers["total"].as_i64().unwrap_or(0);
+
+    let name = share_page.name.clone();
 
     super::layout::page(
         &format!("Shared: {name}"),
@@ -95,8 +107,8 @@ pub fn view_page(
             hgroup {
                 h1 { "Shared Setup" }
                 p {
-                    strong { (name) }
-                    " · Season " (season)
+                    strong { (share_page.name) }
+                    " · Season " (share_page.season)
                     " · " (priority_label)
                 }
             }
@@ -138,11 +150,11 @@ pub fn view_page(
                         tr {
                             td { strong { "Total" } }
                             td {}
-                            td.stat-cell data-label="SPD" { strong { (total_parts["speed"]) } }
-                            td.stat-cell data-label="COR" { strong { (total_parts["cornering"]) } }
-                            td.stat-cell data-label="PWR" { strong { (total_parts["power_unit"]) } }
-                            td.stat-cell data-label="QUA" { strong { (total_parts["qualifying"]) } }
-                            td.stat-cell data-label="PIT" { strong { (format!("{:.2}", total_parts["pit_stop_time"].as_f64().unwrap_or(0.0))) } }
+                            td.stat-cell data-label="SPD" { strong { (share_page.total_parts["speed"]) } }
+                            td.stat-cell data-label="COR" { strong { (share_page.total_parts["cornering"]) } }
+                            td.stat-cell data-label="PWR" { strong { (share_page.total_parts["power_unit"]) } }
+                            td.stat-cell data-label="QUA" { strong { (share_page.total_parts["qualifying"]) } }
+                            td.stat-cell data-label="PIT" { strong { (format!("{:.2}", share_page.total_parts["pit_stop_time"].as_f64().unwrap_or(0.0))) } }
                             td.stat-cell data-label="Total" { strong { (parts_total) } }
                         }
                     }

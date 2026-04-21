@@ -1029,6 +1029,17 @@
       "sort_order": 0
     },
     {
+      "name": "Air Channel",
+      "category": "rear_wing",
+      "series": 3,
+      "rarity": "Common",
+      "levels": [
+        { "level": 1, "speed": 4, "cornering": 3, "power_unit": 7, "qualifying": 6, "pit_stop_time": 0.93 },
+        { "level": 2, "speed": 5, "cornering": 4, "power_unit": 8, "qualifying": 7, "pit_stop_time": 0.91 }
+      ],
+      "sort_order": 0
+    },
+    {
       "name": "Cadence",
       "category": "gearbox",
       "series": 1,
