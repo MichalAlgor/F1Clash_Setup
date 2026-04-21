@@ -367,7 +367,7 @@ impl AnalyticsQuery for PostgresAnalytics {
               ),
               opt AS (
                 SELECT DISTINCT session_id FROM feature_events
-                WHERE event = 'optimizer_run'
+                WHERE event IN ('optimizer_run', 'optimizer_presets')
                   AND ts > now() - ($1::int || ' days')::interval
               ),
               sav AS (
