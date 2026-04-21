@@ -17,6 +17,7 @@ use crate::templates;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
+        .route("/guide", get(guide))
         .route("/inventory", get(list))
         .route("/inventory/bulk", get(bulk_form).post(bulk_save))
         .route("/inventory/{id}", delete(destroy))
@@ -26,6 +27,10 @@ pub fn router() -> Router<AppState> {
 
 async fn index() -> impl IntoResponse {
     Redirect::to("/inventory")
+}
+
+async fn guide(auth: AuthStatus) -> impl IntoResponse {
+    templates::guide::guide_page(&auth)
 }
 
 async fn list(

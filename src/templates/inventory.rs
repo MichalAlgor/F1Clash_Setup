@@ -22,7 +22,33 @@ pub fn list_page(
 
             a href="/inventory/bulk" role="button" { "Manage All Parts" }
 
-            div class="category-grid" {
+            @if items.is_empty() {
+                article style="margin-top:1.5rem" {
+                    hgroup {
+                        h2 { "Welcome! Start by adding your parts." }
+                        p { "Your inventory is empty — the optimizer needs parts to work with." }
+                    }
+                    ol {
+                        li {
+                            strong { "Add your parts" }
+                            " — Use the Bulk Parts form to record which parts you own and at what level."
+                        }
+                        li {
+                            strong { "Run the Optimizer" }
+                            " — Pick a race focus (Speed, Cornering, Power Unit) and find the best combination."
+                        }
+                        li {
+                            strong { "Save and compare" }
+                            " — Name your setup, save it, and compare configurations side-by-side."
+                        }
+                    }
+                    div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem" {
+                        a href="/inventory/bulk" role="button" { "Add your parts →" }
+                        a href="/guide" role="button" class="outline" { "Full guide" }
+                    }
+                }
+            } @else {
+                div class="category-grid" {
                 @for category in categories {
                     @let cat_items: Vec<_> = {
                         let mut v: Vec<_> = items.iter()
@@ -128,6 +154,7 @@ pub fn list_page(
                             }
                         }
                     }
+                }
                 }
             }
         },

@@ -75,7 +75,10 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                             " · Your data is saved in this browser. "
                             a href="/import" { "Export" }
                             " to back it up."
-                            " · Made with ❤️ by Mikele"
+                            " · "
+                            a href="/guide" { "Quick-start guide" }
+                            " · Made with ❤️ by "
+                            a href="https://github.com/MichalAlgor/F1Clash_Setup" { "Mikele" }
                         }
                     }
                 }
