@@ -8,6 +8,7 @@ use sqlx::PgPool;
 
 use crate::AppState;
 use crate::auth::AuthStatus;
+use crate::drivers_data::DriverRarity;
 use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::{DriverBoost, DriverInventoryItem, DriverStats, OwnedDriverDefinition};
@@ -232,6 +233,25 @@ async fn show(
             .collect()
     };
 
+    let driver_slot_ids: Vec<i32> = [setup.driver1_id, setup.driver2_id]
+        .into_iter()
+        .flatten()
+        .collect();
+
+    let driver_slot_items = sqlx::query_as::<_, DriverInventoryItem>(
+        "SELECT * FROM driver_inventory WHERE id = ANY($1) AND session_id = $2",
+    )
+    .bind(&driver_slot_ids[..])
+    .bind(&session_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    let driver_display: Vec<(String, String)> = driver_slot_items
+        .iter()
+        .map(|i| (i.driver_name.clone(), i.rarity.clone()))
+        .collect();
+
     let s = SetupWithStats {
         setup,
         stats,
@@ -242,67 +262,8 @@ async fn show(
         &s.setup.name,
         &auth,
         html! {
-            h1 { (&s.setup.name) }
-
-            h2 { "Parts" }
-            figure {
-                table {
-                    thead { tr { th { "Category" } th { "Part" } th { "Lvl" } } }
-                    tbody {
-                        @for (cat_name, part_name, level) in &slot_display {
-                            tr {
-                                td { (cat_name) }
-                                @if part_name == "Default" {
-                                    td colspan="2" class="secondary" { "Default (1/1/1/1 · 1.00s pit)" }
-                                } @else {
-                                    td { (part_name) }
-                                    td { (level.unwrap_or(0)) }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            h2 { "Part Stats" }
-            figure {
-                table {
-                    thead { tr { th { "Stat" } th { "Value" } } }
-                    tbody {
-                        tr { td { "Speed" } td { (s.stats.speed) } }
-                        tr { td { "Cornering" } td { (s.stats.cornering) } }
-                        tr { td { "Power Unit" } td { (s.stats.power_unit) } }
-                        tr { td { "Qualifying" } td { (s.stats.qualifying) } }
-                        tr { td { "Pit Stop Time" } td { (format!("{:.2}s", s.stats.pit_stop_time)) } }
-                        @if s.stats.additional_stat_value > 0 {
-                            @let label = additional_stat_label.as_deref().unwrap_or("Special");
-                            tr { td { (label) } td { (s.stats.additional_stat_value) } }
-                        }
-                        tr { td { strong { "Total Performance" } } td { strong { (s.stats.total_performance()) } } }
-                    }
-                }
-            }
-
-            @if s.driver_stats.total() > 0 {
-                h2 { "Driver Stats" }
-                figure {
-                    table {
-                        thead { tr { th { "Stat" } th { "Value" } } }
-                        tbody {
-                            tr { td { "Overtaking" } td { (s.driver_stats.overtaking) } }
-                            tr { td { "Defending" } td { (s.driver_stats.defending) } }
-                            tr { td { "Qualifying" } td { (s.driver_stats.qualifying) } }
-                            tr { td { "Race Start" } td { (s.driver_stats.race_start) } }
-                            tr { td { "Tyre Management" } td { (s.driver_stats.tyre_management) } }
-                            tr { td { strong { "Total" } } td { strong { (s.driver_stats.total()) } } }
-                        }
-                    }
-                }
-            }
-
-            div class="setup-actions" {
-                a href="/setups" role="button" class="outline" { "← Back" }
-                a href={"/setups/" (s.setup.id) "/edit"} role="button" { "Edit" }
+            div style="display: flex; justify-content: space-between; align-items: center; gap: 20px;" {
+                h1 { (&s.setup.name) }
                 form method="post" action="/setup/share" {
                     button type="submit" class="save-form-btn outline" { "Share" }
                     input type="hidden" name="name" value=(&s.setup.name);
@@ -316,6 +277,85 @@ async fn show(
                     input type="hidden" name="driver1_id" value=(&s.setup.driver1_id.unwrap_or_default().to_string());
                     input type="hidden" name="driver2_id" value=(&s.setup.driver2_id.unwrap_or_default().to_string());
                 }
+            }
+
+            p {
+                "Combined score: "
+                strong { (s.stats.total_performance() + s.driver_stats.total()) }
+                " (" (s.stats.total_performance()) " parts + " (s.driver_stats.total()) " drivers)"
+            }
+
+            div class="grid" {
+                div style="display: flex-direction: column; width: fit-content; min-width: 250px;" {
+                    h2 { "Parts" }
+                    figure style="margin: 0;" {
+                        table {
+                            thead { tr { th { "Category" } th { "Part" } th { "Lvl" } } }
+                            tbody {
+                                @for (cat_name, part_name, level) in &slot_display {
+                                    tr {
+                                        td { (cat_name) }
+                                        @if part_name == "Default" {
+                                            td colspan="2" class="secondary" { "Default (1/1/1/1 · 1.00s pit)" }
+                                        } @else {
+                                            td { (part_name) }
+                                            td { (level.unwrap_or(0)) }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                div style="display: flex-direction: column; width: fit-content; min-width: 250px;" {
+                    h2 { "Part Stats" }
+                    figure style="margin: 0;" {
+                        table {
+                            thead { tr { th { "Stat" } th { "Value" } } }
+                            tbody {
+                                tr { td { "Speed" } td { (s.stats.speed) } }
+                                tr { td { "Cornering" } td { (s.stats.cornering) } }
+                                tr { td { "Power Unit" } td { (s.stats.power_unit) } }
+                                tr { td { "Qualifying" } td { (s.stats.qualifying) } }
+                                tr { td { "Pit Stop Time" } td { (format!("{:.2}s", s.stats.pit_stop_time)) } }
+                                @if s.stats.additional_stat_value > 0 {
+                                    @let label = additional_stat_label.as_deref().unwrap_or("Special");
+                                    tr { td { (label) } td { (s.stats.additional_stat_value) } }
+                                }
+                                tr { td { strong { "Total Performance" } } td { strong { (s.stats.total_performance()) } } }
+                            }
+                        }
+                    }
+                }
+                div style="display: flex-direction: column; width: fit-content; min-width: 250px;" {
+                    @if s.driver_stats.total() > 0 {
+                        h2 { "Driver Stats" }
+                        table {
+                            @for (driver_name, rarity) in &driver_display {
+                                @let rarity_css = DriverRarity::from_db(rarity).map_or("", |r| r.css_class());
+                                tr { td class=(rarity_css) { (driver_name) } }
+                            }
+                        }
+                        figure style="margin: 0;" {
+                            table {
+                                thead { tr { th { "Stat" } th { "Value" } } }
+                                tbody {
+                                    tr { td { "Overtaking" } td { (s.driver_stats.overtaking) } }
+                                    tr { td { "Defending" } td { (s.driver_stats.defending) } }
+                                    tr { td { "Qualifying" } td { (s.driver_stats.qualifying) } }
+                                    tr { td { "Race Start" } td { (s.driver_stats.race_start) } }
+                                    tr { td { "Tyre Management" } td { (s.driver_stats.tyre_management) } }
+                                    tr { td { strong { "Total" } } td { strong { (s.driver_stats.total()) } } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            div class="setup-actions" style="display: flex; justify-content: space-between; align-items: center;" {
+                a href="/setups" role="button" class="outline" { "← Back" }
+                a href={"/setups/" (s.setup.id) "/edit"} role="button" { "Edit" }
             }
         },
     ))

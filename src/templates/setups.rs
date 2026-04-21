@@ -304,8 +304,8 @@ fn compare_row_f(label: &str, values: &[f64], lower_is_better: bool) -> Markup {
         tr {
             td { strong { (label) } }
             @for (val, raw) in display.iter().zip(values.iter()) {
-                @let is_best = best.map_or(false, |b| (raw - b).abs() < 0.001) && values.iter().filter(|&&v| (v - raw).abs() < 0.001).count() < values.len();
-                @let is_worst = worst.map_or(false, |w| (raw - w).abs() < 0.001) && values.iter().filter(|&&v| (v - raw).abs() < 0.001).count() < values.len();
+                @let is_best = best.is_some_and(|b| (raw - b).abs() < 0.001) && values.iter().filter(|&&v| (v - raw).abs() < 0.001).count() < values.len();
+                @let is_worst = worst.is_some_and(|w| (raw - w).abs() < 0.001) && values.iter().filter(|&&v| (v - raw).abs() < 0.001).count() < values.len();
                 td class={
                     @if is_best { "compare-best" }
                     @else if is_worst { "compare-worst" }

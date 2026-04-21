@@ -99,7 +99,7 @@ async fn run_advisor(
             catalog
                 .iter()
                 .find(|p| p.name == item.part_name)
-                .map_or(false, |p| p.series <= max_part_series)
+                .is_some_and(|p| p.series <= max_part_series)
         })
         .collect();
 
