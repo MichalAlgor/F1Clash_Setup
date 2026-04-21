@@ -3,6 +3,7 @@ pub mod advisor;
 pub mod boosts;
 pub mod drivers;
 pub mod error;
+pub mod guide;
 pub mod inventory;
 pub mod layout;
 pub mod optimizer;

@@ -11137,5 +11137,138 @@
       "series": "Champion",
       "sort_order": 111
     }
+  ],
+  "2026": [
+    {
+      "levels": [
+        {
+          "cards_required": 14,
+          "coins_cost": 0,
+          "defending": 9,
+          "legacy_points": 0,
+          "level": 3,
+          "overtaking": 26,
+          "qualifying": 17,
+          "race_start": 22,
+          "tyre_management": 13
+        },
+        {
+          "cards_required": 20,
+          "coins_cost": 60000,
+          "defending": 12,
+          "legacy_points": 0,
+          "level": 4,
+          "overtaking": 29,
+          "qualifying": 21,
+          "race_start": 25,
+          "tyre_management": 16
+        }
+      ],
+      "name": "Gabriel Bortoleto",
+      "rarity": "Rare",
+      "series": "1",
+      "sort_order": 0
+    },
+    {
+      "levels": [
+        {
+          "cards_required": 4,
+          "coins_cost": 0,
+          "defending": 15,
+          "legacy_points": 0,
+          "level": 2,
+          "overtaking": 14,
+          "qualifying": 18,
+          "race_start": 17,
+          "tyre_management": 20
+        },
+        {
+          "cards_required": 10,
+          "coins_cost": 0,
+          "defending": 18,
+          "legacy_points": 0,
+          "level": 3,
+          "overtaking": 16,
+          "qualifying": 22,
+          "race_start": 20,
+          "tyre_management": 24
+        },
+        {
+          "cards_required": 20,
+          "coins_cost": 0,
+          "defending": 21,
+          "legacy_points": 0,
+          "level": 4,
+          "overtaking": 18,
+          "qualifying": 26,
+          "race_start": 23,
+          "tyre_management": 28
+        }
+      ],
+      "name": "Valtteri Bottas",
+      "rarity": "Rare",
+      "series": "2",
+      "sort_order": 1
+    },
+    {
+      "levels": [
+        {
+          "cards_required": 0,
+          "coins_cost": 0,
+          "defending": 26,
+          "legacy_points": 0,
+          "level": 1,
+          "overtaking": 22,
+          "qualifying": 30,
+          "race_start": 14,
+          "tyre_management": 18
+        },
+        {
+          "cards_required": 4,
+          "coins_cost": 70000,
+          "defending": 31,
+          "legacy_points": 1000,
+          "level": 2,
+          "overtaking": 27,
+          "qualifying": 35,
+          "race_start": 19,
+          "tyre_management": 23
+        }
+      ],
+      "name": "Bruce Mclaren",
+      "rarity": "Legendary",
+      "series": "1",
+      "sort_order": 2
+    },
+    {
+      "levels": [
+        {
+          "cards_required": 0,
+          "coins_cost": 0,
+          "defending": 6,
+          "legacy_points": 0,
+          "level": 1,
+          "overtaking": 5,
+          "qualifying": 2,
+          "race_start": 3,
+          "tyre_management": 4
+        },
+        {
+          "cards_required": 4,
+          "coins_cost": 3000,
+          "defending": 10,
+          "legacy_points": 0,
+          "level": 2,
+          "overtaking": 9,
+          "qualifying": 5,
+          "race_start": 5,
+          "tyre_management": 7
+        }
+      ],
+      "name": "Arvid Lindblad",
+      "rarity": "Common",
+      "series": "1",
+      "sort_order": 3
+    }
   ]
 }
