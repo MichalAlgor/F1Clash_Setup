@@ -21,6 +21,7 @@ use crate::templates;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/optimizer/share", post(create_share))
+        .route("/setup/share", post(create_share))
         .route("/share/{hash}", get(view_share))
 }
 

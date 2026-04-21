@@ -303,6 +303,19 @@ async fn show(
             div class="setup-actions" {
                 a href="/setups" role="button" class="outline" { "← Back" }
                 a href={"/setups/" (s.setup.id) "/edit"} role="button" { "Edit" }
+                form method="post" action="/setup/share" {
+                    button type="submit" class="save-form-btn outline" { "Share" }
+                    input type="hidden" name="name" value=(&s.setup.name);
+                    input type="hidden" name="brakes_id" value=(&s.setup.brakes_id.unwrap_or_default().to_string());
+                    input type="hidden" name="gearbox_id" value=(&s.setup.gearbox_id.unwrap_or_default().to_string());
+                    input type="hidden" name="rear_wing_id" value=(&s.setup.rear_wing_id.unwrap_or_default().to_string());
+                    input type="hidden" name="front_wing_id" value=(&s.setup.front_wing_id.unwrap_or_default().to_string());
+                    input type="hidden" name="suspension_id" value=(&s.setup.suspension_id.unwrap_or_default().to_string());
+                    input type="hidden" name="engine_id" value=(&s.setup.engine_id.unwrap_or_default().to_string());
+                    input type="hidden" name="battery_id" value=(&s.setup.battery_id.unwrap_or_default().to_string());
+                    input type="hidden" name="driver1_id" value=(&s.setup.driver1_id.unwrap_or_default().to_string());
+                    input type="hidden" name="driver2_id" value=(&s.setup.driver2_id.unwrap_or_default().to_string());
+                }
             }
         },
     ))
