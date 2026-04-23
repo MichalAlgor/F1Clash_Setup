@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use sqlx::{Row, postgres::PgRow};
 
 use crate::AppState;
@@ -262,13 +263,51 @@ async fn create_share(
         "total": total_ovt + total_def + total_qual + total_rst + total_tyr,
     });
 
-    // Generate unique hash
+    // Compute a content hash over the snapshot so identical shares reuse the same link.
+    // Sort snapshots by name for a stable order before hashing.
+    parts_snapshot.sort_by(|a, b| a.part_name.cmp(&b.part_name));
+    drivers_snapshot.sort_by(|a, b| a.driver_name.cmp(&b.driver_name));
+    let content_hash = {
+        let mut h = Sha256::new();
+        h.update(form.name.as_bytes());
+        h.update(season.as_bytes());
+        h.update(priorities_val.to_string().as_bytes());
+        h.update(
+            serde_json::to_string(&parts_snapshot)
+                .unwrap_or_default()
+                .as_bytes(),
+        );
+        h.update(
+            serde_json::to_string(&drivers_snapshot)
+                .unwrap_or_default()
+                .as_bytes(),
+        );
+        hex::encode(h.finalize())
+    };
+
+    // Return existing share if this exact snapshot was already shared.
+    let existing: Option<String> =
+        sqlx::query_scalar("SELECT share_hash FROM shared_setups WHERE content_hash = $1")
+            .bind(&content_hash)
+            .fetch_optional(&state.pool)
+            .await
+            .unwrap_or(None);
+    if let Some(existing_hash) = existing {
+        return Ok(templates::share::shared_page(
+            &existing_hash,
+            &form.name,
+            back_href,
+            &auth,
+        ));
+    }
+
+    // New snapshot — generate a unique short hash and persist.
     let share_hash = generate_hash(&state.pool).await;
 
     sqlx::query(
         "INSERT INTO shared_setups \
-         (share_hash, name, season, priorities, parts_snapshot, drivers_snapshot, total_parts, total_drivers) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+         (share_hash, name, season, priorities, parts_snapshot, drivers_snapshot, total_parts, total_drivers, content_hash) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
     )
     .bind(&share_hash)
     .bind(&form.name)
@@ -278,6 +317,7 @@ async fn create_share(
     .bind(serde_json::to_value(&drivers_snapshot)?)
     .bind(&total_parts_val)
     .bind(&total_drivers_val)
+    .bind(&content_hash)
     .execute(&state.pool)
     .await?;
 
