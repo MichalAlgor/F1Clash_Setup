@@ -1,7 +1,7 @@
 use axum::extract::{Path, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::{delete, get};
+use axum::routing::{get, post};
 use axum::{Form, Router};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -22,15 +22,14 @@ pub fn router() -> Router<AppState> {
         .route("/admin/parts/export", get(export_parts))
         .route("/admin/parts/new", get(new_part_form))
         .route("/admin/parts/{id}/edit", get(edit_part_form))
-        .route("/admin/parts/{id}", delete(delete_part).post(update_part))
+        .route("/admin/parts/{id}", post(update_part))
+        .route("/admin/parts/{id}/delete", post(delete_part))
         .route("/admin/drivers", get(list_drivers).post(create_driver))
         .route("/admin/drivers/export", get(export_drivers))
         .route("/admin/drivers/new", get(new_driver_form))
         .route("/admin/drivers/{id}/edit", get(edit_driver_form))
-        .route(
-            "/admin/drivers/{id}",
-            delete(delete_driver).post(update_driver),
-        )
+        .route("/admin/drivers/{id}", post(update_driver))
+        .route("/admin/drivers/{id}/delete", post(delete_driver))
         .route(
             "/admin/seasons",
             get(list_seasons).post(save_season_categories),

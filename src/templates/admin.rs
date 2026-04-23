@@ -67,7 +67,7 @@ pub fn parts_list_page(
                                                     td style="white-space:nowrap" {
                                                         a href={"/admin/parts/" (part.id) "/edit"} role="button" class="outline" style="padding:0.2rem 0.5rem;margin-right:0.3rem" { "Edit" }
                                                         button
-                                                            hx-delete={"/admin/parts/" (part.id)}
+                                                            hx-post={"/admin/parts/" (part.id) "/delete"}
                                                             hx-confirm={"Delete \"" (part.name) "\"?"}
                                                             hx-target="closest tr"
                                                             hx-swap="outerHTML"
@@ -239,7 +239,7 @@ pub fn drivers_list_page(
                                     td style="white-space:nowrap" {
                                         a href={"/admin/drivers/" (driver.id) "/edit"} role="button" class="outline" style="padding:0.2rem 0.5rem;margin-right:0.3rem" { "Edit" }
                                         button
-                                            hx-delete={"/admin/drivers/" (driver.id)}
+                                            hx-post={"/admin/drivers/" (driver.id) "/delete"}
                                             hx-confirm={"Delete \"" (driver.name) " (" (driver.rarity) ")\"?"}
                                             hx-target="closest tr"
                                             hx-swap="outerHTML"

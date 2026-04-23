@@ -1,6 +1,6 @@
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect};
-use axum::routing::{delete, get, post};
+use axum::routing::{get, post};
 use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
@@ -20,7 +20,7 @@ pub fn router() -> Router<AppState> {
         .route("/guide", get(guide))
         .route("/inventory", get(list))
         .route("/inventory/bulk", get(bulk_form).post(bulk_save))
-        .route("/inventory/{id}", delete(destroy))
+        .route("/inventory/{id}/delete", post(destroy))
         .route("/inventory/{id}/level", post(update_level))
         .route("/inventory/{id}/cards", post(update_cards))
 }

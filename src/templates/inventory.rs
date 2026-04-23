@@ -139,7 +139,7 @@ pub fn list_page(
                                                         (cards_cell(item.id, item.cards_owned, item.level, Some(part_def)))
                                                         td.action-cell {
                                                             button.outline.secondary
-                                                                hx-delete={"/inventory/" (item.id)}
+                                                                hx-post={"/inventory/" (item.id) "/delete"}
                                                                 hx-confirm="Remove this part?"
                                                                 hx-target="closest tr"
                                                                 hx-swap="outerHTML"
