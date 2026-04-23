@@ -89,7 +89,7 @@ pub fn list_page(
                                                         (driver_cards_cell(item.id, item.cards_owned, item.level, Some(driver_def)))
                                                         td.action-cell {
                                                             button.outline.secondary
-                                                                hx-delete={"/drivers/" (item.id)}
+                                                                hx-post={"/drivers/" (item.id) "/delete"}
                                                                 hx-confirm="Remove this driver?"
                                                                 hx-target="closest tr"
                                                                 hx-swap="outerHTML"

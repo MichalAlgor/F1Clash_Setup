@@ -1,6 +1,6 @@
 use axum::extract::{Path, Query, State};
 use axum::response::{IntoResponse, Redirect};
-use axum::routing::{delete, get};
+use axum::routing::{get, post};
 use axum::{Form, Router};
 use maud::html;
 use serde::Deserialize;
@@ -24,7 +24,7 @@ pub fn router() -> Router<AppState> {
         .route("/setups/compare", get(compare))
         .route("/setups/{id}/edit", get(edit))
         .route("/setups/{id}", get(show).post(update))
-        .route("/setups/{id}", delete(destroy))
+        .route("/setups/{id}/delete", post(destroy))
 }
 
 async fn list(

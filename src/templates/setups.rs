@@ -68,7 +68,7 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                                             role="button" class="outline" style="margin-right:0.25rem"
                                         { "✎" }
                                         button.outline.secondary
-                                            hx-delete={"/setups/" (s.setup.id)}
+                                            hx-post={"/setups/" (s.setup.id) "/delete"}
                                             hx-confirm="Delete this setup?"
                                             hx-target="closest tr"
                                             hx-swap="outerHTML"
