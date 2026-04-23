@@ -7,8 +7,13 @@ use crate::models::setup::InventoryItem;
 use crate::routes::share::{DriverSnapshot, PartSnapshot};
 
 /// Shown after successfully creating a share — displays the URL with a copy button.
-pub fn shared_page(hash: &str, name: &str, auth: &AuthStatus) -> Markup {
+pub fn shared_page(hash: &str, name: &str, back_href: &str, auth: &AuthStatus) -> Markup {
     let share_url = format!("/share/{hash}");
+    let back_label = if back_href.starts_with("/setups") {
+        "← Back to Setups"
+    } else {
+        "← Back to Optimizer"
+    };
     super::layout::page(
         "Setup Shared",
         auth,
@@ -32,7 +37,7 @@ pub fn shared_page(hash: &str, name: &str, auth: &AuthStatus) -> Markup {
 
             div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem" {
                 a href=(share_url) role="button" class="outline" { "View shared setup" }
-                a href="/optimizer" role="button" class="outline" { "← Back to Optimizer" }
+                a href=(back_href) role="button" class="outline" { (back_label) }
             }
 
             script {

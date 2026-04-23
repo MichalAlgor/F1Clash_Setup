@@ -1,6 +1,6 @@
 use axum::Form;
 use axum::Router;
-use axum::extract::{Path, State};
+use axum::extract::{OriginalUri, Path, State};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
@@ -95,8 +95,14 @@ async fn create_share(
     State(state): State<AppState>,
     UserSession(session_id): UserSession,
     auth: AuthStatus,
+    OriginalUri(uri): OriginalUri,
     Form(form): Form<ShareForm>,
 ) -> Result<impl IntoResponse, AppError> {
+    let back_href = if uri.path().starts_with("/setup") {
+        "/setups"
+    } else {
+        "/optimizer"
+    };
     let season = get_session_season(&state.pool, &session_id).await;
     let catalog = state.catalog_for_season(&season).await;
     let drivers_catalog = state.drivers_catalog_for_season(&season).await;
@@ -285,6 +291,7 @@ async fn create_share(
     Ok(templates::share::shared_page(
         &share_hash,
         &form.name,
+        back_href,
         &auth,
     ))
 }
