@@ -14,7 +14,7 @@ use crate::data::StatPriorities;
 use crate::error::AppError;
 use crate::get_session_season;
 use crate::models::driver::{DriverBoost, DriverInventoryItem};
-use crate::models::part::Stats;
+use crate::models::part::{PartCategory, Stats};
 use crate::models::setup::{Boost, InventoryItem};
 use crate::session::UserSession;
 use crate::templates;
@@ -385,8 +385,15 @@ async fn view_share(
     let record_hash: String = row.get("share_hash");
     let view_count: i32 = row.get("view_count");
 
-    // Parse snapshots
-    let parts: Vec<PartSnapshot> = serde_json::from_value(parts_val.0.clone()).unwrap_or_default();
+    // Parse snapshots — sort parts by canonical category order.
+    let mut parts: Vec<PartSnapshot> =
+        serde_json::from_value(parts_val.0.clone()).unwrap_or_default();
+    parts.sort_by_key(|p| {
+        PartCategory::all()
+            .iter()
+            .position(|cat| cat.display_name() == p.category)
+            .unwrap_or(usize::MAX)
+    });
     let drivers: Vec<DriverSnapshot> =
         serde_json::from_value(drivers_val.0.clone()).unwrap_or_default();
 

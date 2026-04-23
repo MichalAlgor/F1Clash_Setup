@@ -201,7 +201,8 @@ async fn show(
     };
 
     // Build per-slot display: (category_name, part_name_or_default, level_or_none)
-    let slot_display: Vec<(&str, String, Option<i32>)> = {
+    // (category_name, part_name, level, rarity_css_class)
+    let slot_display: Vec<(&str, String, Option<i32>, &'static str)> = {
         let cat_slots: Vec<(&PartCategory, Option<i32>)> = categories
             .iter()
             .map(|cat| {
@@ -220,15 +221,22 @@ async fn show(
         cat_slots
             .into_iter()
             .map(|(cat, id)| {
-                let (name, level) = match id {
-                    None => ("Default".to_string(), None),
+                let (name, level, rarity_class) = match id {
+                    None => ("Default".to_string(), None, ""),
                     Some(part_id) => slot_items
                         .iter()
                         .find(|i| i.id == part_id)
-                        .map(|i| (i.part_name.clone(), Some(i.level)))
-                        .unwrap_or_else(|| ("Default".to_string(), None)),
+                        .map(|i| {
+                            let rarity_class = catalog
+                                .iter()
+                                .find(|p| p.name == i.part_name)
+                                .map(|p| p.rarity_css_class())
+                                .unwrap_or("");
+                            (i.part_name.clone(), Some(i.level), rarity_class)
+                        })
+                        .unwrap_or_else(|| ("Default".to_string(), None, "")),
                 };
-                (cat.display_name(), name, level)
+                (cat.display_name(), name, level, rarity_class)
             })
             .collect()
     };
@@ -292,13 +300,13 @@ async fn show(
                         table {
                             thead { tr { th { "Category" } th { "Part" } th { "Lvl" } } }
                             tbody {
-                                @for (cat_name, part_name, level) in &slot_display {
+                                @for (cat_name, part_name, level, rarity_class) in &slot_display {
                                     tr {
                                         td { (cat_name) }
                                         @if part_name == "Default" {
                                             td colspan="2" class="secondary" { "Default (1/1/1/1 · 1.00s pit)" }
                                         } @else {
-                                            td { (part_name) }
+                                            td { span class=(*rarity_class) { (part_name) } }
                                             td { (level.unwrap_or(0)) }
                                         }
                                     }
@@ -333,7 +341,7 @@ async fn show(
                         table {
                             @for (driver_name, rarity) in &driver_display {
                                 @let rarity_css = DriverRarity::from_db(rarity).map_or("", |r| r.css_class());
-                                tr { td class=(rarity_css) { (driver_name) } }
+                                tr { td { span class=(rarity_css) { (driver_name) } } }
                             }
                         }
                         figure style="margin: 0;" {

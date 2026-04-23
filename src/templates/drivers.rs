@@ -66,7 +66,7 @@ pub fn list_page(
                                                 @if let Some(stats) = driver_def.stats_for_level(item.level) {
                                                     @let rarity_css = DriverRarity::from_db(&driver_def.rarity).map_or("", |r| r.css_class());
                                                     tr {
-                                                        td class=(rarity_css) { (item.driver_name) }
+                                                        td { span class=(rarity_css) { (item.driver_name) } }
                                                         td data-label="Rarity" { (driver_def.rarity) }
                                                         td data-label="Series" { (driver_def.series) }
                                                         td data-label="Lvl" {

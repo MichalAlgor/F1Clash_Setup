@@ -99,9 +99,7 @@ pub fn result_page(result: &AdvisorResult, auth: &AuthStatus) -> Markup {
                         tbody {
                             @for rec in &result.immediate {
                                 tr {
-                                    td class=(rec.candidate.rarity_css_class) {
-                                        (rec.candidate.part_name)
-                                    }
+                                    td { span class=(rec.candidate.rarity_css_class) { (rec.candidate.part_name) } }
                                     td data-label="Category" {
                                         (rec.candidate.category.display_name())
                                     }
@@ -155,8 +153,8 @@ pub fn result_page(result: &AdvisorResult, auth: &AuthStatus) -> Markup {
                             @for rec in &result.planned {
                                 @let is_ready = rec.cost.can_afford;
                                 tr {
-                                    td class=(rec.candidate.rarity_css_class) {
-                                        (rec.candidate.part_name)
+                                    td {
+                                        span class=(rec.candidate.rarity_css_class) { (rec.candidate.part_name) }
                                         @if is_ready {
                                             " " span class="ready-badge" { "Ready" }
                                         }

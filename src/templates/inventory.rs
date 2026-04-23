@@ -96,7 +96,7 @@ pub fn list_page(
                                             @if let Some(part_def) = catalog.iter().find(|p| p.name == item.part_name) {
                                                 @if let Some(stats) = part_def.stats_for_level(item.level) {
                                                     tr {
-                                                        td class=(part_def.rarity_css_class()) { (item.part_name) }
+                                                        td { span class=(part_def.rarity_css_class()) { (item.part_name) } }
                                                         td data-label="Series" { (part_def.series) }
                                                         td data-label="Lvl" {
                                                             form method="post" action={"/inventory/" (item.id) "/level"} style="display:inline;margin:0" {

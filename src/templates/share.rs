@@ -3,8 +3,19 @@ use serde_json::Value;
 
 use crate::auth::AuthStatus;
 use crate::data::StatPriorities;
+use crate::drivers_data::DriverRarity;
 use crate::models::setup::InventoryItem;
 use crate::routes::share::{DriverSnapshot, PartSnapshot};
+
+fn part_rarity_class(rarity: &str) -> &'static str {
+    match rarity {
+        "Common" => "rarity-common",
+        "Rare" => "rarity-rare",
+        "Epic" => "rarity-epic",
+        "Legendary" => "rarity-legendary",
+        _ => "",
+    }
+}
 
 /// Shown after successfully creating a share — displays the URL with a copy button.
 pub fn shared_page(hash: &str, name: &str, back_href: &str, auth: &AuthStatus) -> Markup {
@@ -151,7 +162,7 @@ pub fn view_page(
                             tr {
                                 td {
                                     small class="secondary" { (p.category) }
-                                    " " (p.part_name)
+                                    " " span class=(part_rarity_class(&p.rarity)) { (p.part_name) }
                                 }
                                 td data-label="Lvl" { (p.level) }
                                 td.stat-cell data-label="SPD" { (p.speed) }
@@ -197,8 +208,12 @@ pub fn view_page(
                         }
                         tbody {
                             @for d in drivers {
+                                @let d_rarity_class = DriverRarity::from_db(&d.rarity).map_or("", |r| r.css_class());
                                 tr {
-                                    td { (d.driver_name) " (" (d.rarity) ")" }
+                                    td {
+                                        small class="secondary" { (d.rarity) }
+                                        " " span class=(d_rarity_class) { (d.driver_name) }
+                                    }
                                     td data-label="Lvl" { (d.level) }
                                     td.stat-cell data-label="OVT" { (d.overtaking) }
                                     td.stat-cell data-label="DEF" { (d.defending) }
@@ -236,7 +251,7 @@ pub fn view_page(
                             @for p in parts {
                                 @let viewer_item = viewer_inventory.iter().find(|i| i.part_name == p.part_name);
                                 tr {
-                                    td { (p.part_name) }
+                                    td { span class=(part_rarity_class(&p.rarity)) { (p.part_name) } }
                                     td { "L" (p.level) " (" (p.total) ")" }
                                     @if let Some(vi) = viewer_item {
                                         td {

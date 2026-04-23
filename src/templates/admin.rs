@@ -53,7 +53,7 @@ pub fn parts_list_page(
                                         tbody {
                                             @for part in &parts {
                                                 tr {
-                                                    td class=(part.rarity_css_class()) { (part.name) }
+                                                    td { span class=(part.rarity_css_class()) { (part.name) } }
                                                     td { (part.series) }
                                                     td { (part.rarity) }
                                                     td { (part.levels.len()) }
@@ -232,7 +232,7 @@ pub fn drivers_list_page(
                             @for driver in catalog {
                                 @let rarity_css = DriverRarity::from_db(&driver.rarity).map_or("", |r| r.css_class());
                                 tr {
-                                    td class=(rarity_css) { (driver.name) }
+                                    td { span class=(rarity_css) { (driver.name) } }
                                     td { (driver.rarity) }
                                     td { (driver.series) }
                                     td { (driver.levels.len()) }

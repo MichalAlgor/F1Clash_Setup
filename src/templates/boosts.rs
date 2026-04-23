@@ -106,7 +106,7 @@ pub fn page(
                                                                 checked[is_boosted]
                                                                 onchange={"togglePartBoost('" (part_def.name) "', this.checked, '" (category.display_name()) "', '" (part_def.rarity_css_class()) "')"};
                                                         }
-                                                        td class=(part_def.rarity_css_class()) { (part_def.name) }
+                                                        td { span class=(part_def.rarity_css_class()) { (part_def.name) } }
                                                         td { (part_def.series) }
                                                     }
                                                 }
@@ -156,7 +156,7 @@ pub fn page(
                                                                 checked[is_boosted]
                                                                 onchange={"toggleDriverBoost('" (driver_def.name) "', '" (driver_def.rarity) "', this.checked, '" (d_rarity_css) "', '" (driver_def.rarity) "')"};
                                                         }
-                                                        td class=(d_rarity_css) { (driver_def.name) }
+                                                        td { span class=(d_rarity_css) { (driver_def.name) } }
                                                         td { (driver_def.rarity) }
                                                         td { (driver_def.series) }
                                                     }
