@@ -302,160 +302,150 @@ pub fn result_page(
             }
             (tab_bar("custom"))
 
-            @if part_priorities.any_selected() || driver_priorities.any_selected() {
-                p {
-                    @if !part_labels.is_empty() {
-                        "Part priorities: " strong { (part_labels) }
-                    }
-                    @if !part_labels.is_empty() && !driver_labels.is_empty() {
-                        " | "
-                    }
-                    @if !driver_labels.is_empty() {
-                        "Driver priorities: " strong { (driver_labels) }
-                    }
-                }
-            } @else {
-                p { "No priorities selected — optimizing for highest totals" }
-            }
-
             @if part_picks.is_empty() {
                 p { "No parts in inventory for one or more categories. Add parts first!" }
             } @else {
-                h2 { "Parts" }
-                figure {
-                    table.responsive-table {
-                        thead {
-                            tr {
-                                th { "Category" }
-                                th { "Part" }
-                                th { "Lvl" }
-                                th { "SPD" }
-                                th { "COR" }
-                                th { "PWR" }
-                                th { "QUA" }
-                                th { "PIT (s)" }
-                                th { "Total" }
-                            }
-                        }
-                        tbody {
-                            @for (cat, item, stats, rarity_class) in part_picks {
-                                tr {
-                                    td { (cat.display_name()) " " strong class=(*rarity_class) { (item.part_name.clone()) } }
-                                    td data-label="Lvl" { (item.level) }
-                                    td.stat-cell data-label="SPD" { (stats.speed) }
-                                    td.stat-cell data-label="COR" { (stats.cornering) }
-                                    td.stat-cell data-label="PWR" { (stats.power_unit) }
-                                    td.stat-cell data-label="QUA" { (stats.qualifying) }
-                                    td.stat-cell data-label="PIT" { (format!("{:.2}", stats.pit_stop_time)) }
-                                    td.stat-cell data-label="Total" { (stats.total_performance()) }
-                                }
-                            }
-                        }
-                        tfoot {
-                            tr {
-                                td { strong { "Total" } }
-                                td.stat-cell data-label="SPD" { strong { (total_parts.speed) } }
-                                td.stat-cell data-label="COR" { strong { (total_parts.cornering) } }
-                                td.stat-cell data-label="PWR" { strong { (total_parts.power_unit) } }
-                                td.stat-cell data-label="QUA" { strong { (total_parts.qualifying) } }
-                                td.stat-cell data-label="PIT" { strong { (format!("{:.2}", total_parts.pit_stop_time)) } }
-                                td.stat-cell data-label="Total" { strong { (total_parts.total_performance()) } }
-                            }
-                        }
-                    }
-                }
+                div class="preset-card" {
+                    h3 style="margin-top:0;font-size:0.95rem" { (all_labels) }
 
-                h2 { "Drivers" }
-                @if driver1.is_none() && driver2.is_none() {
-                    p { "No drivers in inventory." }
-                } @else {
-                    figure {
-                        table.responsive-table {
+                    // Parts table
+                    figure class="preset-figure" {
+                        table class="responsive-table preset-parts-table" {
                             thead {
                                 tr {
-                                    th { "Driver" }
-                                    th { "Rarity" }
+                                    th { "Part" }
                                     th { "Lvl" }
-                                    th { "OVT" }
-                                    th { "DEF" }
-                                    th { "QUA" }
-                                    th { "RST" }
-                                    th { "TYR" }
-                                    th { "Total" }
+                                    th class="stat-header" { "SPD" }
+                                    th class="stat-header" { "COR" }
+                                    th class="stat-header" { "PWR" }
+                                    th class="stat-header" { "QUA" }
+                                    th class="stat-header" { "PIT" }
+                                    th { "Tot" }
                                 }
                             }
                             tbody {
-                                @for driver_opt in &[driver1, driver2] {
-                                    @if let Some((item, stats)) = driver_opt {
-                                        @let d_rarity = DriverRarity::from_db(&item.rarity);
-                                        tr {
-                                            td class=[d_rarity.map(|r| r.css_class())] { strong { (item.driver_name.clone()) } }
-                                            td data-label="Rarity" { (item.rarity) }
-                                            td data-label="Lvl" { (item.level) }
-                                            td.stat-cell data-label="OVT" { (stats.overtaking) }
-                                            td.stat-cell data-label="DEF" { (stats.defending) }
-                                            td.stat-cell data-label="QUA" { (stats.qualifying) }
-                                            td.stat-cell data-label="RST" { (stats.race_start) }
-                                            td.stat-cell data-label="TYR" { (stats.tyre_management) }
-                                            td.stat-cell data-label="Total" { (stats.total()) }
-                                        }
+                                @for (cat, item, stats, rarity_class) in part_picks {
+                                    tr {
+                                        td { small class="secondary" { (cat.display_name()) } " " span class=(*rarity_class) { (item.part_name.clone()) } }
+                                        td data-label="Lvl" { (item.level) }
+                                        td data-label="SPD" class="stat-cell" { (stats.speed) }
+                                        td data-label="COR" class="stat-cell" { (stats.cornering) }
+                                        td data-label="PWR" class="stat-cell" { (stats.power_unit) }
+                                        td data-label="QUA" class="stat-cell" { (stats.qualifying) }
+                                        td data-label="PIT" class="stat-cell" { (format!("{:.2}", stats.pit_stop_time)) }
+                                        td data-label="Total" { strong { (stats.total_performance()) } }
                                     }
                                 }
                             }
                             tfoot {
                                 tr {
-                                    td { strong { "Total" } }
-                                    td.stat-cell data-label="OVT" { strong { (total_drivers.overtaking) } }
-                                    td.stat-cell data-label="DEF" { strong { (total_drivers.defending) } }
-                                    td.stat-cell data-label="QUA" { strong { (total_drivers.qualifying) } }
-                                    td.stat-cell data-label="RST" { strong { (total_drivers.race_start) } }
-                                    td.stat-cell data-label="TYR" { strong { (total_drivers.tyre_management) } }
-                                    td.stat-cell data-label="Total" { strong { (total_drivers.total()) } }
+                                    td colspan="2" data-label="Parts" { strong { "Total" } }
+                                    td data-label="SPD" class="stat-cell" { strong { (total_parts.speed) } }
+                                    td data-label="COR" class="stat-cell" { strong { (total_parts.cornering) } }
+                                    td data-label="PWR" class="stat-cell" { strong { (total_parts.power_unit) } }
+                                    td data-label="QUA" class="stat-cell" { strong { (total_parts.qualifying) } }
+                                    td data-label="PIT" class="stat-cell" { strong { (format!("{:.2}", total_parts.pit_stop_time)) } }
+                                    td data-label="Total" { strong { (total_parts.total_performance()) } }
                                 }
                             }
                         }
                     }
-                }
 
-                p {
-                    "Combined score: "
-                    strong { (total_parts.total_performance() + total_drivers.total()) }
-                    " (" (total_parts.total_performance()) " parts + " (total_drivers.total()) " drivers)"
-                }
-
-                h2 { "Save or Share" }
-                form method="post" action="/optimizer/save" class="custom-save-form" {
-                    input id="custom-save-toggle" type="checkbox" class="save-toggle" {}
-                    div class="save-name-row" {
-                        span class="save-name-display" { "Optimized (" (all_labels) ")" }
-                        label class="save-edit-btn" for="custom-save-toggle" { "✏" }
-                    }
-                    input type="text" name="name" required class="save-name-edit"
-                        value=(format!("Optimized ({all_labels})"));
-                    div class="preset-form-btns" {
-                        button type="submit" class="save-form-btn" { "Save Setup" }
-                        button type="submit" formaction="/optimizer/share" class="save-form-btn outline" { "Share" }
-                    }
-
-                    @for (cat, item, _, _) in part_picks {
-                        @if item.id != 0 {
-                            input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                    // Drivers table
+                    @if driver1.is_some() || driver2.is_some() {
+                        figure class="preset-figure" {
+                            table class="responsive-table preset-parts-table" {
+                                thead {
+                                    tr {
+                                        th { "Driver" }
+                                        th { "Lvl" }
+                                        th class="stat-header" { "OVT" }
+                                        th class="stat-header" { "DEF" }
+                                        th class="stat-header" { "QUA" }
+                                        th class="stat-header" { "RST" }
+                                        th class="stat-header" { "TYR" }
+                                        th { "Tot" }
+                                    }
+                                }
+                                tbody {
+                                    @for driver_opt in &[driver1, driver2] {
+                                        @if let Some((item, stats)) = driver_opt {
+                                            @let d_rarity = DriverRarity::from_db(&item.rarity);
+                                            tr {
+                                                td { small class="secondary" { (item.rarity.clone()) } " " span class=[d_rarity.map(|r| r.css_class())] { (item.driver_name.clone()) } }
+                                                td data-label="Lvl" { (item.level) }
+                                                td data-label="OVT" class="stat-cell" { (stats.overtaking) }
+                                                td data-label="DEF" class="stat-cell" { (stats.defending) }
+                                                td data-label="QUA" class="stat-cell" { (stats.qualifying) }
+                                                td data-label="RST" class="stat-cell" { (stats.race_start) }
+                                                td data-label="TYR" class="stat-cell" { (stats.tyre_management) }
+                                                td data-label="Total" { strong { (stats.total()) } }
+                                            }
+                                        }
+                                    }
+                                }
+                                tfoot {
+                                    tr {
+                                        td colspan="2" data-label="Drivers" { strong { "Total" } }
+                                        td data-label="OVT" class="stat-cell" { strong { (total_drivers.overtaking) } }
+                                        td data-label="DEF" class="stat-cell" { strong { (total_drivers.defending) } }
+                                        td data-label="QUA" class="stat-cell" { strong { (total_drivers.qualifying) } }
+                                        td data-label="RST" class="stat-cell" { strong { (total_drivers.race_start) } }
+                                        td data-label="TYR" class="stat-cell" { strong { (total_drivers.tyre_management) } }
+                                        td data-label="Total" { strong { (total_drivers.total()) } }
+                                    }
+                                }
+                            }
                         }
                     }
-                    @if let Some((item, _)) = driver1 {
-                        input type="hidden" name="driver1_id" value=(item.id);
+
+                    // Score summary
+                    p class="preset-score" {
+                        "Total: "
+                        strong { (total_parts.total_performance() + total_drivers.total()) }
+                        small class="secondary" {
+                            "  Parts " (total_parts.total_performance())
+                            @if total_drivers.total() > 0 {
+                                " · Drivers " (total_drivers.total())
+                            }
+                            "  PIT " (format!("{:.2}s", total_parts.pit_stop_time))
+                        }
                     }
-                    @if let Some((item, _)) = driver2 {
-                        input type="hidden" name="driver2_id" value=(item.id);
+
+                    // Save / Share form
+                    form method="post" action="/optimizer/save" class="preset-save-form" {
+                        input id="custom-save-toggle" type="checkbox" class="save-toggle" {}
+                        div class="save-name-row" {
+                            span class="save-name-display" { "Optimized (" (all_labels) ")" }
+                            label class="save-edit-btn" for="custom-save-toggle" { "✏" }
+                        }
+                        input type="text" name="name" required class="save-name-edit"
+                            value=(format!("Optimized ({all_labels})"));
+                        div class="preset-form-btns" {
+                            button type="submit" class="save-form-btn outline" { "Save" }
+                            button type="submit" formaction="/optimizer/share" class="save-form-btn outline" { "Share" }
+                        }
+                        @for (cat, item, _, _) in part_picks {
+                            @if item.id != 0 {
+                                input type="hidden" name=(format!("{}_id", cat.slug())) value=(item.id);
+                            }
+                        }
+                        @if let Some((item, _)) = driver1 {
+                            input type="hidden" name="driver1_id" value=(item.id);
+                        }
+                        @if let Some((item, _)) = driver2 {
+                            input type="hidden" name="driver2_id" value=(item.id);
+                        }
+                        @if part_priorities.speed { input type="hidden" name="speed" value="true"; }
+                        @if part_priorities.cornering { input type="hidden" name="cornering" value="true"; }
+                        @if part_priorities.power_unit { input type="hidden" name="power_unit" value="true"; }
+                        @if part_priorities.qualifying { input type="hidden" name="qualifying" value="true"; }
                     }
-                    // Priority flags for share
-                    @if part_priorities.speed { input type="hidden" name="speed" value="true"; }
-                    @if part_priorities.cornering { input type="hidden" name="cornering" value="true"; }
-                    @if part_priorities.power_unit { input type="hidden" name="power_unit" value="true"; }
-                    @if part_priorities.qualifying { input type="hidden" name="qualifying" value="true"; }
                 }
 
-                a href="/optimizer/custom" role="button" class="outline" { "← Try different priorities" }
+                a href="/optimizer/custom" role="button" class="outline" style="margin-top:1rem;display:inline-block" {
+                    "← Try different priorities"
+                }
             }
         },
     )
