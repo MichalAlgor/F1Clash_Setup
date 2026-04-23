@@ -77,15 +77,16 @@ impl DriverStats {
         }
     }
 
+    /// Integer stats use ceiling so any non-zero boost always adds at least 1.
     pub fn boosted(&self, percentage: i32) -> DriverStats {
         let mult = percentage as f64 / 100.0;
         DriverStats {
-            overtaking: self.overtaking + (self.overtaking as f64 * mult).round() as i32,
-            defending: self.defending + (self.defending as f64 * mult).round() as i32,
-            qualifying: self.qualifying + (self.qualifying as f64 * mult).round() as i32,
-            race_start: self.race_start + (self.race_start as f64 * mult).round() as i32,
+            overtaking: self.overtaking + (self.overtaking as f64 * mult).ceil() as i32,
+            defending: self.defending + (self.defending as f64 * mult).ceil() as i32,
+            qualifying: self.qualifying + (self.qualifying as f64 * mult).ceil() as i32,
+            race_start: self.race_start + (self.race_start as f64 * mult).ceil() as i32,
             tyre_management: self.tyre_management
-                + (self.tyre_management as f64 * mult).round() as i32,
+                + (self.tyre_management as f64 * mult).ceil() as i32,
         }
     }
 }
@@ -165,11 +166,19 @@ mod tests {
     }
 
     #[test]
-    fn boosted_50_percent_rounds_half_away_from_zero() {
-        // 3 * 0.5 = 1.5, rounds to 2
+    fn boosted_10_percent_ceils_small_bonus() {
+        // 3 * 10% = 0.3 → ceil = 1, so 3 + 1 = 4 (not 3)
+        let s = ds(3, 0, 0, 0, 0);
+        let b = s.boosted(10);
+        assert_eq!(b.overtaking, 4);
+    }
+
+    #[test]
+    fn boosted_50_percent_ceils_bonus() {
+        // 3 * 0.5 = 1.5 → ceil = 2, so 3 + 2 = 5
         let s = ds(3, 0, 0, 0, 0);
         let b = s.boosted(50);
-        assert_eq!(b.overtaking, 5); // 3 + round(1.5) = 3 + 2 = 5
+        assert_eq!(b.overtaking, 5);
     }
 }
 

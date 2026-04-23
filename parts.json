@@ -984,7 +984,8 @@
         "levels": [
             { "level": 1, "speed": 1, "cornering": 1, "power_unit": 2, "qualifying": 1, "pit_stop_time": 0.95 },
             { "level": 2, "speed": 2, "cornering": 2, "power_unit": 3, "qualifying": 2, "pit_stop_time": 0.91 },
-            { "level": 3, "speed": 3, "cornering": 2, "power_unit": 5, "qualifying": 2, "pit_stop_time": 0.86 }
+            { "level": 3, "speed": 3, "cornering": 2, "power_unit": 5, "qualifying": 2, "pit_stop_time": 0.86 },
+            { "level": 4, "speed": 3, "cornering": 3, "power_unit": 6, "qualifying": 3, "pit_stop_time": 0.81 }
         ],
         "sort_order": 0
     },

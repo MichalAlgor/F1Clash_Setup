@@ -6,7 +6,11 @@ use crate::models::driver::{DriverInventoryItem, OwnedDriverDefinition};
 use crate::models::part::{OwnedLevelStats, PartCategory};
 use crate::models::setup::{InventoryItem, SetupWithStats};
 
-pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
+pub fn list_page(
+    setups: &[SetupWithStats],
+    base_totals: &[(i32, i32)],
+    auth: &AuthStatus,
+) -> Markup {
     super::layout::page(
         "Setups",
         auth,
@@ -46,7 +50,9 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                             }
                         }
                         tbody {
-                            @for s in setups {
+                            @for (s, &(base_p, base_d)) in setups.iter().zip(base_totals.iter()) {
+                                @let boost_p = s.stats.total_performance();
+                                @let boost_d = s.driver_stats.total();
                                 tr {
                                     @if setups.len() >= 2 {
                                         td class="compare-col action-cell" {
@@ -60,9 +66,26 @@ pub fn list_page(setups: &[SetupWithStats], auth: &AuthStatus) -> Markup {
                                     td.stat-cell data-label="PWR" { (s.stats.power_unit) }
                                     td.stat-cell data-label="QUA" { (s.stats.qualifying) }
                                     td.stat-cell data-label="PIT" { (format!("{:.2}", s.stats.pit_stop_time)) }
-                                    td.stat-cell data-label="P.Tot" { (s.stats.total_performance()) }
-                                    td.stat-cell data-label="D.Tot" { (s.driver_stats.total()) }
-                                    td.stat-cell data-label="Score" { strong { (s.stats.total_performance() + s.driver_stats.total()) } }
+                                    td.stat-cell data-label="P.Tot" {
+                                        (base_p)
+                                        @if base_p != boost_p {
+                                            " " span class="secondary" { "(" (boost_p) " " span class="upgrade-positive" { "↑" } ")" }
+                                        }
+                                    }
+                                    td.stat-cell data-label="D.Tot" {
+                                        (base_d)
+                                        @if base_d != boost_d {
+                                            " " span class="secondary" { "(" (boost_d) " " span class="upgrade-positive" { "↑" } ")" }
+                                        }
+                                    }
+                                    td.stat-cell data-label="Score" {
+                                        @let base_s = base_p + base_d;
+                                        @let boost_s = boost_p + boost_d;
+                                        strong { (base_s) }
+                                        @if base_s != boost_s {
+                                            " " span class="secondary" { "(" strong { (boost_s) } " " span class="upgrade-positive" { "↑" } ")" }
+                                        }
+                                    }
                                     td.action-cell {
                                         a href={"/setups/" (s.setup.id) "/edit"}
                                             role="button" class="outline" style="margin-right:0.25rem"

@@ -88,15 +88,16 @@ impl Stats {
     }
 
     /// Apply a percentage boost to performance stats (pit_stop_time is reduced).
+    /// Integer stats use ceiling so any non-zero bonus always adds at least 1.
     /// The additional stat is left unchanged.
     pub fn boosted(&self, percentage: i32) -> Stats {
         let mult = percentage as f64 / 100.0;
         Stats {
-            speed: self.speed + (self.speed as f64 * mult).round() as i32,
-            cornering: self.cornering + (self.cornering as f64 * mult).round() as i32,
-            power_unit: self.power_unit + (self.power_unit as f64 * mult).round() as i32,
-            qualifying: self.qualifying + (self.qualifying as f64 * mult).round() as i32,
-            pit_stop_time: self.pit_stop_time * (1.0 - mult),
+            speed: self.speed + (self.speed as f64 * mult).ceil() as i32,
+            cornering: self.cornering + (self.cornering as f64 * mult).ceil() as i32,
+            power_unit: self.power_unit + (self.power_unit as f64 * mult).ceil() as i32,
+            qualifying: self.qualifying + (self.qualifying as f64 * mult).ceil() as i32,
+            pit_stop_time: ((self.pit_stop_time - 0.7 * mult) * 100.0).round() / 100.0,
             additional_stat_value: self.additional_stat_value,
         }
     }
@@ -279,21 +280,32 @@ mod tests {
 
     #[test]
     fn boosted_100_percent_doubles_performance_stats() {
+        // pit_stop_time: 2.0 - 0.7*1.0 = 1.3 (fixed 0.7s reduction per 100%)
         let s = stats(50, 40, 30, 20, 2.0, 5);
         let b = s.boosted(100);
         assert_eq!(b.speed, 100);
         assert_eq!(b.cornering, 80);
         assert_eq!(b.power_unit, 60);
         assert_eq!(b.qualifying, 40);
-        assert!((b.pit_stop_time - 0.0).abs() < 1e-9);
+        assert!((b.pit_stop_time - 1.3).abs() < 1e-9);
         assert_eq!(b.additional_stat_value, 5); // unchanged
     }
 
     #[test]
-    fn boosted_50_percent_rounds_half_away_from_zero() {
+    fn boosted_10_percent_ceils_small_bonus_and_reduces_pit_by_0_07s() {
+        // Integer stats: 3 * 10% = 0.3 → ceil = 1, so 3 + 1 = 4
+        // Pit stop:      0.81 - 0.7 * 0.1 = 0.81 - 0.07 = 0.74
+        let s = stats(3, 0, 0, 0, 0.81, 0);
+        let b = s.boosted(10);
+        assert_eq!(b.speed, 4);
+        assert!((b.pit_stop_time - 0.74).abs() < 0.005);
+    }
+
+    #[test]
+    fn boosted_50_percent_ceils_bonus() {
         let s = stats(3, 0, 0, 0, 1.0, 0);
         let b = s.boosted(50);
-        assert_eq!(b.speed, 5); // 3 + round(1.5) = 3 + 2 = 5
+        assert_eq!(b.speed, 5); // 3 + ceil(1.5) = 3 + 2 = 5
     }
 
     #[test]

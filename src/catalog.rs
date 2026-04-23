@@ -406,5 +406,8 @@ pub async fn load_season_categories(pool: &PgPool) -> HashMap<String, Vec<PartCa
     for row in rows {
         map.entry(row.season).or_default().push(row.category);
     }
+    for cats in map.values_mut() {
+        cats.sort();
+    }
     map
 }
