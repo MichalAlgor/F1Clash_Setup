@@ -30,6 +30,10 @@ cargo fmt            # Format all code (run after every change)
 
 **Every code change must be verified by running `cargo fmt` then `cargo test` before considering it complete.** All tests must pass. If a change breaks existing tests, fix them before moving on.
 
+## Versioning Rule
+
+**Whenever a new version is added to `CHANGELOG.md`, also update the `version` field in `Cargo.toml` to match.**
+
 ## UI Rules
 
 - **Never introduce horizontal scrolling.** Tables must stay within the viewport. Remove columns, shorten headers, or combine cells before allowing any table to overflow horizontally.
