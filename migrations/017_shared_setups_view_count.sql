@@ -1,0 +1,1 @@
+ALTER TABLE shared_setups ADD COLUMN view_count INTEGER NOT NULL DEFAULT 0;
