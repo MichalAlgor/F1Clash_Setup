@@ -87,7 +87,7 @@ pub fn run_brute_force(
     let sizes: Vec<usize> = parts_per_cat.iter().map(|c| c.len()).collect();
     let total_part_combos: usize = sizes.iter().product();
 
-    let mut best_part: Option<(Vec<usize>, (i32, i32))> = None;
+    let mut best_part: Option<(Vec<usize>, (i32, i32, i32))> = None;
     let mut part_indices = vec![0usize; categories.len()];
 
     for _ in 0..total_part_combos {
@@ -137,18 +137,18 @@ pub fn run_brute_force(
     // Build result
     let picks: Vec<_> = {
         let mut temp: Vec<_> = best_pidx
-        .iter()
-        .enumerate()
-        .map(|(ci, &pi)| {
-            let rp = &parts_per_cat[ci][pi];
-            (
-                categories[ci],
-                rp.item.clone(),
-                rp.stats.clone(),
-                rp.rarity_css_class,
-            )
-        })
-        .collect();
+            .iter()
+            .enumerate()
+            .map(|(ci, &pi)| {
+                let rp = &parts_per_cat[ci][pi];
+                (
+                    categories[ci],
+                    rp.item.clone(),
+                    rp.stats.clone(),
+                    rp.rarity_css_class,
+                )
+            })
+            .collect();
         temp.sort_by_key(|d| d.0);
         temp
     };
@@ -175,10 +175,10 @@ pub fn run_brute_force(
     })
 }
 
-pub fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32) {
+pub fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32, i32) {
+    let total = stats.total_performance();
     if !priorities.any_selected() {
-        let total = stats.total_performance();
-        return (total, total);
+        return (total, total, total);
     }
     let mut values = Vec::new();
     if priorities.speed {
@@ -195,8 +195,7 @@ pub fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32
     }
     let min = *values.iter().min().unwrap();
     let sum: i32 = values.iter().sum();
-    let sum = sum + stats.total_performance();
-    (min, sum)
+    (min, sum, total)
 }
 
 // ── Driver priorities ─────────────────────────────────────────────────────────
