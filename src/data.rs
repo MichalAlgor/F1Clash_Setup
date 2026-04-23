@@ -319,10 +319,10 @@ mod tests {
 
     #[test]
     fn calculate_upgrade_series_2_costs() {
-        // 4 cards at L1, series 2 costs 6_000 for L1→L2
+        // 4 cards at L1, series 2 costs 8_600 for L1→L2
         let info = calculate_upgrade(1, 4, 2, "Common");
         assert_eq!(info.reachable_level, 2);
-        assert_eq!(info.coins_needed, 6_000);
+        assert_eq!(info.coins_needed, 8_600);
     }
 
     #[test]

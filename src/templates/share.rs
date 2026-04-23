@@ -76,14 +76,8 @@ pub struct SharePage {
 /// Public view of a shared setup snapshot.
 pub fn view_page(
     share_page: &SharePage,
-    // _hash: &str,
-    // name: &str,
-    // season: &str,
-    // priorities: &StatPriorities,
     parts: &[PartSnapshot],
     drivers: &[DriverSnapshot],
-    // total_parts: &Value,
-    // total_drivers: &Value,
     viewer_inventory: &[InventoryItem],
     auth: &AuthStatus,
 ) -> Markup {
@@ -98,10 +92,8 @@ pub fn view_page(
     let parts_total = share_page.total_parts["total"].as_i64().unwrap_or(0);
     let drivers_total = share_page.total_drivers["total"].as_i64().unwrap_or(0);
 
-    let name = share_page.name.clone();
-
     super::layout::page(
-        &format!("Shared: {name}"),
+        &format!("Shared: {}", share_page.name),
         auth,
         html! {
             hgroup {

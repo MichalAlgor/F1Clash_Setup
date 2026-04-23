@@ -286,7 +286,7 @@ async fn show(
             }
 
             div class="grid" {
-                div style="display: flex-direction: column; width: fit-content; min-width: 250px;" {
+                div style="display: flex; flex-direction: column; width: fit-content; min-width: 250px;" {
                     h2 { "Parts" }
                     figure style="margin: 0;" {
                         table {
@@ -307,7 +307,7 @@ async fn show(
                         }
                     }
                 }
-                div style="display: flex-direction: column; width: fit-content; min-width: 250px;" {
+                div style="display: flex; flex-direction: column; width: fit-content; min-width: 250px;" {
                     h2 { "Part Stats" }
                     figure style="margin: 0;" {
                         table {
@@ -327,7 +327,7 @@ async fn show(
                         }
                     }
                 }
-                div style="display: flex-direction: column; width: fit-content; min-width: 250px;" {
+                div style="display: flex; flex-direction: column; width: fit-content; min-width: 250px;" {
                     @if s.driver_stats.total() > 0 {
                         h2 { "Driver Stats" }
                         table {

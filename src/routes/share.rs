@@ -347,7 +347,7 @@ async fn view_share(
         &state.analytics,
         session_id.clone(),
         "share_view",
-        serde_json::json!({ "season": record_season }),
+        serde_json::json!({ "season": record_season, "hash": hash }),
     );
 
     let share_page = SharePage {
@@ -358,13 +358,7 @@ async fn view_share(
         total_parts: total_parts_val.0,
         total_drivers: total_drivers_val.0,
     };
-    templates::share::view_page(
-        &share_page,
-        &parts,
-        &drivers,
-        &viewer_items,
-        &auth,
-    )
+    templates::share::view_page(&share_page, &parts, &drivers, &viewer_items, &auth)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -4,7 +4,9 @@ use crate::data::StatPriorities;
 use serde::{Deserialize, Serialize};
 
 /// Car part categories in F1 Clash
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, sqlx::Type)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, sqlx::Type,
+)]
 #[sqlx(type_name = "part_category", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum PartCategory {
@@ -235,19 +237,19 @@ mod tests {
 
     #[test]
     fn total_performance_sums_four_stats_and_pit_contribution() {
-        // pit=1.0 → round(7 + (7-1)*200/7) = round(178.43) = 178
+        // pit=1.0 → round(7 + 29*(7-1)) = 181
         let s = stats(10, 20, 30, 40, 1.0, 5);
-        assert_eq!(s.total_performance(), 278);
+        assert_eq!(s.total_performance(), 281);
     }
 
     #[test]
     fn total_performance_includes_pit_stop_excludes_additional_stat() {
-        // pit=7.0 (baseline, 7 default parts) → contribution = 7
+        // pit=7.0 (baseline) → 7 + 29*0 = 7
         let s = stats(0, 0, 0, 0, 7.0, 999);
         assert_eq!(s.total_performance(), 7);
-        // pit=0.0 (fastest possible) → 7 + 7*200/7 = 207
+        // pit=0.0 (fastest possible) → 7 + 29*7 = 210
         let s_fast = stats(0, 0, 0, 0, 0.0, 0);
-        assert_eq!(s_fast.total_performance(), 207);
+        assert_eq!(s_fast.total_performance(), 210);
     }
 
     #[test]

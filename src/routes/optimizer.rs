@@ -675,36 +675,39 @@ mod tests {
     }
 
     #[test]
-    fn score_part_combo_no_priorities_returns_total_performance_twice() {
-        // pit=1.0 → round(7 + (7-1)*200/7) = 178; total = 100 + 178 = 278
+    fn score_part_combo_no_priorities_returns_total_performance_thrice() {
+        // pit=1.0 → round(7 + 29*(7-1)) = 181; total = 10+20+30+40+181 = 281
         let stats = part_stats(10, 20, 30, 40);
         let p = StatPriorities::default();
-        assert_eq!(score_part_combo(&stats, &p), (278, 278));
+        assert_eq!(score_part_combo(&stats, &p), (281, 281, 281));
     }
 
     #[test]
-    fn score_part_combo_speed_only_returns_speed_twice() {
+    fn score_part_combo_speed_only_returns_speed_min_sum_and_total() {
+        // total = 50+20+10+5+181 = 266
         let stats = part_stats(50, 20, 10, 5);
         let p = StatPriorities {
             speed: true,
             ..Default::default()
         };
-        assert_eq!(score_part_combo(&stats, &p), (50, 50));
+        assert_eq!(score_part_combo(&stats, &p), (50, 50, 266));
     }
 
     #[test]
-    fn score_part_combo_multiple_priorities_returns_min_and_sum() {
+    fn score_part_combo_multiple_priorities_returns_min_sum_and_total() {
+        // total = 100+50+0+0+181 = 331
         let stats = part_stats(100, 50, 0, 0);
         let p = StatPriorities {
             speed: true,
             cornering: true,
             ..Default::default()
         };
-        assert_eq!(score_part_combo(&stats, &p), (50, 150));
+        assert_eq!(score_part_combo(&stats, &p), (50, 150, 331));
     }
 
     #[test]
     fn score_part_combo_all_priorities_matches_total_when_equal_stats() {
+        // total = 25+25+25+25+181 = 281
         let stats = part_stats(25, 25, 25, 25);
         let p = StatPriorities {
             speed: true,
@@ -712,7 +715,7 @@ mod tests {
             power_unit: true,
             qualifying: true,
         };
-        assert_eq!(score_part_combo(&stats, &p), (25, 100));
+        assert_eq!(score_part_combo(&stats, &p), (25, 100, 281));
     }
 }
 
