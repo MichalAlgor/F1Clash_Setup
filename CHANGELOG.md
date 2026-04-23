@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.5.0] — 2026-04-23
+
+### Added
+- **Privacy-first analytics** — fire-and-forget page event capture with no third-party scripts; records path, device class, country (via swappable GeoIP provider), referrer, and response time; bot traffic filtered automatically
+- **Analytics dashboard** (`/analytics`) — admin-only JSON API and UI showing unique visitors, top paths, referrers, countries, device breakdown, hourly/day-of-week distribution, engagement stats, and a feature funnel
+- **Feature event instrumentation** — key actions (optimizer run, save, share, export/import, season switch, setup create/delete) are recorded as named feature events with JSONB properties
+- **Upgrade Advisor** — shows which parts and drivers in your inventory are most valuable to upgrade next, ranked by the score gain per upgrade relative to your current optimizer result
+- **Setup comparison** — select multiple setups from the list and compare their stats side-by-side with best/worst highlighting per stat
+- **Setup edit** — edit route and pre-filled form for existing setups; previously only create and delete were supported
+- **Shareable optimizer results** — optimizer results can be shared via a snapshot URL that captures part names, levels, and stats at share time; snapshot is immutable so links remain valid after inventory changes
+- **Share setups** — Share button on the setup detail page creates a snapshot link just like the optimizer share
+- **Share view count** — each visit to a shared setup increments a persistent `view_count` column (atomic `UPDATE...RETURNING`); displayed in the page subtitle with correct singular/plural
+- **Share deduplication** — tapping Share on an unchanged setup returns the existing link instead of creating a new DB row; a SHA-256 hash over the sorted snapshot detects identical shares
+- **Default/placeholder parts in setups** — setup slots can be left empty (shown as "Default · 1/1/1/1 · 1.00s pit") rather than requiring all 7 parts to be filled
+- **Pit stop time in total score** — pit stop time now contributes to the total performance score used by the optimizer and setup view
+- **Quick-start guide** — `/guide` page explains how to use the app for new users
+- **Partial 2026 season data** — additional parts and drivers added to the 2026 catalog; coin upgrade costs corrected for Series 1–3
+
+### Changed
+- **Optimizer scoring** — `score_part_combo` now returns a 3-tuple `(min_priority, sum_priorities, total_performance)` so total performance is a clean tiebreaker that never pollutes priority comparison; for multiple priorities, the min-first bottleneck approach ensures no single stat is sacrificed
+- **Custom optimizer result UI** — result page now uses the same `preset-card` layout as Presets: category/part merged into one cell with rarity colouring, `preset-figure` tables, score summary line, and matching save/share form style
+- **Optimizer save form** — redesigned for better discoverability; editable name with inline pencil toggle, Save and Share buttons consistently placed
+- **Share back link** — confirmation page after sharing links back to Setups or Optimizer depending on which flow created the share
+- **Mobile UX** — responsive layout improvements across inventory, optimizer, and setup pages; stat columns collapse gracefully on small screens
+- **drivers.json included in Docker image** — catalog seed file is now baked into the image so fresh deployments auto-populate without a separate step
+
+### Fixed
+- **Delete actions broken on Render** — Render's reverse proxy strips HTTP `DELETE` requests; all delete routes replaced with `POST /{id}/delete` and `hx-delete` updated to `hx-post` across inventory, drivers, setups, admin parts, and admin drivers
+- **Pit stop score formula** — corrected multiplier from `200/7 ≈ 28.57` to `29.0`; updated all affected tests
+- **Optimizer save/share with placeholder parts** — parts with `id = 0` (Default slots) are now skipped when writing hidden form inputs, preventing invalid IDs from being submitted
+- **Analytics funnel** — `optimizer_presets` events now counted alongside `optimizer_run` in the "ran optimizer" funnel step
+- CSS typo `display: flex-direction: column` → `display: flex; flex-direction: column` on the setup detail page (grid columns were not applying flex layout)
+
+---
+
 ## [0.4.0] — 2026-04-17
 
 ### Added
