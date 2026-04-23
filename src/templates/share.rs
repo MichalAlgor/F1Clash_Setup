@@ -76,6 +76,7 @@ pub struct SharePage {
     pub priorities: StatPriorities,
     pub total_parts: Value,
     pub total_drivers: Value,
+    pub view_count: i32,
 }
 
 /// Public view of a shared setup snapshot.
@@ -107,6 +108,7 @@ pub fn view_page(
                     strong { (share_page.name) }
                     " · Season " (share_page.season)
                     " · " (priority_label)
+                    " · " (share_page.view_count) " view" @if share_page.view_count != 1 { "s" }
                 }
             }
 

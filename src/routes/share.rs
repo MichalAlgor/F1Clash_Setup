@@ -344,9 +344,12 @@ async fn view_share(
     Path(hash): Path<String>,
     auth: AuthStatus,
 ) -> impl IntoResponse {
+    // Increment view count and return the updated row in one round-trip.
     let row: Option<PgRow> = sqlx::query(
-        "SELECT id, share_hash, name, season, priorities, parts_snapshot, drivers_snapshot, \
-         total_parts, total_drivers FROM shared_setups WHERE share_hash = $1",
+        "UPDATE shared_setups SET view_count = view_count + 1 \
+         WHERE share_hash = $1 \
+         RETURNING share_hash, name, season, priorities, parts_snapshot, \
+                   drivers_snapshot, total_parts, total_drivers, view_count",
     )
     .bind(&hash)
     .fetch_optional(&state.pool)
@@ -366,6 +369,7 @@ async fn view_share(
     let record_name: String = row.get("name");
     let record_season: String = row.get("season");
     let record_hash: String = row.get("share_hash");
+    let view_count: i32 = row.get("view_count");
 
     // Parse snapshots
     let parts: Vec<PartSnapshot> = serde_json::from_value(parts_val.0.clone()).unwrap_or_default();
@@ -404,6 +408,7 @@ async fn view_share(
         priorities,
         total_parts: total_parts_val.0,
         total_drivers: total_drivers_val.0,
+        view_count,
     };
     templates::share::view_page(&share_page, &parts, &drivers, &viewer_items, &auth)
 }
