@@ -4,16 +4,16 @@ use crate::data::StatPriorities;
 use serde::{Deserialize, Serialize};
 
 /// Car part categories in F1 Clash
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "part_category", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 pub enum PartCategory {
-    Engine,
     FrontWing,
-    RearWing,
-    Suspension,
     Brakes,
+    Suspension,
+    RearWing,
     Gearbox,
+    Engine,
     Battery,
 }
 
@@ -21,11 +21,11 @@ impl PartCategory {
     /// All known categories — used as a fallback; prefer `AppState::categories_for_season()`.
     pub fn all() -> &'static [PartCategory] {
         &[
-            Self::Brakes,
-            Self::Gearbox,
-            Self::RearWing,
             Self::FrontWing,
+            Self::Brakes,
             Self::Suspension,
+            Self::RearWing,
+            Self::Gearbox,
             Self::Engine,
             Self::Battery,
         ]
@@ -33,24 +33,24 @@ impl PartCategory {
 
     pub fn display_name(&self) -> &'static str {
         match self {
-            Self::Engine => "Engine",
             Self::FrontWing => "Front Wing",
-            Self::RearWing => "Rear Wing",
-            Self::Suspension => "Suspension",
             Self::Brakes => "Brakes",
+            Self::Suspension => "Suspension",
+            Self::RearWing => "Rear Wing",
             Self::Gearbox => "Gearbox",
+            Self::Engine => "Engine",
             Self::Battery => "Battery",
         }
     }
 
     pub fn slug(&self) -> &'static str {
         match self {
-            Self::Engine => "engine",
             Self::FrontWing => "front_wing",
-            Self::RearWing => "rear_wing",
-            Self::Suspension => "suspension",
             Self::Brakes => "brakes",
+            Self::Suspension => "suspension",
+            Self::RearWing => "rear_wing",
             Self::Gearbox => "gearbox",
+            Self::Engine => "engine",
             Self::Battery => "battery",
         }
     }
@@ -70,7 +70,7 @@ pub struct Stats {
 
 impl Stats {
     pub fn total_performance(&self) -> i32 {
-        let pit = (7.0 + (7.0 - self.pit_stop_time) * 200.0 / 7.0).round() as i32;
+        let pit = (7.0 + (29.0 * (7.0 - self.pit_stop_time))).round() as i32;
         self.speed + self.cornering + self.power_unit + self.qualifying + pit
     }
 

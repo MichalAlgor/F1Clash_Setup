@@ -135,7 +135,8 @@ pub fn run_brute_force(
         .unwrap_or(0);
 
     // Build result
-    let picks: Vec<_> = best_pidx
+    let picks: Vec<_> = {
+        let mut temp: Vec<_> = best_pidx
         .iter()
         .enumerate()
         .map(|(ci, &pi)| {
@@ -148,6 +149,9 @@ pub fn run_brute_force(
             )
         })
         .collect();
+        temp.sort_by_key(|d| d.0);
+        temp
+    };
     let (d1_idx, d2_idx) = driver_pairs[best_dp_idx];
     let d1 = d1_idx.map(|i| &resolved_drivers[i]);
     let d2 = d2_idx.map(|i| &resolved_drivers[i]);
@@ -191,6 +195,7 @@ pub fn score_part_combo(stats: &Stats, priorities: &StatPriorities) -> (i32, i32
     }
     let min = *values.iter().min().unwrap();
     let sum: i32 = values.iter().sum();
+    let sum = sum + stats.total_performance();
     (min, sum)
 }
 
