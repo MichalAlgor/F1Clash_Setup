@@ -344,14 +344,28 @@ async fn view_share(
     Path(hash): Path<String>,
     auth: AuthStatus,
 ) -> impl IntoResponse {
-    // Increment view count and return the updated row in one round-trip.
+    // Record this session as a viewer (no-op on repeat visits).
+    // Only increment view_count when a new row is inserted — one round-trip via CTE.
     let row: Option<PgRow> = sqlx::query(
-        "UPDATE shared_setups SET view_count = view_count + 1 \
-         WHERE share_hash = $1 \
-         RETURNING share_hash, name, season, priorities, parts_snapshot, \
-                   drivers_snapshot, total_parts, total_drivers, view_count",
+        "WITH inserted AS (
+             INSERT INTO share_views (share_hash, session_id)
+             VALUES ($1, $2)
+             ON CONFLICT DO NOTHING
+             RETURNING 1
+         ),
+         updated AS (
+             UPDATE shared_setups
+             SET view_count = view_count + 1
+             WHERE share_hash = $1
+               AND EXISTS (SELECT 1 FROM inserted)
+         )
+         SELECT share_hash, name, season, priorities, parts_snapshot,
+                drivers_snapshot, total_parts, total_drivers, view_count
+         FROM shared_setups
+         WHERE share_hash = $1",
     )
     .bind(&hash)
+    .bind(&session_id)
     .fetch_optional(&state.pool)
     .await
     .unwrap_or(None);
