@@ -98,8 +98,26 @@ pub fn view_page(
     let parts_total = share_page.total_parts["total"].as_i64().unwrap_or(0);
     let drivers_total = share_page.total_drivers["total"].as_i64().unwrap_or(0);
 
-    super::layout::page(
+    let og_title = share_page.name.clone();
+    let og_description = {
+        let score = parts_total + drivers_total;
+        if drivers_total > 0 {
+            format!(
+                "Season {} · {} · Score: {} ({} parts + {} drivers)",
+                share_page.season, priority_label, score, parts_total, drivers_total
+            )
+        } else {
+            format!(
+                "Season {} · {} · Score: {}",
+                share_page.season, priority_label, score
+            )
+        }
+    };
+
+    super::layout::page_with_og(
         &format!("Shared: {}", share_page.name),
+        &og_title,
+        &og_description,
         auth,
         html! {
             hgroup {

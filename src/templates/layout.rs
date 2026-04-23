@@ -3,6 +3,34 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 use crate::auth::AuthStatus;
 
 pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
+    page_inner(title, None, auth, content)
+}
+
+pub fn page_with_og(
+    title: &str,
+    og_title: &str,
+    og_description: &str,
+    auth: &AuthStatus,
+    content: Markup,
+) -> Markup {
+    let extra = html! {
+        meta property="og:title" content=(og_title);
+        meta property="og:description" content=(og_description);
+        meta property="og:type" content="website";
+        meta property="og:site_name" content="F1 Clash Setup";
+        meta name="twitter:card" content="summary";
+        meta name="twitter:title" content=(og_title);
+        meta name="twitter:description" content=(og_description);
+    };
+    page_inner(title, Some(extra), auth, content)
+}
+
+fn page_inner(
+    title: &str,
+    extra_head: Option<Markup>,
+    auth: &AuthStatus,
+    content: Markup,
+) -> Markup {
     html! {
         (DOCTYPE)
         html lang="en" data-theme="dark" {
@@ -10,6 +38,7 @@ pub fn page(title: &str, auth: &AuthStatus, content: Markup) -> Markup {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
                 title { "F1 Clash Setup — " (title) }
+                @if let Some(ref extra) = extra_head { (extra) }
                 link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css";
                 script src="https://unpkg.com/htmx.org@2.0.4" {}
                 style { (PreEscaped(CUSTOM_CSS)) }
