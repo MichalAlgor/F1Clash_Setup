@@ -1021,7 +1021,9 @@
         "rarity": "Common",
         "levels": [
             { "level": 1, "speed": 4, "cornering": 9, "power_unit": 3, "qualifying": 9, "pit_stop_time": 0.86 },
-            { "level": 2, "speed": 5, "cornering": 10, "power_unit": 4, "qualifying": 10, "pit_stop_time": 0.84 }
+            { "level": 2, "speed": 5, "cornering": 10, "power_unit": 4, "qualifying": 10, "pit_stop_time": 0.84 },
+            { "level": 3, "speed": 5, "cornering": 11, "power_unit": 4, "qualifying": 12, "pit_stop_time": 0.81 },
+            { "level": 4, "speed": 6, "cornering": 12, "power_unit": 5, "qualifying": 13, "pit_stop_time": 0.79 }
         ],
         "sort_order": 2
     },
@@ -1056,7 +1058,8 @@
             { "level": 2, "speed": 4, "cornering": 3, "power_unit": 5, "qualifying": 3, "pit_stop_time": 0.85 },
             { "level": 3, "speed": 6, "cornering": 4, "power_unit": 6, "qualifying": 4, "pit_stop_time": 0.8 },
             { "level": 4, "speed": 7, "cornering": 5, "power_unit": 7, "qualifying": 5, "pit_stop_time": 0.75 },
-            { "level": 5, "speed": 8, "cornering": 7, "power_unit": 8, "qualifying": 6, "pit_stop_time": 0.70 }
+            { "level": 5, "speed": 8, "cornering": 7, "power_unit": 8, "qualifying": 6, "pit_stop_time": 0.70 },
+            { "level": 6, "speed": 9, "cornering": 8, "power_unit": 9, "qualifying": 6, "pit_stop_time": 0.65 }
         ],
         "sort_order": 0
     },

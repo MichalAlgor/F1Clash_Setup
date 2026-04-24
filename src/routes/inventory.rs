@@ -50,7 +50,7 @@ async fn list(
     .await
     .unwrap_or_default();
 
-    templates::inventory::list_page(&items, &catalog, &categories, &auth)
+    templates::inventory::list_page(&items, &catalog, &categories, &auth, &season)
 }
 
 async fn bulk_form(
@@ -195,7 +195,7 @@ async fn update_cards(
     let part_def = catalog.iter().find(|p| p.name == item.part_name);
 
     Ok(templates::inventory::cards_cell(
-        id, cards, item.level, part_def,
+        id, cards, item.level, part_def, &season,
     ))
 }
 

@@ -42,10 +42,104 @@ pub const CARD_COSTS: &[i32] = &[4, 10, 20, 50, 100, 200, 400, 1_000, 2_000, 4_0
 
 /// Coin cost to upgrade from level N to N+1, per series (outer index = series - 1,
 /// inner index 0 = L1→L2).
-pub const COIN_COSTS_BY_SERIES: &[&[u64]] = &[
+const COIN_COSTS_S2025: &[&[u64]] = &[
     // Series 1
     &[
-        2_000, 8_000, 60_000, 190_000, 275_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000,
+        2_000, 8_000, 35_000, 90_000, 275_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000,
+    ],
+    // Series 2
+    &[
+        6_000, 30_000, 95_000, 300_000, 950_000, 1_900_000, 3_750_000, 5_600_000, 7_450_000,
+        9_300_000,
+    ],
+    // Series 3
+    &[
+        22_000, 45_000, 135_000, 450_000, 1_350_000, 2_800_000, 5_250_000, 7_700_000, 10_150_000,
+        12_600_000,
+    ],
+    // Series 4
+    &[
+        1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000,
+    ],
+    // Series 5
+    &[
+        4_500_000,
+        9_000_000,
+        20_000_000,
+        42_250_000,
+        139_250_000,
+        167_000_000,
+        195_000_000,
+        223_000_000,
+    ],
+    // Series 6
+    &[
+        790_000, 1_600_000, 2_400_000, 3_200_000, 6_800_000, 19_500_000, 36_250_000, 53_000_000,
+        69_750_000, 86_500_000,
+    ],
+    // Series 7
+    &[
+        1_950_000, 3_850_000, 5_800_000, 7_700_000, 15_750_000, 28_000_000, 51_750_000, 75_500_000,
+    ],
+    // Series 8
+    &[
+        4_500_000,
+        9_000_000,
+        20_000_000,
+        42_250_000,
+        139_250_000,
+        167_000_000,
+        195_000_000,
+        223_000_000,
+    ],
+    // Series 9
+    &[
+        9_500_000,
+        19_000_000,
+        45_000_000,
+        105_000_000,
+        199_000_000,
+        239_000_000,
+        278_000_000,
+        317_000_000,
+    ],
+    // Series 10
+    &[
+        22_000_000,
+        43_000_000,
+        65_000_000,
+        150_000_000,
+        284_000_000,
+        341_000_000,
+        398_000_000,
+    ],
+    // Series 11
+    &[
+        54_000_000,
+        107_000_000,
+        161_000_000,
+        215_000_000,
+        406_000_000,
+        487_000_000,
+        568_000_000,
+    ],
+    // Series 12
+    &[
+        116_000_000,
+        232_000_000,
+        348_000_000,
+        464_000_000,
+        580_000_000,
+        696_000_000,
+        812_000_000,
+    ],
+];
+
+// Season 2026 — still being gathered; values confirmed so far differ on S1–S4.
+const COIN_COSTS_S2026: &[&[u64]] = &[
+    // Series 1
+    &[
+        2_000, 8_000, 60_000, 190_000, 640_000, 800_000, 1_600_000, 2_400_000, 3_200_000, 4_000_000,
     ],
     // Series 2
     &[
@@ -135,6 +229,15 @@ pub const COIN_COSTS_BY_SERIES: &[&[u64]] = &[
     ],
 ];
 
+/// Returns the coin cost table for the given season string.
+/// Defaults to 2025 costs for any unrecognised season.
+pub fn coin_costs_for_season(season: &str) -> &'static [&'static [u64]] {
+    match season {
+        "2026" => COIN_COSTS_S2026,
+        _ => COIN_COSTS_S2025,
+    }
+}
+
 /// Maximum upgrade level for a given rarity.
 pub fn max_level_for_rarity(rarity: &str) -> i32 {
     match rarity {
@@ -160,9 +263,10 @@ pub fn calculate_upgrade(
     cards_owned: i32,
     series: i32,
     rarity: &str,
+    season: &str,
 ) -> UpgradeInfo {
     let max_lvl = max_level_for_rarity(rarity);
-    let coin_table = COIN_COSTS_BY_SERIES
+    let coin_table = coin_costs_for_season(season)
         .get((series - 1) as usize)
         .copied()
         .unwrap_or(&[]);
@@ -279,14 +383,14 @@ mod tests {
 
     #[test]
     fn calculate_upgrade_already_at_max() {
-        let info = calculate_upgrade(8, 999, 1, "Epic");
+        let info = calculate_upgrade(8, 999, 1, "Epic", "2025");
         assert_eq!(info.reachable_level, 8);
         assert_eq!(info.coins_needed, 0);
     }
 
     #[test]
     fn calculate_upgrade_no_cards() {
-        let info = calculate_upgrade(1, 0, 1, "Common");
+        let info = calculate_upgrade(1, 0, 1, "Common", "2025");
         assert_eq!(info.reachable_level, 1);
         assert_eq!(info.coins_needed, 0);
         assert_eq!(info.cards_to_next, 4); // need 4 cards for L1→L2
@@ -295,7 +399,7 @@ mod tests {
     #[test]
     fn calculate_upgrade_exact_cards_for_one_level() {
         // 4 cards = exactly enough for L1→L2, series 1 costs 2_000 coins
-        let info = calculate_upgrade(1, 4, 1, "Common");
+        let info = calculate_upgrade(1, 4, 1, "Common", "2025");
         assert_eq!(info.reachable_level, 2);
         assert_eq!(info.coins_needed, 2_000);
     }
@@ -303,7 +407,7 @@ mod tests {
     #[test]
     fn calculate_upgrade_two_levels() {
         // 4 + 10 = 14 cards → L1→L2→L3, series 1: 2_000 + 8_000 = 10_000 coins
-        let info = calculate_upgrade(1, 14, 1, "Common");
+        let info = calculate_upgrade(1, 14, 1, "Common", "2025");
         assert_eq!(info.reachable_level, 3);
         assert_eq!(info.coins_needed, 10_000);
     }
@@ -311,7 +415,7 @@ mod tests {
     #[test]
     fn calculate_upgrade_not_enough_for_next() {
         // Only 3 cards at L1 — need 4 for L1→L2
-        let info = calculate_upgrade(1, 3, 1, "Common");
+        let info = calculate_upgrade(1, 3, 1, "Common", "2025");
         assert_eq!(info.reachable_level, 1);
         assert_eq!(info.coins_needed, 0);
         assert_eq!(info.cards_to_next, 1);
@@ -319,10 +423,10 @@ mod tests {
 
     #[test]
     fn calculate_upgrade_series_2_costs() {
-        // 4 cards at L1, series 2 costs 8_600 for L1→L2
-        let info = calculate_upgrade(1, 4, 2, "Common");
+        // 4 cards at L1, series 2 costs 6_000 for L1→L2 in 2025
+        let info = calculate_upgrade(1, 4, 2, "Common", "2025");
         assert_eq!(info.reachable_level, 2);
-        assert_eq!(info.coins_needed, 8_600);
+        assert_eq!(info.coins_needed, 6_000);
     }
 
     #[test]

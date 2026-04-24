@@ -76,6 +76,7 @@ pub fn run_upgrade_advisor(
     inventory: &[InventoryItem],
     boosts: &[Boost],
     priorities: &StatPriorities,
+    season: &str,
 ) -> AdvisorResult {
     // ── Baseline ──────────────────────────────────────────────────────────────
     let no_drivers = vec![(None, None)];
@@ -115,6 +116,7 @@ pub fn run_upgrade_advisor(
             item.cards_owned,
             part_def.series,
             &part_def.rarity,
+            season,
         );
         let immediate_target = upgrade_info.reachable_level;
         let can_afford = immediate_target > item.level;
@@ -209,7 +211,7 @@ pub fn run_upgrade_advisor(
             let score_delta = sim_score - baseline_score;
 
             // Compute upgrade cost for this specific target level
-            let cost = compute_cost(item, part_def, target_level);
+            let cost = compute_cost(item, part_def, target_level, season);
 
             all_recs.push(UpgradeRecommendation {
                 candidate: UpgradeCandidate {
@@ -257,6 +259,7 @@ fn compute_cost(
     item: &InventoryItem,
     part_def: &OwnedPartDefinition,
     target_level: i32,
+    season: &str,
 ) -> UpgradeCost {
     // Cards needed from current → target (sum of per-level costs)
     let cards_needed: i32 = (item.level..target_level)
@@ -267,7 +270,7 @@ fn compute_cost(
         .sum();
     let can_afford = item.cards_owned >= cards_needed;
 
-    let coins_to_target: u64 = compute_coin_cost(item.level, target_level, part_def.series);
+    let coins_to_target: u64 = compute_coin_cost(item.level, target_level, part_def.series, season);
 
     UpgradeCost {
         cards_owned: item.cards_owned,
@@ -278,8 +281,8 @@ fn compute_cost(
     }
 }
 
-fn compute_coin_cost(from_level: i32, to_level: i32, series: i32) -> u64 {
-    let coin_table = crate::data::COIN_COSTS_BY_SERIES
+fn compute_coin_cost(from_level: i32, to_level: i32, series: i32, season: &str) -> u64 {
+    let coin_table = crate::data::coin_costs_for_season(season)
         .get((series - 1) as usize)
         .copied()
         .unwrap_or(&[]);
@@ -411,6 +414,7 @@ mod tests {
             &inventory,
             &[],
             &priorities,
+            "2025",
         );
         assert!(
             result.immediate.is_empty(),
@@ -436,6 +440,7 @@ mod tests {
             &[item],
             &[],
             &StatPriorities::default(),
+            "2025",
         );
         // Should appear in immediate (500 cards >> cost for next levels)
         assert!(
@@ -459,6 +464,7 @@ mod tests {
             &[item],
             &[],
             &StatPriorities::default(),
+            "2025",
         );
         assert!(
             result.immediate.is_empty(),
@@ -481,6 +487,7 @@ mod tests {
             &[item],
             &[],
             &StatPriorities::default(),
+            "2025",
         );
         for rec in &result.planned {
             assert_eq!(

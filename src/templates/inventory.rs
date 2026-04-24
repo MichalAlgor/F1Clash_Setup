@@ -10,6 +10,7 @@ pub fn list_page(
     catalog: &[OwnedPartDefinition],
     categories: &[PartCategory],
     auth: &AuthStatus,
+    season: &str,
 ) -> Markup {
     super::layout::page(
         "Inventory",
@@ -136,7 +137,7 @@ pub fn list_page(
                                                                 } @else { "—" }
                                                             }
                                                         }
-                                                        (cards_cell(item.id, item.cards_owned, item.level, Some(part_def)))
+                                                        (cards_cell(item.id, item.cards_owned, item.level, Some(part_def), season))
                                                         td.action-cell {
                                                             button.outline.secondary
                                                                 hx-post={"/inventory/" (item.id) "/delete"}
@@ -168,6 +169,7 @@ pub fn cards_cell(
     cards_owned: i32,
     current_level: i32,
     part_def: Option<&OwnedPartDefinition>,
+    season: &str,
 ) -> Markup {
     let upgrade_markup = match part_def {
         None => html! {},
@@ -178,8 +180,13 @@ pub fn cards_cell(
             } else if cards_owned == 0 {
                 html! {}
             } else {
-                let upgrade =
-                    data::calculate_upgrade(current_level, cards_owned, part.series, &part.rarity);
+                let upgrade = data::calculate_upgrade(
+                    current_level,
+                    cards_owned,
+                    part.series,
+                    &part.rarity,
+                    season,
+                );
                 if upgrade.reachable_level > current_level {
                     html! {
                         span class="upgrade-tag" title={"Coins: " (upgrade.coins_needed)} {

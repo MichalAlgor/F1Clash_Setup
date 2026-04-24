@@ -110,6 +110,7 @@ async fn run_advisor(
         &filtered_inventory,
         &boosts,
         &priorities,
+        &season,
     );
 
     templates::advisor::result_page(&result, &auth)
