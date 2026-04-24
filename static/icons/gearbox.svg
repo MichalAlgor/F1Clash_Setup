@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <defs>
+    <!-- Cut a ring hole: mask removes r=4, centre dot added back separately -->
+    <mask id="gm">
+      <rect width="24" height="24" fill="white"/>
+      <circle cx="12" cy="12" r="4" fill="black"/>
+    </mask>
+  </defs>
+  <!-- 12-tooth gear polygon: alternating outer r=10 and root r=7.5, every 15° -->
+  <polygon
+    points="
+      22,12
+      19.24,13.94
+      20.66,17
+      17.3,17.3
+      17,20.66
+      13.94,19.24
+      12,22
+      10.06,19.24
+      7,20.66
+      6.7,17.3
+      3.34,17
+      4.76,13.94
+      2,12
+      4.76,10.06
+      3.34,7
+      6.7,6.7
+      7,3.34
+      10.06,4.76
+      12,2
+      13.94,4.76
+      17,3.34
+      17.3,6.7
+      20.66,7
+      19.24,10.06"
+    mask="url(#gm)"/>
+  <!-- Centre hub dot -->
+  <circle cx="12" cy="12" r="2"/>
+</svg>

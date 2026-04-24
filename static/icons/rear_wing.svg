@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <!-- Main wing plane (wide top bar) -->
+  <rect x="1" y="3" width="22" height="5" rx="1"/>
+  <!-- Left end plate -->
+  <rect x="1" y="8" width="4.5" height="13" rx="1"/>
+  <!-- Right end plate -->
+  <rect x="18.5" y="8" width="4.5" height="13" rx="1"/>
+  <!-- Centre pod / DRS element below main plane -->
+  <rect x="9" y="8" width="6" height="4.5" rx="0.5"/>
+</svg>

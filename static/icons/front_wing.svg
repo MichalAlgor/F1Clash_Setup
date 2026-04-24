@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <!-- Nose / chassis attachment (triangle at top-centre) -->
+  <path d="M10 4 L14 4 L12 9 Z"/>
+  <!-- Left endplate arm -->
+  <rect x="2" y="9" width="5" height="12" rx="1"/>
+  <!-- Right endplate arm -->
+  <rect x="17" y="9" width="5" height="12" rx="1"/>
+  <!-- Bottom crossbar connecting the two arms -->
+  <rect x="2" y="18" width="20" height="3" rx="1"/>
+  <!-- Inner bottom element (cascade) -->
+  <rect x="7" y="14" width="10" height="2.5" rx="0.5"/>
+</svg>

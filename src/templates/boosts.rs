@@ -83,7 +83,7 @@ pub fn page(
                             @let parts: Vec<_> = catalog.iter().filter(|p| p.category == *category).collect();
                             @if !parts.is_empty() {
                                 section {
-                                    h2 { (category.display_name()) }
+                                    h2 { img src=(category.icon_path()) class="cat-icon" alt=""; (category.display_name()) }
                                     figure {
                                         table {
                                             thead {

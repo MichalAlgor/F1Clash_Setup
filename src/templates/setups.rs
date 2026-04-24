@@ -171,7 +171,10 @@ pub fn form_page(
                             crate::models::part::PartCategory::Battery    => s.battery_id,
                         }
                     });
-                    label for=(category.slug()) { (category.display_name()) }
+                    label for=(category.slug()) {
+                        img src=(category.icon_path()) class="cat-icon" alt="";
+                        (category.display_name())
+                    }
                     select id=(category.slug()) name=(category.slug()) {
                         option value="" selected[current_id.is_none()] { "Default (1/1/1/1 · 1.00s pit)" }
                         @for (item, stats) in items {

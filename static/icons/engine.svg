@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <!-- Air intake / turbo box (top-left, smaller rectangle) -->
+  <rect x="2" y="4" width="9" height="5.5" rx="1.5"/>
+  <!-- Main engine block body (large, lower) -->
+  <rect x="2" y="9.5" width="20" height="12" rx="2"/>
+  <!-- Exhaust outlet (small rectangle on right side) -->
+  <rect x="19" y="12" width="3" height="4" rx="0.5"/>
+</svg>

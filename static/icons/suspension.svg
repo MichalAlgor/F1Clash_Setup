@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <!-- Diagonal push-rod body (45° from bottom-left to top-right) -->
+  <!-- Rotated rect: horizontal 14×3 rect rotated -45° around centre (12,12) -->
+  <rect x="5" y="10.5" width="14" height="3" rx="1.5" transform="rotate(-45 12 12)"/>
+  <!-- Ball joint at bottom-left end -->
+  <!-- After -45° rotation, left end of rect centres at approx (6.3, 17.7) -->
+  <circle cx="6" cy="18" r="2.8"/>
+  <!-- Square mount at top-right end, approx (17.7, 6.3) -->
+  <rect x="16" y="3.5" width="5.5" height="4.5" rx="0.5"/>
+</svg>

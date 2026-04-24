@@ -863,6 +863,23 @@ footer p {
     white-space: nowrap;
 }
 
+/* --- Category icon badge (matches in-game red pill style) --- */
+.cat-icon {
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+    background: #b71c1c;
+    border-radius: 5px;
+    vertical-align: middle;
+    margin-right: 0.35rem;
+    display: inline-block;
+    flex-shrink: 0;
+}
+h2:has(.cat-icon) {
+    display: flex;
+    align-items: center;
+}
+
 /* --- Admin action bar --- */
 .admin-actions {
     display: flex;

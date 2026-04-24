@@ -56,6 +56,18 @@ impl PartCategory {
             Self::Battery => "battery",
         }
     }
+
+    pub fn icon_path(&self) -> &'static str {
+        match self {
+            Self::FrontWing => "/static/icons/front_wing.svg",
+            Self::Brakes => "/static/icons/brakes.svg",
+            Self::Suspension => "/static/icons/suspension.svg",
+            Self::RearWing => "/static/icons/rear_wing.svg",
+            Self::Gearbox => "/static/icons/gearbox.svg",
+            Self::Engine => "/static/icons/engine.svg",
+            Self::Battery => "/static/icons/battery.svg",
+        }
+    }
 }
 
 /// Stats that car parts contribute to a setup.

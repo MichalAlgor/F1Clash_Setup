@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <defs>
+    <mask id="bm">
+      <rect width="24" height="24" fill="white"/>
+      <!-- Minus symbol (left side of body) — horizontal bar cutout -->
+      <rect x="4" y="14.5" width="5.5" height="2" rx="0.6" fill="black"/>
+      <!-- Plus symbol (right side of body) — horizontal bar -->
+      <rect x="14.5" y="14.5" width="5.5" height="2" rx="0.6" fill="black"/>
+      <!-- Plus symbol — vertical bar -->
+      <rect x="16.5" y="12.5" width="1.8" height="6" rx="0.6" fill="black"/>
+    </mask>
+  </defs>
+  <!-- Left terminal -->
+  <rect x="4.5" y="5" width="4.5" height="3.5" rx="1"/>
+  <!-- Right terminal -->
+  <rect x="15" y="5" width="4.5" height="3.5" rx="1"/>
+  <!-- Battery body with − and + cutouts -->
+  <rect x="2" y="8.5" width="20" height="12.5" rx="1.5" mask="url(#bm)"/>
+</svg>

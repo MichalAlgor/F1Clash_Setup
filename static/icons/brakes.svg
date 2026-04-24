@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-linecap="round">
+  <!-- Outer arc: 300° arc leaving a ~60° gap at top-right (~330° to 30°) -->
+  <!-- Start at 30° (lower-right): (12+9·cos30, 12+9·sin30) = (19.79, 16.5) -->
+  <!-- End at 330° (upper-right): (19.79, 7.5) -->
+  <path d="M 19.79 16.5 A 9 9 0 1 1 19.79 7.5" stroke-width="2.5"/>
+  <!-- Inner circle -->
+  <circle cx="12" cy="12" r="5" stroke-width="1.5"/>
+  <!-- Centre hub -->
+  <circle cx="12" cy="12" r="2" fill="white" stroke="none"/>
+</svg>
