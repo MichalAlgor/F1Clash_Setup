@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Multipart, Path, State};
 use axum::http::header;
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
@@ -34,6 +34,8 @@ pub fn router() -> Router<AppState> {
             "/admin/seasons",
             get(list_seasons).post(save_season_categories),
         )
+        .route("/admin/parts/import", post(import_parts))
+        .route("/admin/drivers/import", post(import_drivers))
 }
 
 /// Returns a redirect if auth is required but the user isn't logged in.
@@ -563,4 +565,58 @@ async fn insert_driver_levels(
 async fn reload_drivers_catalog(state: &AppState) {
     let new_catalog = catalog::load_drivers_catalog(&state.pool).await;
     *state.drivers_catalog.write().await = new_catalog;
+}
+
+async fn import_parts(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    mut multipart: Multipart,
+) -> Result<Response, AppError> {
+    if let Some(r) = guard(&auth) {
+        return Ok(r);
+    }
+    let mut json: Option<String> = None;
+    while let Some(field) = multipart.next_field().await? {
+        if field.name() == Some("file") {
+            let bytes = field.bytes().await?;
+            json = Some(
+                String::from_utf8(bytes.to_vec())
+                    .map_err(|_| AppError::BadRequest("File must be valid UTF-8".into()))?,
+            );
+            break;
+        }
+    }
+    let json = json.ok_or_else(|| AppError::BadRequest("No file field in upload".into()))?;
+    catalog::seed_parts_from_str(&state.pool, &json)
+        .await
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    reload_catalog(&state).await;
+    Ok(Redirect::to("/admin/parts").into_response())
+}
+
+async fn import_drivers(
+    State(state): State<AppState>,
+    auth: AuthStatus,
+    mut multipart: Multipart,
+) -> Result<Response, AppError> {
+    if let Some(r) = guard(&auth) {
+        return Ok(r);
+    }
+    let mut json: Option<String> = None;
+    while let Some(field) = multipart.next_field().await? {
+        if field.name() == Some("file") {
+            let bytes = field.bytes().await?;
+            json = Some(
+                String::from_utf8(bytes.to_vec())
+                    .map_err(|_| AppError::BadRequest("File must be valid UTF-8".into()))?,
+            );
+            break;
+        }
+    }
+    let json = json.ok_or_else(|| AppError::BadRequest("No file field in upload".into()))?;
+    catalog::seed_drivers_from_str(&state.pool, &json)
+        .await
+        .map_err(|e| AppError::BadRequest(e.to_string()))?;
+    reload_drivers_catalog(&state).await;
+    Ok(Redirect::to("/admin/drivers").into_response())
 }

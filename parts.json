@@ -939,6 +939,18 @@
         "sort_order": 1
     },
     {
+        "name": "Aegis",
+        "category": "brakes",
+        "series": 4,
+        "rarity": "Common",
+        "levels": [
+            { "level": 1, "speed": 12, "cornering": 5, "power_unit": 3, "qualifying": 4, "pit_stop_time": 0.83 },
+            { "level": 2, "speed": 14, "cornering": 5, "power_unit": 4, "qualifying": 5, "pit_stop_time": 0.80 },
+            { "level": 3, "speed": 16, "cornering": 6, "power_unit": 4, "qualifying": 5, "pit_stop_time": 0.78 }
+        ],
+        "sort_order": 2
+    },
+    {
         "name": "Wind Guard",
         "category": "front_wing",
         "series": 1,
@@ -1001,6 +1013,17 @@
             { "level": 4, "speed": 6, "cornering": 7, "power_unit": 5, "qualifying": 6, "pit_stop_time": 0.88 }
         ],
         "sort_order": 1
+    },
+    {
+        "name": "Stability Unit",
+        "category": "suspension",
+        "series": 4,
+        "rarity": "Common",
+        "levels": [
+            { "level": 1, "speed": 4, "cornering": 9, "power_unit": 3, "qualifying": 9, "pit_stop_time": 0.86 },
+            { "level": 2, "speed": 5, "cornering": 10, "power_unit": 4, "qualifying": 10, "pit_stop_time": 0.84 }
+        ],
+        "sort_order": 2
     },
     {
         "name": "Tempest",

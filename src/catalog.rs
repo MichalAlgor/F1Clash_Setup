@@ -64,24 +64,10 @@ struct LevelRow {
     additional_stat_details: serde_json::Value,
 }
 
-/// Read parts.json and upsert all parts+levels into the DB.
+/// Parse a parts.json string and upsert all parts+levels into the DB.
 /// Adds new rows and updates existing ones; never deletes.
-pub async fn seed_catalog(pool: &PgPool) {
-    let json = match std::fs::read_to_string("parts.json") {
-        Ok(s) => s,
-        Err(e) => {
-            tracing::warn!("parts.json not found, skipping catalog seed: {e}");
-            return;
-        }
-    };
-
-    let seasons: HashMap<String, Vec<SeedPart>> = match serde_json::from_str(&json) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed to parse parts.json: {e}");
-            return;
-        }
-    };
+pub async fn seed_parts_from_str(pool: &PgPool, json: &str) -> Result<(), anyhow::Error> {
+    let seasons: HashMap<String, Vec<SeedPart>> = serde_json::from_str(json)?;
 
     for (season, parts) in &seasons {
         for part in parts {
@@ -105,7 +91,7 @@ pub async fn seed_catalog(pool: &PgPool) {
             .bind(&part.additional_stat_name)
             .fetch_one(pool)
             .await
-            .unwrap_or_else(|e| panic!("Failed to upsert part '{}': {e}", part.name));
+            .map_err(|e| anyhow::anyhow!("Failed to upsert part '{}': {e}", part.name))?;
 
             for lvl in &part.levels {
                 let details = serde_json::to_value(&lvl.additional_stat_details)
@@ -135,17 +121,35 @@ pub async fn seed_catalog(pool: &PgPool) {
                 .bind(details)
                 .execute(pool)
                 .await
-                .unwrap_or_else(|e| {
-                    panic!(
+                .map_err(|e| {
+                    anyhow::anyhow!(
                         "Failed to upsert level {} for '{}': {e}",
-                        lvl.level, part.name
+                        lvl.level,
+                        part.name
                     )
-                });
+                })?;
             }
         }
     }
 
-    tracing::info!("Catalog seeded from parts.json");
+    tracing::info!("Catalog seeded from parts JSON");
+    Ok(())
+}
+
+/// Read parts.json and upsert all parts+levels into the DB.
+/// Adds new rows and updates existing ones; never deletes.
+pub async fn seed_catalog(pool: &PgPool) {
+    let json = match std::fs::read_to_string("parts.json") {
+        Ok(s) => s,
+        Err(e) => {
+            tracing::warn!("parts.json not found, skipping catalog seed: {e}");
+            return;
+        }
+    };
+
+    if let Err(e) = seed_parts_from_str(pool, &json).await {
+        tracing::error!("Failed to seed parts catalog: {e}");
+    }
 }
 
 /// Load the full catalog (all seasons) from the DB into memory.
@@ -234,22 +238,25 @@ struct SeedDriverLevel {
     legacy_points: i32,
 }
 
+/// Parse a drivers.json string and upsert all drivers+levels into the DB.
+/// Adds new rows and updates existing ones; never deletes.
+pub async fn seed_drivers_from_str(pool: &PgPool, json: &str) -> Result<(), anyhow::Error> {
+    let seasons: HashMap<String, Vec<SeedDriver>> = serde_json::from_str(json)?;
+    for (season, drivers) in &seasons {
+        seed_driver_season(pool, season, drivers).await;
+    }
+    tracing::info!("Driver catalog seeded from drivers JSON");
+    Ok(())
+}
+
 /// Read drivers.json and upsert all drivers+levels into the DB.
 /// Falls back to seeding from built-in static data (season "2025") when
 /// drivers.json is absent and the table is empty.
 pub async fn seed_drivers_catalog(pool: &PgPool) {
     if let Ok(json) = std::fs::read_to_string("drivers.json") {
-        let seasons: HashMap<String, Vec<SeedDriver>> = match serde_json::from_str(&json) {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("Failed to parse drivers.json: {e}");
-                return;
-            }
-        };
-        for (season, drivers) in &seasons {
-            seed_driver_season(pool, season, drivers).await;
+        if let Err(e) = seed_drivers_from_str(pool, &json).await {
+            tracing::error!("Failed to seed drivers catalog: {e}");
         }
-        tracing::info!("Driver catalog seeded from drivers.json");
         return;
     }
 

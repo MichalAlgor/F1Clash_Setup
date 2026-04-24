@@ -24,6 +24,10 @@ pub fn parts_list_page(
             div class="admin-actions" {
                 a href="/admin/parts/new" role="button" { "+ Add Part" }
                 a href="/admin/parts/export" role="button" class="outline" { "Export parts.json" }
+                form method="post" action="/admin/parts/import" enctype="multipart/form-data" style="display:contents" {
+                    input type="file" name="file" accept=".json" required style="width:auto" {}
+                    button type="submit" class="outline" { "Import parts.json" }
+                }
                 a href="/admin/seasons" role="button" class="outline" { "Season Settings" }
                 a href="/admin/drivers" role="button" class="outline" { "Driver Catalog" }
                 a href="/admin/stats" role="button" class="outline" { "Analytics" }
@@ -210,6 +214,10 @@ pub fn drivers_list_page(
             div class="admin-actions" {
                 a href="/admin/drivers/new" role="button" { "+ Add Driver" }
                 a href="/admin/drivers/export" role="button" class="outline" { "Export drivers.json" }
+                form method="post" action="/admin/drivers/import" enctype="multipart/form-data" style="display:contents" {
+                    input type="file" name="file" accept=".json" required style="width:auto" {}
+                    button type="submit" class="outline" { "Import drivers.json" }
+                }
                 a href="/admin/parts" role="button" class="outline" { "Parts Catalog" }
                 a href="/admin/stats" role="button" class="outline" { "Analytics" }
             }

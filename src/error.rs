@@ -1,3 +1,4 @@
+use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use thiserror::Error;
@@ -9,6 +10,12 @@ pub enum AppError {
 
     #[error("serialization error: {0}")]
     Json(#[from] serde_json::Error),
+
+    #[error("bad request: {0}")]
+    BadRequest(String),
+
+    #[error("multipart error: {0}")]
+    Multipart(#[from] MultipartError),
 }
 
 impl IntoResponse for AppError {
@@ -31,6 +38,11 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "An internal error occurred.".to_string(),
                 )
+            }
+            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
+            AppError::Multipart(e) => {
+                tracing::error!(error = %e, "multipart error");
+                (StatusCode::BAD_REQUEST, e.to_string())
             }
         };
         crate::templates::error::error_page(status, &message).into_response()
