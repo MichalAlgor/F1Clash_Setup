@@ -790,7 +790,7 @@ footer p {
     }
 }
 
-/* --- Share page --- */
+/* --- Share page (confirmation screen) --- */
 .share-url-row {
     display: flex;
     align-items: center;
@@ -805,6 +805,171 @@ footer p {
     border-radius: var(--pico-border-radius);
     font-size: 0.85rem;
     word-break: break-all;
+}
+
+/* --- Share view page redesign --- */
+.share-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-left: 3px solid var(--pico-primary);
+    border-radius: var(--pico-border-radius);
+}
+.share-hero-left { flex: 1; min-width: 0; }
+.share-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pico-muted-color);
+    margin: 0 0 0.35rem;
+}
+.share-hero h1 {
+    font-size: 1.6rem;
+    margin: 0 0 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.share-hero-sub {
+    font-size: 0.8rem;
+    color: var(--pico-muted-color);
+    margin: 0;
+}
+.share-season-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(46, 204, 113, 0.12);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.35);
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.share-hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+.share-views-count {
+    font-size: 0.78rem;
+    color: var(--pico-muted-color);
+}
+.share-total-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.8rem;
+    background: var(--pico-primary);
+    color: var(--pico-primary-inverse);
+    border-radius: var(--pico-border-radius);
+    white-space: nowrap;
+}
+.share-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+@media (min-width: 900px) {
+    .share-layout { grid-template-columns: 1fr 260px; }
+}
+h2.share-section-h2 {
+    font-size: 0.68rem;
+    color: var(--pico-muted-color);
+    margin: 1.25rem 0 0.5rem;
+    padding: 0.2rem 0 0.2rem 0.6rem;
+    border-bottom: none;
+    border-left: 3px solid var(--pico-primary);
+}
+h2.share-section-h2:first-child { margin-top: 0; }
+.share-total-cell { color: #4fc3f7 !important; font-weight: 700; }
+.share-score-bar {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    flex-wrap: wrap;
+}
+.share-score-combined {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffd700;
+}
+.share-score-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70px;
+}
+.share-score-stat-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+.share-score-stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pico-muted-color);
+}
+.share-sidebar-card {
+    background: var(--pico-card-background-color);
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    padding: 1rem;
+    position: sticky;
+    top: 4rem;
+}
+.share-sidebar-card h3 {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pico-muted-color);
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+.share-summary-dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.3rem 0.75rem;
+    align-items: baseline;
+}
+.share-summary-dl dt {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--pico-muted-color);
+    white-space: nowrap;
+}
+.share-summary-dl dd {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0;
+    color: var(--pico-color);
+    word-break: break-word;
+}
+.share-compare-section { margin-top: 2rem; }
+@media (max-width: 768px) {
+    .share-hero { flex-direction: column; }
+    .share-hero-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+    .share-score-bar { gap: 1rem; }
 }
 
 /* --- Setup Comparison --- */

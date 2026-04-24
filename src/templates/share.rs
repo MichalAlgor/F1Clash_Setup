@@ -88,6 +88,7 @@ pub struct SharePage {
     pub total_parts: Value,
     pub total_drivers: Value,
     pub view_count: i32,
+    pub created_at: String,
 }
 
 /// Public view of a shared setup snapshot.
@@ -108,19 +109,19 @@ pub fn view_page(
     };
     let parts_total = share_page.total_parts["total"].as_i64().unwrap_or(0);
     let drivers_total = share_page.total_drivers["total"].as_i64().unwrap_or(0);
+    let combined = parts_total + drivers_total;
 
     let og_title = share_page.name.clone();
     let og_description = {
-        let score = parts_total + drivers_total;
         if drivers_total > 0 {
             format!(
                 "Season {} · {} · Score: {} ({} parts + {} drivers)",
-                share_page.season, priority_label, score, parts_total, drivers_total
+                share_page.season, priority_label, combined, parts_total, drivers_total
             )
         } else {
             format!(
                 "Season {} · {} · Score: {}",
-                share_page.season, priority_label, score
+                share_page.season, priority_label, combined
             )
         }
     };
@@ -131,151 +132,224 @@ pub fn view_page(
         &og_description,
         auth,
         html! {
-            hgroup {
-                h1 { "Shared Setup" }
-                p {
-                    strong { (share_page.name) }
-                    " · Season " (share_page.season)
-                    " · " (priority_label)
-                    " · " (share_page.view_count) " view" @if share_page.view_count != 1 { "s" }
+            // ── Hero header ───────────────────────────────────────────────
+            div class="share-hero" {
+                div class="share-hero-left" {
+                    p class="share-label" { "Shared Setup" }
+                    h1 {
+                        (share_page.name)
+                        span class="share-season-badge" { "Season " (share_page.season) }
+                    }
+                    p class="share-hero-sub" {
+                        (priority_label)
+                        " / "
+                        (share_page.view_count)
+                        " view" @if share_page.view_count != 1 { "s" }
+                    }
                 }
-            }
-
-            // Parts table
-            h2 { "Parts" }
-            figure {
-                table.responsive-table {
-                    thead {
-                        tr {
-                            th { "Part" }
-                            th { "Lvl" }
-                            th { "SPD" }
-                            th { "COR" }
-                            th { "PWR" }
-                            th { "QUA" }
-                            th { "PIT" }
-                            th { "Total" }
-                        }
+                div class="share-hero-right" {
+                    p class="share-views-count" {
+                        "👁 " (share_page.view_count) " view" @if share_page.view_count != 1 { "s" }
                     }
-                    tbody {
-                        @for p in parts {
-                            tr {
-                                td {
-                                    small class="secondary" { (p.category) }
-                                    " " span class=(part_rarity_class(&p.rarity)) { (p.part_name) }
-                                }
-                                td data-label="Lvl" { (p.level) }
-                                td.stat-cell data-label="SPD" { (p.speed) }
-                                td.stat-cell data-label="COR" { (p.cornering) }
-                                td.stat-cell data-label="PWR" { (p.power_unit) }
-                                td.stat-cell data-label="QUA" { (p.qualifying) }
-                                td.stat-cell data-label="PIT" { (format!("{:.2}", p.pit_stop_time)) }
-                                td.stat-cell data-label="Total" { strong { (p.total) } }
-                            }
-                        }
-                    }
-                    tfoot {
-                        tr {
-                            td { strong { "Total" } }
-                            td {}
-                            td.stat-cell data-label="SPD" { strong { (share_page.total_parts["speed"]) } }
-                            td.stat-cell data-label="COR" { strong { (share_page.total_parts["cornering"]) } }
-                            td.stat-cell data-label="PWR" { strong { (share_page.total_parts["power_unit"]) } }
-                            td.stat-cell data-label="QUA" { strong { (share_page.total_parts["qualifying"]) } }
-                            td.stat-cell data-label="PIT" { strong { (format!("{:.2}", share_page.total_parts["pit_stop_time"].as_f64().unwrap_or(0.0))) } }
-                            td.stat-cell data-label="Total" { strong { (parts_total) } }
-                        }
+                    @if combined > 0 {
+                        div class="share-total-badge" { (combined) " Total Score" }
                     }
                 }
             }
 
-            // Drivers table
-            @if !drivers.is_empty() {
-                h2 { "Drivers" }
-                figure {
-                    table.responsive-table {
-                        thead {
-                            tr {
-                                th { "Driver" }
-                                th { "Lvl" }
-                                th { "OVT" }
-                                th { "DEF" }
-                                th { "QUA" }
-                                th { "RST" }
-                                th { "TYR" }
-                                th { "Total" }
-                            }
-                        }
-                        tbody {
-                            @for d in drivers {
-                                @let d_rarity_class = DriverRarity::from_db(&d.rarity).map_or("", |r| r.css_class());
+            // ── Two-column layout ─────────────────────────────────────────
+            div class="share-layout" {
+
+                // Left: parts + drivers + score bar
+                div {
+                    // Parts table
+                    h2 class="share-section-h2" { "Parts" }
+                    figure {
+                        table class="responsive-table" style="width:100%" {
+                            thead {
                                 tr {
-                                    td {
-                                        small class="secondary" { (d.rarity) }
-                                        " " span class=(d_rarity_class) { (d.driver_name) }
-                                    }
-                                    td data-label="Lvl" { (d.level) }
-                                    td.stat-cell data-label="OVT" { (d.overtaking) }
-                                    td.stat-cell data-label="DEF" { (d.defending) }
-                                    td.stat-cell data-label="QUA" { (d.qualifying) }
-                                    td.stat-cell data-label="RST" { (d.race_start) }
-                                    td.stat-cell data-label="TYR" { (d.tyre_management) }
-                                    td.stat-cell data-label="Total" { strong { (d.total) } }
+                                    th { "Part" }
+                                    th { "Lvl" }
+                                    th { "SPD" }
+                                    th { "COR" }
+                                    th { "PWR" }
+                                    th { "QUA" }
+                                    th { "PIT" }
+                                    th { "Total" }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-            p {
-                "Combined score: "
-                strong { (parts_total + drivers_total) }
-                " (" (parts_total) " parts + " (drivers_total) " drivers)"
-            }
-
-            // Compare with viewer's inventory
-            @if !viewer_inventory.is_empty() {
-                h2 { "Compare with Your Inventory" }
-                figure {
-                    table {
-                        thead {
-                            tr {
-                                th { "Part" }
-                                th { "Shared" }
-                                th { "Yours" }
-                                th { "Diff" }
-                            }
-                        }
-                        tbody {
-                            @for p in parts {
-                                @let viewer_item = viewer_inventory.iter().find(|i| i.part_name == p.part_name);
-                                tr {
-                                    td { span class=(part_rarity_class(&p.rarity)) { (p.part_name) } }
-                                    td { "L" (p.level) " (" (p.total) ")" }
-                                    @if let Some(vi) = viewer_item {
+                            tbody {
+                                @for p in parts {
+                                    tr {
                                         td {
-                                            @if vi.level == p.level {
-                                                "L" (vi.level)
-                                            } @else {
-                                                span class={ @if vi.level > p.level { "upgrade-positive" } @else { "compare-worst" } } {
+                                            small class="secondary" { (p.category) }
+                                            " "
+                                            span class=(part_rarity_class(&p.rarity)) { (p.part_name) }
+                                        }
+                                        td data-label="Lvl" { (p.level) }
+                                        td class="stat-cell" data-label="SPD" { (p.speed) }
+                                        td class="stat-cell" data-label="COR" { (p.cornering) }
+                                        td class="stat-cell" data-label="PWR" { (p.power_unit) }
+                                        td class="stat-cell" data-label="QUA" { (p.qualifying) }
+                                        td class="stat-cell" data-label="PIT" { (format!("{:.2}", p.pit_stop_time)) }
+                                        td class="stat-cell share-total-cell" data-label="Total" { (p.total) }
+                                    }
+                                }
+                            }
+                            tfoot {
+                                tr {
+                                    td { strong { "Total" } }
+                                    td {}
+                                    td class="stat-cell" data-label="SPD" { (share_page.total_parts["speed"]) }
+                                    td class="stat-cell" data-label="COR" { (share_page.total_parts["cornering"]) }
+                                    td class="stat-cell" data-label="PWR" { (share_page.total_parts["power_unit"]) }
+                                    td class="stat-cell" data-label="QUA" { (share_page.total_parts["qualifying"]) }
+                                    td class="stat-cell" data-label="PIT" {
+                                        (format!("{:.2}", share_page.total_parts["pit_stop_time"].as_f64().unwrap_or(0.0)))
+                                    }
+                                    td class="stat-cell share-total-cell" data-label="Total" { strong { (parts_total) } }
+                                }
+                            }
+                        }
+                    }
+
+                    // Drivers table
+                    @if !drivers.is_empty() {
+                        h2 class="share-section-h2" { "Drivers" }
+                        figure {
+                            table class="responsive-table" style="width:100%" {
+                                thead {
+                                    tr {
+                                        th { "Driver" }
+                                        th { "Lvl" }
+                                        th { "OVT" }
+                                        th { "DEF" }
+                                        th { "QUA" }
+                                        th { "RST" }
+                                        th { "TYR" }
+                                        th { "Total" }
+                                    }
+                                }
+                                tbody {
+                                    @for d in drivers {
+                                        @let d_rarity_class = DriverRarity::from_db(&d.rarity).map_or("", |r| r.css_class());
+                                        tr {
+                                            td {
+                                                small class="secondary" { (d.rarity) }
+                                                " "
+                                                span class=(d_rarity_class) { (d.driver_name) }
+                                            }
+                                            td data-label="Lvl" { (d.level) }
+                                            td class="stat-cell" data-label="OVT" { (d.overtaking) }
+                                            td class="stat-cell" data-label="DEF" { (d.defending) }
+                                            td class="stat-cell" data-label="QUA" { (d.qualifying) }
+                                            td class="stat-cell" data-label="RST" { (d.race_start) }
+                                            td class="stat-cell" data-label="TYR" { (d.tyre_management) }
+                                            td class="stat-cell share-total-cell" data-label="Total" { (d.total) }
+                                        }
+                                    }
+                                }
+                                tfoot {
+                                    tr {
+                                        td { strong { "Total" } }
+                                        td {}
+                                        td class="stat-cell" data-label="OVT" { (share_page.total_drivers["overtaking"]) }
+                                        td class="stat-cell" data-label="DEF" { (share_page.total_drivers["defending"]) }
+                                        td class="stat-cell" data-label="QUA" { (share_page.total_drivers["qualifying"]) }
+                                        td class="stat-cell" data-label="RST" { (share_page.total_drivers["race_start"]) }
+                                        td class="stat-cell" data-label="TYR" { (share_page.total_drivers["tyre_management"]) }
+                                        td class="stat-cell share-total-cell" data-label="Total" { strong { (drivers_total) } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Score bar
+                    div class="share-score-bar" {
+                        div class="share-score-combined" {
+                            "🏆 " (combined) " Combined Score"
+                        }
+                        div class="share-score-stat" {
+                            span class="share-score-stat-value" { (parts_total) }
+                            span class="share-score-stat-label" { "Parts Score" }
+                        }
+                        @if drivers_total > 0 {
+                            div class="share-score-stat" {
+                                span class="share-score-stat-value" { (drivers_total) }
+                                span class="share-score-stat-label" { "Drivers Score" }
+                            }
+                        }
+                    }
+                }
+
+                // Right: setup summary sidebar
+                aside {
+                    div class="share-sidebar-card" {
+                        h3 { "Setup Summary" }
+                        dl class="share-summary-dl" {
+                            dt { "Setup Name" }
+                            dd { (share_page.name) }
+                            dt { "Season" }
+                            dd { (share_page.season) }
+                            dt { "Views" }
+                            dd { (share_page.view_count) }
+                            dt { "Created" }
+                            dd { (share_page.created_at) }
+                        }
+                    }
+                    div style="margin-top:1rem" {
+                        a href="/optimizer" role="button" style="width:100%;text-align:center;display:block" {
+                            "Try the Optimizer →"
+                        }
+                    }
+                }
+            }
+
+            // ── Compare with viewer's inventory (full width) ───────────────
+            @if !viewer_inventory.is_empty() {
+                div class="share-compare-section" {
+                    h2 class="share-section-h2" { "Compare with Your Inventory" }
+                    figure {
+                        table {
+                            thead {
+                                tr {
+                                    th { "Part" }
+                                    th { "Shared" }
+                                    th { "Yours" }
+                                    th { "Diff" }
+                                }
+                            }
+                            tbody {
+                                @for p in parts {
+                                    @let viewer_item = viewer_inventory.iter().find(|i| i.part_name == p.part_name);
+                                    tr {
+                                        td { span class=(part_rarity_class(&p.rarity)) { (p.part_name) } }
+                                        td { "L" (p.level) " (" (p.total) ")" }
+                                        @if let Some(vi) = viewer_item {
+                                            td {
+                                                @if vi.level == p.level {
                                                     "L" (vi.level)
+                                                } @else {
+                                                    span class={ @if vi.level > p.level { "upgrade-positive" } @else { "compare-worst" } } {
+                                                        "L" (vi.level)
+                                                    }
                                                 }
                                             }
-                                        }
-                                        td {
-                                            @let diff = vi.level - p.level;
-                                            @if diff > 0 {
-                                                span class="upgrade-positive" { "+" (diff) " lvl" }
-                                            } @else if diff < 0 {
-                                                span class="compare-worst" { (diff) " lvl" }
-                                            } @else {
-                                                span class="secondary" { "=" }
+                                            td {
+                                                @let diff = vi.level - p.level;
+                                                @if diff > 0 {
+                                                    span class="upgrade-positive" { "+" (diff) " lvl" }
+                                                } @else if diff < 0 {
+                                                    span class="compare-worst" { (diff) " lvl" }
+                                                } @else {
+                                                    span class="secondary" { "=" }
+                                                }
                                             }
+                                        } @else {
+                                            td class="compare-worst" { "Not owned" }
+                                            td { "—" }
                                         }
-                                    } @else {
-                                        td class="compare-worst" { "Not owned" }
-                                        td { "—" }
                                     }
                                 }
                             }
@@ -283,13 +357,9 @@ pub fn view_page(
                     }
                 }
             } @else {
-                p class="secondary" {
+                p class="secondary" style="margin-top:1.5rem" {
                     "Add parts to your inventory to see how your setup compares."
                 }
-            }
-
-            div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1.5rem" {
-                a href="/optimizer" role="button" { "Try the Optimizer →" }
             }
         },
     )

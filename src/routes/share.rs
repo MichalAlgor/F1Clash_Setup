@@ -168,7 +168,39 @@ async fn create_share(
                 power_unit: s.power_unit,
                 qualifying: s.qualifying,
                 pit_stop_time: s.pit_stop_time,
-                total: s.total_performance(),
+                total: part_total(&s),
+            });
+        }
+    }
+
+    // Any category slot not covered by an inventory item uses the same
+    // default stats (1/1/1/1 + 1.0s pit) that the setups page applies,
+    // so the snapshot always contains all 7 parts and the total matches.
+    for cat in PartCategory::all() {
+        if !parts_snapshot
+            .iter()
+            .any(|p| p.category == cat.display_name())
+        {
+            let ds = Stats {
+                speed: 1,
+                cornering: 1,
+                power_unit: 1,
+                qualifying: 1,
+                pit_stop_time: 1.0,
+                additional_stat_value: 0,
+            };
+            total_parts = total_parts.add(&ds);
+            parts_snapshot.push(PartSnapshot {
+                category: cat.display_name().to_string(),
+                part_name: "Default".to_string(),
+                level: 1,
+                rarity: String::new(),
+                speed: ds.speed,
+                cornering: ds.cornering,
+                power_unit: ds.power_unit,
+                qualifying: ds.qualifying,
+                pit_stop_time: ds.pit_stop_time,
+                total: part_total(&ds),
             });
         }
     }
@@ -360,7 +392,7 @@ async fn view_share(
                AND EXISTS (SELECT 1 FROM inserted)
          )
          SELECT share_hash, name, season, priorities, parts_snapshot,
-                drivers_snapshot, total_parts, total_drivers, view_count
+                drivers_snapshot, total_parts, total_drivers, view_count, created_at
          FROM shared_setups
          WHERE share_hash = $1",
     )
@@ -384,6 +416,8 @@ async fn view_share(
     let record_season: String = row.get("season");
     let record_hash: String = row.get("share_hash");
     let view_count: i32 = row.get("view_count");
+    let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
+    let created_at_str = created_at.format("%b %d, %Y").to_string();
 
     // Parse snapshots — sort parts by canonical category order.
     let mut parts: Vec<PartSnapshot> =
@@ -430,6 +464,7 @@ async fn view_share(
         total_parts: total_parts_val.0,
         total_drivers: total_drivers_val.0,
         view_count,
+        created_at: created_at_str,
     };
     templates::share::view_page(&share_page, &parts, &drivers, &viewer_items, &auth)
 }
@@ -466,4 +501,11 @@ async fn generate_hash(pool: &sqlx::PgPool) -> String {
             return hash;
         }
     }
+}
+
+/// Per-part total using the single-part formula (same as OwnedLevelStats::total_performance).
+/// Stats::total_performance() is for a 7-part combined setup; this is for individual rows.
+fn part_total(s: &Stats) -> i32 {
+    let pit = (1.0 + (1.0 - s.pit_stop_time) * 200.0 / 7.0).round() as i32;
+    s.speed + s.cornering + s.power_unit + s.qualifying + pit
 }
