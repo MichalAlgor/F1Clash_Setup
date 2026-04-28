@@ -10,6 +10,8 @@ pub fn page_with_og(
     title: &str,
     og_title: &str,
     og_description: &str,
+    og_image_url: Option<&str>,
+    og_url: Option<&str>,
     auth: &AuthStatus,
     content: Markup,
 ) -> Markup {
@@ -18,9 +20,17 @@ pub fn page_with_og(
         meta property="og:description" content=(og_description);
         meta property="og:type" content="website";
         meta property="og:site_name" content="F1 Clash Setup";
-        meta name="twitter:card" content="summary";
+        @if let Some(img) = og_image_url {
+            meta property="og:image" content=(img);
+            meta name="twitter:card" content="summary_large_image";
+        } @else {
+            meta name="twitter:card" content="summary";
+        }
         meta name="twitter:title" content=(og_title);
         meta name="twitter:description" content=(og_description);
+        @if let Some(url) = og_url {
+            meta property="og:url" content=(url);
+        }
     };
     page_inner(title, Some(extra), auth, content)
 }

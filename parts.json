@@ -934,7 +934,8 @@
         "levels": [
             { "level": 1, "speed": 2, "cornering": 2, "power_unit": 4, "qualifying": 4, "pit_stop_time": 1.0 },
             { "level": 2, "speed": 3, "cornering": 3, "power_unit": 6, "qualifying": 6, "pit_stop_time": 0.94 },
-            { "level": 3, "speed": 3, "cornering": 3, "power_unit": 7, "qualifying": 7, "pit_stop_time": 0.91 }
+            { "level": 3, "speed": 3, "cornering": 3, "power_unit": 7, "qualifying": 7, "pit_stop_time": 0.91 },
+            { "level": 4, "speed": 4, "cornering": 4, "power_unit": 8, "qualifying": 9, "pit_stop_time": 0.88 }
         ],
         "sort_order": 1
     },
@@ -1028,6 +1029,18 @@
         "sort_order": 2
     },
     {
+        "name": "Equilibrium",
+        "category": "suspension",
+        "series": 5,
+        "rarity": "Rare",
+        "levels": [
+            { "level": 1, "speed": 7, "cornering": 6, "power_unit": 18, "qualifying": 5, "pit_stop_time": 0.79 },
+            { "level": 2, "speed": 8, "cornering": 7, "power_unit": 20, "qualifying": 6, "pit_stop_time": 0.76 },
+            { "level": 3, "speed": 9, "cornering": 8, "power_unit": 23, "qualifying": 7, "pit_stop_time": 0.72 }
+        ],
+        "sort_order": 3
+    },
+    {
         "name": "Tempest",
         "category": "engine",
         "series": 1,
@@ -1082,7 +1095,8 @@
         "levels": [
             { "level": 1, "speed": 4, "cornering": 3, "power_unit": 7, "qualifying": 6, "pit_stop_time": 0.93 },
             { "level": 2, "speed": 5, "cornering": 4, "power_unit": 8, "qualifying": 7, "pit_stop_time": 0.91 },
-            { "level": 3, "speed": 5, "cornering": 4, "power_unit": 9, "qualifying": 8, "pit_stop_time": 0.88 }
+            { "level": 3, "speed": 5, "cornering": 4, "power_unit": 9, "qualifying": 8, "pit_stop_time": 0.88 },
+            { "level": 4, "speed": 6, "cornering": 5, "power_unit": 11, "qualifying": 10, "pit_stop_time": 0.86 }
         ],
         "sort_order": 2
     },
@@ -1118,6 +1132,16 @@
             { "level": 1, "speed": 5, "cornering": 5, "power_unit": 10, "qualifying": 11, "pit_stop_time": 0.83 }
         ],
         "sort_order": 2
+    },
+    {
+        "name": "Charge Core",
+        "category": "battery",
+        "series": 4,
+        "rarity": "Epic",
+        "levels": [
+            { "level": 1, "speed": 10, "cornering": 4, "power_unit": 4, "qualifying": 3, "pit_stop_time": 0.90, "additional_stat_name": "Overtaking", "additional_stat_value": 30 }
+        ],
+        "sort_order": 0
     }
   ]
 }

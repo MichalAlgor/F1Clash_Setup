@@ -81,7 +81,7 @@ pub fn not_found_page(auth: &AuthStatus) -> Markup {
 }
 
 pub struct SharePage {
-    pub _hash: String,
+    pub hash: String,
     pub name: String,
     pub season: String,
     pub priorities: StatPriorities,
@@ -98,6 +98,7 @@ pub fn view_page(
     drivers: &[DriverSnapshot],
     viewer_inventory: &[InventoryItem],
     auth: &AuthStatus,
+    base_url: &str,
 ) -> Markup {
     let priority_label = {
         let labels = share_page.priorities.labels();
@@ -126,10 +127,23 @@ pub fn view_page(
         }
     };
 
+    let og_image_url = if base_url.is_empty() {
+        None
+    } else {
+        Some(format!("{}/share/{}/og-image", base_url, share_page.hash))
+    };
+    let og_url = if base_url.is_empty() {
+        None
+    } else {
+        Some(format!("{}/share/{}", base_url, share_page.hash))
+    };
+
     super::layout::page_with_og(
         &format!("Shared: {}", share_page.name),
         &og_title,
         &og_description,
+        og_image_url.as_deref(),
+        og_url.as_deref(),
         auth,
         html! {
             // ── Hero header ───────────────────────────────────────────────

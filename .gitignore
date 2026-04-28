@@ -2,3 +2,4 @@
 .env
 .claude/settings.local.json
 .docs/
+.vscode/

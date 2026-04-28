@@ -5,6 +5,7 @@ pub mod data;
 pub mod drivers_data;
 pub mod error;
 mod models;
+pub mod og_image;
 pub mod optimizer_core;
 mod routes;
 pub mod session;
@@ -37,6 +38,9 @@ pub struct AppState {
     pub session_token: Option<String>,
     /// Analytics handle for query API and dashboard.
     pub analytics: analytics::AnalyticsHandle,
+    /// Absolute base URL (e.g. "https://f1clashsetup.com"). Empty string in local dev.
+    /// Used to build og:image URLs for share previews.
+    pub base_url: String,
 }
 
 impl AppState {
@@ -246,6 +250,8 @@ async fn main() {
         }
     });
 
+    let base_url = std::env::var("BASE_URL").unwrap_or_default();
+
     let state = AppState {
         pool,
         catalog: Arc::new(RwLock::new(parts)),
@@ -254,6 +260,7 @@ async fn main() {
         admin_password,
         session_token,
         analytics: analytics_handle.clone(),
+        base_url,
     };
 
     let app = Router::new()

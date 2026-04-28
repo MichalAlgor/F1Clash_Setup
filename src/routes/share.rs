@@ -1,7 +1,9 @@
 use axum::Form;
 use axum::Router;
+use axum::body::Body;
 use axum::extract::{OriginalUri, Path, State};
-use axum::response::IntoResponse;
+use axum::http::{StatusCode, header};
+use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -25,6 +27,7 @@ pub fn router() -> Router<AppState> {
         .route("/optimizer/share", post(create_share))
         .route("/setup/share", post(create_share))
         .route("/share/{hash}", get(view_share))
+        .route("/share/{hash}/og-image", get(og_image_handler))
 }
 
 // ── Share form (extends SaveForm with priorities) ─────────────────────────────
@@ -63,7 +66,7 @@ pub struct ShareForm {
 
 // ── Snapshot types ────────────────────────────────────────────────────────────
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PartSnapshot {
     pub category: String,
     pub part_name: String,
@@ -353,6 +356,44 @@ async fn create_share(
     .execute(&state.pool)
     .await?;
 
+    // Generate and cache the og:image for this share (snapshot is immutable).
+    {
+        let priorities = StatPriorities {
+            speed: form.speed,
+            cornering: form.cornering,
+            power_unit: form.power_unit,
+            qualifying: form.qualifying,
+        };
+        let mut ordered_parts = parts_snapshot.clone();
+        ordered_parts.sort_by_key(|p| {
+            PartCategory::all()
+                .iter()
+                .position(|cat| cat.display_name() == p.category)
+                .unwrap_or(usize::MAX)
+        });
+        let og_parts_total = total_parts.total_performance() as i64;
+        let og_drivers_total = (total_ovt + total_def + total_qual + total_rst + total_tyr) as i64;
+        let created_at = chrono::Utc::now().format("%b %d, %Y").to_string();
+        let og_bytes = crate::og_image::render_og_image(
+            &form.name,
+            &season,
+            &priorities,
+            &ordered_parts,
+            &drivers_snapshot,
+            og_parts_total,
+            og_drivers_total,
+            0,
+            &created_at,
+        );
+        if !og_bytes.is_empty() {
+            let _ = sqlx::query("UPDATE shared_setups SET og_image = $1 WHERE share_hash = $2")
+                .bind(&og_bytes)
+                .bind(&share_hash)
+                .execute(&state.pool)
+                .await;
+        }
+    }
+
     crate::analytics::fire(
         &state.analytics,
         session_id.clone(),
@@ -457,7 +498,7 @@ async fn view_share(
     );
 
     let share_page = SharePage {
-        _hash: record_hash,
+        hash: record_hash,
         name: record_name,
         season: record_season,
         priorities,
@@ -466,7 +507,105 @@ async fn view_share(
         view_count,
         created_at: created_at_str,
     };
-    templates::share::view_page(&share_page, &parts, &drivers, &viewer_items, &auth)
+    templates::share::view_page(
+        &share_page,
+        &parts,
+        &drivers,
+        &viewer_items,
+        &auth,
+        &state.base_url,
+    )
+}
+
+// ── OG image endpoint ─────────────────────────────────────────────────────────
+
+async fn og_image_handler(State(state): State<AppState>, Path(hash): Path<String>) -> Response {
+    let row: Option<PgRow> = sqlx::query(
+        "SELECT og_image, parts_snapshot, drivers_snapshot, name, season, priorities, \
+         total_parts, total_drivers, view_count, created_at \
+         FROM shared_setups WHERE share_hash = $1",
+    )
+    .bind(&hash)
+    .fetch_optional(&state.pool)
+    .await
+    .unwrap_or(None);
+
+    let Some(row) = row else {
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::empty())
+            .unwrap();
+    };
+
+    // Return cached image when available.
+    let cached: Option<Vec<u8>> = row.get("og_image");
+    if let Some(bytes) = cached {
+        return make_png_response(bytes);
+    }
+
+    // Legacy share — generate lazily, then cache.
+    let parts_val: sqlx::types::Json<Value> = row.get("parts_snapshot");
+    let drivers_val: sqlx::types::Json<Value> = row.get("drivers_snapshot");
+    let priorities_val: sqlx::types::Json<Value> = row.get("priorities");
+    let total_parts_val: sqlx::types::Json<Value> = row.get("total_parts");
+    let total_drivers_val: sqlx::types::Json<Value> = row.get("total_drivers");
+    let name: String = row.get("name");
+    let season: String = row.get("season");
+    let view_count: i32 = row.get("view_count");
+    let created_at_dt: chrono::DateTime<chrono::Utc> = row.get("created_at");
+    let created_at = created_at_dt.format("%b %d, %Y").to_string();
+
+    let mut parts: Vec<PartSnapshot> =
+        serde_json::from_value(parts_val.0.clone()).unwrap_or_default();
+    parts.sort_by_key(|p| {
+        PartCategory::all()
+            .iter()
+            .position(|cat| cat.display_name() == p.category)
+            .unwrap_or(usize::MAX)
+    });
+    let drivers: Vec<DriverSnapshot> =
+        serde_json::from_value(drivers_val.0.clone()).unwrap_or_default();
+
+    let priorities = StatPriorities {
+        speed: priorities_val.0["speed"].as_bool().unwrap_or(false),
+        cornering: priorities_val.0["cornering"].as_bool().unwrap_or(false),
+        power_unit: priorities_val.0["power_unit"].as_bool().unwrap_or(false),
+        qualifying: priorities_val.0["qualifying"].as_bool().unwrap_or(false),
+    };
+
+    let parts_total = total_parts_val.0["total"].as_i64().unwrap_or(0);
+    let drivers_total = total_drivers_val.0["total"].as_i64().unwrap_or(0);
+
+    let bytes = crate::og_image::render_og_image(
+        &name,
+        &season,
+        &priorities,
+        &parts,
+        &drivers,
+        parts_total,
+        drivers_total,
+        view_count,
+        &created_at,
+    );
+
+    if !bytes.is_empty() {
+        let _ = sqlx::query("UPDATE shared_setups SET og_image = $1 WHERE share_hash = $2")
+            .bind(&bytes)
+            .bind(&hash)
+            .execute(&state.pool)
+            .await;
+    }
+
+    make_png_response(bytes)
+}
+
+fn make_png_response(bytes: Vec<u8>) -> Response {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "image/png")
+        .header(header::CACHE_CONTROL, "public, max-age=31536000, immutable")
+        .body(Body::from(bytes))
+        .unwrap()
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

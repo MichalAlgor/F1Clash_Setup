@@ -11459,6 +11459,36 @@
             ]
         },
         {
+            "name": "Oliver Bearman",
+            "rarity": "Common",
+            "series": "3",
+            "sort_order": 11,
+            "levels": [
+                {
+                    "level": 1,
+                    "cards_required": 0,
+                    "coins_cost": 0,
+                    "overtaking": 8,
+                    "defending": 13,
+                    "qualifying": 18,
+                    "race_start": 23,
+                    "tyre_management": 3,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 2,
+                    "cards_required": 4,
+                    "coins_cost": 35000,
+                    "overtaking": 11,
+                    "defending": 16,
+                    "qualifying": 21,
+                    "race_start": 26,
+                    "tyre_management": 6,
+                    "legacy_points": 0
+                }
+            ]
+        },
+        {
             "name": "Isack Hadjar",
             "rarity": "Common",
             "series": "3",
@@ -11544,6 +11574,126 @@
                     "qualifying": 24,
                     "race_start": 24,
                     "tyre_management": 26,
+                    "legacy_points": 0
+                }
+            ]
+        },
+        {
+            "name": "Fernando Alonso",
+            "rarity": "Common",
+            "series": "4",
+            "sort_order": 15,
+            "levels": [
+                {
+                    "level": 1,
+                    "cards_required": 0,
+                    "coins_cost": 0,
+                    "overtaking": 28,
+                    "defending": 13,
+                    "qualifying": 8,
+                    "race_start": 23,
+                    "tyre_management": 18,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 2,
+                    "cards_required": 4,
+                    "coins_cost": 110000,
+                    "overtaking": 30,
+                    "defending": 15,
+                    "qualifying": 10,
+                    "race_start": 25,
+                    "tyre_management": 20,
+                    "legacy_points": 0
+                }
+            ]
+        },
+        {
+            "name": "Valtteri Bottas",
+            "rarity": "Epic",
+            "series": "4",
+            "sort_order": 20,
+            "levels": [
+                {
+                    "level": 1,
+                    "cards_required": 0,
+                    "coins_cost": 0,
+                    "overtaking": 25,
+                    "defending": 26,
+                    "qualifying": 28,
+                    "race_start": 27,
+                    "tyre_management": 29,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 2,
+                    "cards_required": 4,
+                    "coins_cost": 110000,
+                    "overtaking": 27,
+                    "defending": 29,
+                    "qualifying": 31,
+                    "race_start": 31,
+                    "tyre_management": 34,
+                    "legacy_points": 0
+                }
+            ]
+        },
+        {
+            "name": "Max Verstappen",
+            "rarity": "Common",
+            "series": "5",
+            "sort_order": 25,
+            "levels": [
+                {
+                    "level": 1,
+                    "cards_required": 0,
+                    "coins_cost": 0,
+                    "overtaking": 27,
+                    "defending": 17,
+                    "qualifying": 32,
+                    "race_start": 12,
+                    "tyre_management": 22,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 2,
+                    "cards_required": 4,
+                    "coins_cost": 400000,
+                    "overtaking": 30,
+                    "defending": 20,
+                    "qualifying": 35,
+                    "race_start": 15,
+                    "tyre_management": 25,
+                    "legacy_points": 0
+                }
+            ]
+        },
+        {
+            "name": "Franco Colapinto",
+            "rarity": "Rare",
+            "series": "5",
+            "sort_order": 26,
+            "levels": [
+                {
+                    "level": 1,
+                    "cards_required": 0,
+                    "coins_cost": 0,
+                    "overtaking": 24,
+                    "defending": 26,
+                    "qualifying": 25,
+                    "race_start": 27,
+                    "tyre_management": 23,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 2,
+                    "cards_required": 4,
+                    "coins_cost": 400000,
+                    "overtaking": 27,
+                    "defending": 30,
+                    "qualifying": 28,
+                    "race_start": 31,
+                    "tyre_management": 25,
                     "legacy_points": 0
                 }
             ]
