@@ -444,6 +444,7 @@ mod tests {
                 power_unit: 70,
                 qualifying: 50,
                 pit_stop_time: 2.10,
+                additional_stat_value: 0,
                 total: 216,
             },
             PartSnapshot {
@@ -456,6 +457,7 @@ mod tests {
                 power_unit: 55,
                 qualifying: 60,
                 pit_stop_time: 2.30,
+                additional_stat_value: 0,
                 total: 225,
             },
             PartSnapshot {
@@ -468,6 +470,7 @@ mod tests {
                 power_unit: 60,
                 qualifying: 55,
                 pit_stop_time: 2.50,
+                additional_stat_value: 0,
                 total: 219,
             },
             PartSnapshot {
@@ -480,6 +483,7 @@ mod tests {
                 power_unit: 50,
                 qualifying: 65,
                 pit_stop_time: 2.20,
+                additional_stat_value: 0,
                 total: 208,
             },
             PartSnapshot {
@@ -492,6 +496,7 @@ mod tests {
                 power_unit: 45,
                 qualifying: 50,
                 pit_stop_time: 2.40,
+                additional_stat_value: 0,
                 total: 204,
             },
             PartSnapshot {
@@ -504,6 +509,7 @@ mod tests {
                 power_unit: 55,
                 qualifying: 58,
                 pit_stop_time: 2.15,
+                additional_stat_value: 0,
                 total: 217,
             },
             PartSnapshot {
@@ -516,6 +522,7 @@ mod tests {
                 power_unit: 80,
                 qualifying: 70,
                 pit_stop_time: 2.05,
+                additional_stat_value: 0,
                 total: 231,
             },
         ]

@@ -77,6 +77,8 @@ pub struct PartSnapshot {
     pub power_unit: i32,
     pub qualifying: i32,
     pub pit_stop_time: f64,
+    #[serde(default)]
+    pub additional_stat_value: i32,
     pub total: i32,
 }
 
@@ -171,6 +173,7 @@ async fn create_share(
                 power_unit: s.power_unit,
                 qualifying: s.qualifying,
                 pit_stop_time: s.pit_stop_time,
+                additional_stat_value: s.additional_stat_value,
                 total: part_total(&s),
             });
         }
@@ -203,6 +206,7 @@ async fn create_share(
                 power_unit: ds.power_unit,
                 qualifying: ds.qualifying,
                 pit_stop_time: ds.pit_stop_time,
+                additional_stat_value: 0,
                 total: part_total(&ds),
             });
         }
@@ -646,5 +650,5 @@ async fn generate_hash(pool: &sqlx::PgPool) -> String {
 /// Stats::total_performance() is for a 7-part combined setup; this is for individual rows.
 fn part_total(s: &Stats) -> i32 {
     let pit = (1.0 + (1.0 - s.pit_stop_time) * 200.0 / 7.0).round() as i32;
-    s.speed + s.cornering + s.power_unit + s.qualifying + pit
+    s.speed + s.cornering + s.power_unit + s.qualifying + pit + s.additional_stat_value
 }

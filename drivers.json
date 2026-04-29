@@ -11226,6 +11226,28 @@
                     "race_start": 7,
                     "tyre_management": 10,
                     "legacy_points": 0
+                },
+                {
+                    "level": 4,
+                    "cards_required": 20,
+                    "coins_cost": 18000,
+                    "overtaking": 8,
+                    "defending": 10,
+                    "qualifying": 15,
+                    "race_start": 12,
+                    "tyre_management": 17,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 5,
+                    "cards_required": 50,
+                    "coins_cost": 190000,
+                    "overtaking": 10,
+                    "defending": 13,
+                    "qualifying": 18,
+                    "race_start": 15,
+                    "tyre_management": 20,
+                    "legacy_points": 0
                 }
             ]
         },
@@ -11275,6 +11297,17 @@
                     "race_start": 9,
                     "tyre_management": 21,
                     "legacy_points": 0
+                },
+                {
+                    "level": 3,
+                    "cards_required": 10,
+                    "coins_cost": 13000,
+                    "overtaking": 17,
+                    "defending": 21,
+                    "qualifying": 30,
+                    "race_start": 12,
+                    "tyre_management": 25,
+                    "legacy_points": 0
                 }
             ]
         },
@@ -11304,6 +11337,28 @@
                     "qualifying": 12,
                     "race_start": 16,
                     "tyre_management": 7,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 3,
+                    "cards_required": 10,
+                    "coins_cost": 53000,
+                    "overtaking": 23,
+                    "defending": 6,
+                    "qualifying": 14,
+                    "race_start": 18,
+                    "tyre_management": 10,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 4,
+                    "cards_required": 20,
+                    "coins_cost": 190000,
+                    "overtaking": 26,
+                    "defending": 8,
+                    "qualifying": 17,
+                    "race_start": 21,
+                    "tyre_management": 13,
                     "legacy_points": 0
                 }
             ]
@@ -11335,6 +11390,17 @@
                     "race_start": 3,
                     "tyre_management": 16,
                     "legacy_points": 0
+                },
+                {
+                    "level": 3,
+                    "cards_required": 10,
+                    "coins_cost": 53000,
+                    "overtaking": 10,
+                    "defending": 14,
+                    "qualifying": 23,
+                    "race_start": 6,
+                    "tyre_management": 18,
+                    "legacy_points": 0
                 }
             ]
         },
@@ -11364,6 +11430,28 @@
                     "qualifying": 7,
                     "race_start": 3,
                     "tyre_management": 12,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 3,
+                    "cards_required": 10,
+                    "coins_cost": 53000,
+                    "overtaking": 18,
+                    "defending": 23,
+                    "qualifying": 10,
+                    "race_start": 6,
+                    "tyre_management": 14,
+                    "legacy_points": 0
+                },
+                {
+                    "level": 4,
+                    "cards_required": 20,
+                    "coins_cost": 190000,
+                    "overtaking": 21,
+                    "defending": 26,
+                    "qualifying": 13,
+                    "race_start": 8,
+                    "tyre_management": 17,
                     "legacy_points": 0
                 }
             ]
@@ -11575,6 +11663,17 @@
                     "race_start": 24,
                     "tyre_management": 26,
                     "legacy_points": 0
+                },
+                {
+                    "level": 3,
+                    "cards_required": 10,
+                    "coins_cost": 70000,
+                    "overtaking": 32,
+                    "defending": 34,
+                    "qualifying": 27,
+                    "race_start": 26,
+                    "tyre_management": 30,
+                    "legacy_points": 0
                 }
             ]
         },
@@ -11631,7 +11730,7 @@
                     "coins_cost": 110000,
                     "overtaking": 27,
                     "defending": 29,
-                    "qualifying": 31,
+                    "qualifying": 32,
                     "race_start": 31,
                     "tyre_management": 34,
                     "legacy_points": 0
@@ -11725,6 +11824,17 @@
                     "qualifying": 35,
                     "race_start": 19,
                     "tyre_management": 23
+                },
+                {
+                    "cards_required": 10,
+                    "coins_cost": 250000,
+                    "defending": 35,
+                    "legacy_points": 1500,
+                    "level": 3,
+                    "overtaking": 31,
+                    "qualifying": 39,
+                    "race_start": 23,
+                    "tyre_management": 27
                 }
             ]
         }

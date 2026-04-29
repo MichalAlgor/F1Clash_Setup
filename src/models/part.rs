@@ -78,14 +78,19 @@ pub struct Stats {
     pub power_unit: i32,
     pub qualifying: i32,
     pub pit_stop_time: f64,
-    /// Generic secondary stat (DRS, Overtake Mode, …). Not included in total_performance.
+    /// Generic secondary stat (DRS, Overtake Mode, …). Included in total_performance.
     pub additional_stat_value: i32,
 }
 
 impl Stats {
     pub fn total_performance(&self) -> i32 {
         let pit = (7.0 + (29.0 * (7.0 - self.pit_stop_time))).round() as i32;
-        self.speed + self.cornering + self.power_unit + self.qualifying + pit
+        self.speed
+            + self.cornering
+            + self.power_unit
+            + self.qualifying
+            + pit
+            + self.additional_stat_value
     }
 
     pub fn add(&self, other: &Stats) -> Stats {
@@ -152,7 +157,12 @@ impl OwnedLevelStats {
 
     pub fn total_performance(&self) -> i32 {
         let pit = (1.0 + (1.0 - self.pit_stop_time) * 200.0 / 7.0).round() as i32;
-        self.speed + self.cornering + self.power_unit + self.qualifying + pit
+        self.speed
+            + self.cornering
+            + self.power_unit
+            + self.qualifying
+            + pit
+            + self.additional_stat_value
     }
 }
 
@@ -250,17 +260,17 @@ mod tests {
 
     #[test]
     fn total_performance_sums_four_stats_and_pit_contribution() {
-        // pit=1.0 → round(7 + 29*(7-1)) = 181
+        // pit=1.0 → round(7 + 29*(7-1)) = 181; additional_stat=5 → total = 286
         let s = stats(10, 20, 30, 40, 1.0, 5);
-        assert_eq!(s.total_performance(), 281);
+        assert_eq!(s.total_performance(), 286);
     }
 
     #[test]
-    fn total_performance_includes_pit_stop_excludes_additional_stat() {
-        // pit=7.0 (baseline) → 7 + 29*0 = 7
+    fn total_performance_includes_pit_stop_and_additional_stat() {
+        // pit=7.0 (baseline) → 7 + 29*0 = 7; additional_stat=999 → total = 1006
         let s = stats(0, 0, 0, 0, 7.0, 999);
-        assert_eq!(s.total_performance(), 7);
-        // pit=0.0 (fastest possible) → 7 + 29*7 = 210
+        assert_eq!(s.total_performance(), 1006);
+        // pit=0.0 (fastest possible) → 7 + 29*7 = 210; no additional_stat
         let s_fast = stats(0, 0, 0, 0, 0.0, 0);
         assert_eq!(s_fast.total_performance(), 210);
     }
@@ -337,11 +347,11 @@ mod tests {
     }
 
     #[test]
-    fn owned_level_stats_total_performance_includes_pit_stop_excludes_additional_stat() {
-        // pit=1.0 baseline → contribution = 1; additional_stat excluded
+    fn owned_level_stats_total_performance_includes_pit_stop_and_additional_stat() {
+        // pit=1.0 baseline → contribution = 1; additional_stat=999 → total = 1000
         let mut ls = level_stats(1, 0, 0, 0, 0);
         ls.additional_stat_value = 999;
-        assert_eq!(ls.total_performance(), 1);
+        assert_eq!(ls.total_performance(), 1000);
     }
 
     #[test]
