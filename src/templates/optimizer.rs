@@ -211,7 +211,7 @@ fn preset_card(preset: &PresetResult) -> Markup {
                                         td data-label="PWR" class="stat-cell" { (stats.power_unit) }
                                         td data-label="QUA" class="stat-cell" { (stats.qualifying) }
                                         td data-label="PIT" class="stat-cell" { (format!("{:.2}", stats.pit_stop_time)) }
-                                        td data-label="Total" { strong { (stats.total_performance()) } }
+                                        td data-label="Total" { strong { (stats.single_part_total()) } }
                                     }
                                 }
                             }
@@ -333,7 +333,7 @@ pub fn result_page(
                                         td data-label="PWR" class="stat-cell" { (stats.power_unit) }
                                         td data-label="QUA" class="stat-cell" { (stats.qualifying) }
                                         td data-label="PIT" class="stat-cell" { (format!("{:.2}", stats.pit_stop_time)) }
-                                        td data-label="Total" { strong { (stats.total_performance()) } }
+                                        td data-label="Total" { strong { (stats.single_part_total()) } }
                                     }
                                 }
                             }

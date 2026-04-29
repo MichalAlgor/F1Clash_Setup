@@ -70,6 +70,12 @@ impl PartCategory {
     }
 }
 
+/// Pit-stop score contribution: `round(n + 29×(n − pit_sum))`.
+/// Pass `n=1` for a single part, `n=7` for a combined 7-part setup.
+fn pit_score(n: f64, pit_sum: f64) -> i32 {
+    (n + 29.0 * (n - pit_sum)).round() as i32
+}
+
 /// Stats that car parts contribute to a setup.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Stats {
@@ -83,13 +89,25 @@ pub struct Stats {
 }
 
 impl Stats {
+    /// Combined 7-part setup score. `pit_stop_time` is expected to be the SUM of 7 parts.
     pub fn total_performance(&self) -> i32 {
-        let pit = (7.0 + (29.0 * (7.0 - self.pit_stop_time))).round() as i32;
+        let pit = pit_score(7.0, self.pit_stop_time);
         self.speed
             + self.cornering
             + self.power_unit
             + self.qualifying
             + pit
+            + self.additional_stat_value
+    }
+
+    /// Per-part display total. Use this for individual part rows;
+    /// `total_performance()` is for the combined 7-part setup score.
+    pub fn single_part_total(&self) -> i32 {
+        pit_score(1.0, self.pit_stop_time)
+            + self.speed
+            + self.cornering
+            + self.power_unit
+            + self.qualifying
             + self.additional_stat_value
     }
 
@@ -156,12 +174,11 @@ impl OwnedLevelStats {
     }
 
     pub fn total_performance(&self) -> i32 {
-        let pit = (1.0 + (1.0 - self.pit_stop_time) * 200.0 / 7.0).round() as i32;
-        self.speed
+        pit_score(1.0, self.pit_stop_time)
+            + self.speed
             + self.cornering
             + self.power_unit
             + self.qualifying
-            + pit
             + self.additional_stat_value
     }
 }

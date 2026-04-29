@@ -649,6 +649,5 @@ async fn generate_hash(pool: &sqlx::PgPool) -> String {
 /// Per-part total using the single-part formula (same as OwnedLevelStats::total_performance).
 /// Stats::total_performance() is for a 7-part combined setup; this is for individual rows.
 fn part_total(s: &Stats) -> i32 {
-    let pit = (1.0 + (1.0 - s.pit_stop_time) * 200.0 / 7.0).round() as i32;
-    s.speed + s.cornering + s.power_unit + s.qualifying + pit + s.additional_stat_value
+    s.single_part_total()
 }
