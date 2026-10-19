@@ -30,6 +30,8 @@ pub struct ExportData {
 pub struct PartEntry {
     pub name: String,
     pub level: i32,
+    #[serde(default, alias = "cards_owned")]
+    pub cards: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -37,6 +39,8 @@ pub struct DriverEntry {
     pub name: String,
     pub rarity: String,
     pub level: i32,
+    #[serde(default, alias = "cards_owned")]
+    pub cards: i32,
 }
 
 async fn export(
@@ -70,6 +74,7 @@ async fn export(
             .map(|p| PartEntry {
                 name: p.part_name.clone(),
                 level: p.level,
+                cards: p.cards_owned,
             })
             .collect(),
         drivers: drivers
@@ -78,6 +83,7 @@ async fn export(
                 name: d.driver_name.clone(),
                 rarity: d.rarity.clone(),
                 level: d.level,
+                cards: d.cards_owned,
             })
             .collect(),
     };
@@ -225,10 +231,11 @@ async fn import(
             continue;
         }
         sqlx::query(
-            "INSERT INTO inventory (part_name, level, season, session_id) VALUES ($1, $2, $3, $4)",
+            "INSERT INTO inventory (part_name, level, cards_owned, season, session_id) VALUES ($1, $2, $3, $4, $5)",
         )
         .bind(&part.name)
         .bind(part.level)
+        .bind(part.cards.max(0))
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
@@ -247,11 +254,12 @@ async fn import(
             continue;
         }
         sqlx::query(
-            "INSERT INTO driver_inventory (driver_name, rarity, level, season, session_id) VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO driver_inventory (driver_name, rarity, level, cards_owned, season, session_id) VALUES ($1, $2, $3, $4, $5, $6)",
         )
         .bind(&driver.name)
         .bind(&driver.rarity)
         .bind(driver.level)
+        .bind(driver.cards.max(0))
         .bind(&season)
         .bind(&session_id)
         .execute(&state.pool)
@@ -275,4 +283,60 @@ async fn import(
     );
 
     Ok(Redirect::to("/inventory"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_export_data_serialization_with_cards() {
+        let export = ExportData {
+            season: "2026".to_string(),
+            parts: vec![PartEntry {
+                name: "Front Wing".to_string(),
+                level: 5,
+                cards: 120,
+            }],
+            drivers: vec![DriverEntry {
+                name: "Verstappen".to_string(),
+                rarity: "Epic".to_string(),
+                level: 3,
+                cards: 45,
+            }],
+        };
+        let json = serde_json::to_string(&export).unwrap();
+        assert!(json.contains("\"cards\":120"));
+        assert!(json.contains("\"cards\":45"));
+
+        let deserialized: ExportData = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.parts[0].cards, 120);
+        assert_eq!(deserialized.drivers[0].cards, 45);
+    }
+
+    #[test]
+    fn test_import_backwards_compatible_without_cards() {
+        let legacy_json = r#"{
+            "season": "2026",
+            "parts": [{"name": "Rear Wing", "level": 4}],
+            "drivers": [{"name": "Hamilton", "rarity": "Rare", "level": 6}]
+        }"#;
+
+        let parsed: ExportData = serde_json::from_str(legacy_json).unwrap();
+        assert_eq!(parsed.parts[0].cards, 0);
+        assert_eq!(parsed.drivers[0].cards, 0);
+    }
+
+    #[test]
+    fn test_import_with_cards_owned_alias() {
+        let alias_json = r#"{
+            "season": "2026",
+            "parts": [{"name": "Engine", "level": 7, "cards_owned": 80}],
+            "drivers": [{"name": "Norris", "rarity": "Epic", "level": 5, "cards_owned": 15}]
+        }"#;
+
+        let parsed: ExportData = serde_json::from_str(alias_json).unwrap();
+        assert_eq!(parsed.parts[0].cards, 80);
+        assert_eq!(parsed.drivers[0].cards, 15);
+    }
 }
